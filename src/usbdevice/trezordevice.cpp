@@ -31,19 +31,24 @@ namespace usb_device {
 
 int CTrezorDevice::Open()
 {
+    printf("[rm] Open pType %d\n", pType);
     if (!pType) {
         return 1;
     }
 
+    printf("[rm] hid_init\n");
     if (hid_init()) {
         return 1;
     }
+    printf("[rm] hid_init done\n");
+    printf("[rm] cPath %s\n", cPath);
 
-    if (!(handle = hid_open_path(cPath))) {
+    if (!(handle = libusb_open_path(cPath))) {
+        printf("[rm] !hid_open_path\n");
         hid_exit();
         return 1;
     }
-
+    printf("[rm] end Open\n");
     return 0;
 };
 
@@ -145,6 +150,7 @@ static int ReadV1(hid_device *handle, uint16_t &msg_type, std::vector<uint8_t> &
 
 int CTrezorDevice::GetFirmwareVersion(std::string &sFirmware, std::string &sError)
 {
+    printf("[rm] GetFirmwareVersion\n");
     GetFeatures msg_in;
     Features msg_out;
 
@@ -156,9 +162,11 @@ int CTrezorDevice::GetFirmwareVersion(std::string &sFirmware, std::string &sErro
         return errorN(1, sError, __func__, "SerializeToArray failed.");
     }
 
+    printf("[rm] 1\n");
     if (0 != Open()) {
         return errorN(1, sError, __func__, "Failed to open device.");
     }
+    printf("[rm] 2\n");
 
     if (0 != WriteV1(handle, MessageType_GetFeatures, vec_in)) {
         Close();

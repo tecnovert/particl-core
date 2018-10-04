@@ -1213,6 +1213,10 @@ else
   fi
 fi
 
+if test "x$enable_usbdevice" = "xyes"; then
+  USB_LIBS="$USB_LIBS -lusb-1.0"
+fi
+
 save_CXXFLAGS="${CXXFLAGS}"
 CXXFLAGS="${CXXFLAGS} ${CRYPTO_CFLAGS} ${SSL_CFLAGS}"
 AC_CHECK_DECLS([EVP_MD_CTX_new],,,[AC_INCLUDES_DEFAULT

@@ -162,6 +162,8 @@ public:
     bool CreateSig(const SigningProvider& provider, std::vector<unsigned char> &vchSig, const CKeyID &keyid, const CScript &scriptCode, SigVersion sigversion) const override;
 };
 
+hid_device *libusb_open_path(const char *path);
+
 } // usb_device
 
 #endif // PARTICL_USBDEVICE_USBDEVICE_H
