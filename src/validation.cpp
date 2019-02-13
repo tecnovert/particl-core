@@ -1219,11 +1219,14 @@ bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Consensus:
     // Check the header
     if (fParticlMode) {
         // only CheckProofOfWork for genesis blocks
+        /*
         if (block.hashPrevBlock.IsNull()
             && !CheckProofOfWork(block.GetHash(), block.nBits, consensusParams, 0, Params().GetLastImportHeight())) {
             return error("ReadBlockFromDisk: Errors in block header at %s", pos.ToString());
         }
-    } else {
+        */
+    } else
+    {
         if (!CheckProofOfWork(block.GetHash(), block.nBits, consensusParams))
             return error("ReadBlockFromDisk: Errors in block header at %s", pos.ToString());
     }

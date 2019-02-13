@@ -210,35 +210,50 @@ const std::pair<const char*, CAmount> genesisOutputs[] = {
 const size_t nGenesisOutputs = sizeof(genesisOutputs) / sizeof(genesisOutputs[0]);
 
 const std::pair<const char*, CAmount> genesisOutputsTestnet[] = {
-    std::make_pair("46a064688dc7beb5f70ef83569a0f15c7abf4f28",7017084118),
-    std::make_pair("9c97b561ac186bd3758bf690036296d36b1fd019",221897417980),
-    std::make_pair("118a92e28242a73244fb03c96b7e1429c06f979f",120499999),
-    std::make_pair("cae4bf990ce39624e2f77c140c543d4b15428ce7",18074999),
-    std::make_pair("9d6b7b5874afc100eb82a4883441a73b99d9c306",92637054909),
-    std::make_pair("f989e2deedb1f09ed10310fc0d7da7ebfb573326",3100771006662),
-    std::make_pair("4688d6701fb4ae2893d3ec806e6af966faf67545",465115650998),
-    std::make_pair("40e07b038941fb2616a54a498f763abae6d4f280",669097504996),
-    std::make_pair("c43f7c57448805a068a440cc51f67379ca946264",802917005996),
-    std::make_pair("98b7269dbf0c2e3344fb41cd60e75db16d6743a6",267639001997),
-    std::make_pair("85dceec8cdbb9e24fe07af783e4d273d1ae39f75",267639001997),
-    std::make_pair("ddc05d332b7d1a18a55509f34c786ccb65bbffbc",245040727620),
-    std::make_pair("8b04d0b2b582c986975414a01cb6295f1c33d0e9",1204260290404),
-    std::make_pair("1e9ff4c3ac6d0372963e92a13f1e47409eb62d37",1204270995964),
-    std::make_pair("687e7cf063cd106c6098f002fa1ea91d8aee302a",236896901156),
-    std::make_pair("dc0be0edcadd4cc97872db40bb8c2db2cebafd1c",155127107700),
-    std::make_pair("21efcbfe37045648180ac68b406794bde77f9983",115374999),
-    std::make_pair("deaf53dbfbc799eed1171269e84c733dec22f517",17306249),
-    std::make_pair("200a0f9dba25e00ea84a4a3a43a7ea6983719d71",133819500998),
-    std::make_pair("2d072fb1a9d1f7dd8df0443e37e9f942eab58680",133713917412),
-    std::make_pair("0850f3b7caf3b822bb41b9619f8edf9b277402d0",173382671567),
-    std::make_pair("ec62fbd782bf6f48e52eea75a3c68a4c3ab824c0",254257051898),
-    std::make_pair("c6dcb0065e98f5edda771c594265d61e38cf63a0",200226012806),
-    std::make_pair("e5f9a711ccd7cb0d2a70f9710229d0d0d7ef3bda",436119839355),
-    std::make_pair("cae1527d24a91470aeb796f9d024630f301752ef",156118097804),
-    std::make_pair("604f36860d79a9d72b827c99409118bfe16711bd",108968353176),
-    std::make_pair("f02e5891cef35c9c5d9a770756b240aba5ba3639",126271503135),
-    std::make_pair("8251b4983be1027a17dc3b977502086f08ba8910",35102718156),
-    std::make_pair("b991d98acde28455ecb0193fefab06841187c4e7",80306152234),
+    std::make_pair("585c2b3914d9ee51f8e710304e386531c3abcc82", 100000 * COIN),
+    std::make_pair("c33f3603ce7c46b423536f0434155dad8ee2aa1f", 100000 * COIN),
+    std::make_pair("72d83540ed1dcf28bfaca3fa2ed77100c2808825", 100000 * COIN),
+    std::make_pair("69e4cc4c219d8971a253cd5db69a0c99c4a5659d", 100000 * COIN),
+    std::make_pair("eab5ed88d97e50c87615a015771e220ab0a0991a", 100000 * COIN),
+    std::make_pair("119668a93761a34a4ba1c065794b26733975904f", 100000 * COIN),
+    std::make_pair("6da49762a4402d199d41d5778fcb69de19abbe9f", 100000 * COIN),
+    std::make_pair("27974d10ff5ba65052be7461d89ef2185acbe411", 100000 * COIN),
+    std::make_pair("89ea3129b8dbf1238b20a50211d50d462a988f61", 100000 * COIN),
+    std::make_pair("3baab5b42a409b7c6848a95dfd06ff792511d561", 100000 * COIN),
+
+    std::make_pair("585c2b3914d9ee51f8e710304e386531c3abcc82", 100000 * COIN),
+    std::make_pair("c33f3603ce7c46b423536f0434155dad8ee2aa1f", 100000 * COIN),
+    std::make_pair("72d83540ed1dcf28bfaca3fa2ed77100c2808825", 100000 * COIN),
+    std::make_pair("69e4cc4c219d8971a253cd5db69a0c99c4a5659d", 100000 * COIN),
+    std::make_pair("eab5ed88d97e50c87615a015771e220ab0a0991a", 100000 * COIN),
+    std::make_pair("119668a93761a34a4ba1c065794b26733975904f", 100000 * COIN),
+    std::make_pair("6da49762a4402d199d41d5778fcb69de19abbe9f", 100000 * COIN),
+    std::make_pair("27974d10ff5ba65052be7461d89ef2185acbe411", 100000 * COIN),
+    std::make_pair("89ea3129b8dbf1238b20a50211d50d462a988f61", 100000 * COIN),
+    std::make_pair("3baab5b42a409b7c6848a95dfd06ff792511d561", 100000 * COIN),
+
+    std::make_pair("585c2b3914d9ee51f8e710304e386531c3abcc82", 100000 * COIN),
+    std::make_pair("c33f3603ce7c46b423536f0434155dad8ee2aa1f", 100000 * COIN),
+    std::make_pair("72d83540ed1dcf28bfaca3fa2ed77100c2808825", 100000 * COIN),
+    std::make_pair("69e4cc4c219d8971a253cd5db69a0c99c4a5659d", 100000 * COIN),
+    std::make_pair("eab5ed88d97e50c87615a015771e220ab0a0991a", 100000 * COIN),
+    std::make_pair("119668a93761a34a4ba1c065794b26733975904f", 100000 * COIN),
+    std::make_pair("6da49762a4402d199d41d5778fcb69de19abbe9f", 100000 * COIN),
+    std::make_pair("27974d10ff5ba65052be7461d89ef2185acbe411", 100000 * COIN),
+    std::make_pair("89ea3129b8dbf1238b20a50211d50d462a988f61", 100000 * COIN),
+    std::make_pair("3baab5b42a409b7c6848a95dfd06ff792511d561", 100000 * COIN),
+
+    std::make_pair("649b801848cc0c32993fb39927654969a5af27b0", 50000 * COIN),
+    std::make_pair("d669de30fa30c3e64a0303cb13df12391a2f7256", 50000 * COIN),
+    std::make_pair("f0c0e3ebe4a1334ed6a5e9c1e069ef425c529934", 50000 * COIN),
+    std::make_pair("27189afe71ca423856de5f17538a069f22385422", 50000 * COIN),
+    std::make_pair("0e7f6fe0c4a5a6a9bfd18f7effdd5898b1f40b80", 50000 * COIN),
+
+    std::make_pair("649b801848cc0c32993fb39927654969a5af27b0", 50000 * COIN),
+    std::make_pair("d669de30fa30c3e64a0303cb13df12391a2f7256", 50000 * COIN),
+    std::make_pair("f0c0e3ebe4a1334ed6a5e9c1e069ef425c529934", 50000 * COIN),
+    std::make_pair("27189afe71ca423856de5f17538a069f22385422", 50000 * COIN),
+    std::make_pair("0e7f6fe0c4a5a6a9bfd18f7effdd5898b1f40b80", 50000 * COIN),
 };
 const size_t nGenesisOutputsTestnet = sizeof(genesisOutputsTestnet) / sizeof(genesisOutputsTestnet[0]);
 
@@ -644,10 +659,10 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = 1493596800; // May 1st 2017
 
         // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000000000003d577d5f2d3d2c767");
+        //consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000000000003d577d5f2d3d2c767");
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0xeecbeafc4b338901e3dfb6eeaefc128ef477dfe1e6f0f96bd63da27caf113ddc"); // 331600
+        //consensus.defaultAssumeValid = uint256S("0xeecbeafc4b338901e3dfb6eeaefc128ef477dfe1e6f0f96bd63da27caf113ddc"); // 331600
 
         consensus.nMinRCTOutputDepth = 12;
 
@@ -674,10 +689,13 @@ public:
 
         genesis = CreateGenesisBlockTestNet(1502309248, 5924, 0x1f00ffff);
         consensus.hashGenesisBlock = genesis.GetHash();
+        LogPrintf("Demo testnet genesis block hash: %s\n", consensus.hashGenesisBlock.ToString());
 
+        /*
         assert(consensus.hashGenesisBlock == uint256S("0x0000594ada5310b367443ee0afd4fa3d0bbd5850ea4e33cdc7d6a904a7ec7c90"));
         assert(genesis.hashMerkleRoot == uint256S("0x2c7f4d88345994e3849502061f6303d9666172e4dff3641d3472a72908eec002"));
         assert(genesis.hashWitnessMerkleRoot == uint256S("0xf9e2235c9531d5a19263ece36e82c4d5b71910d73cd0b677b81c5e50d17b6cda"));
+        */
 
         vFixedSeeds.clear();
         vSeeds.clear();
@@ -720,6 +738,7 @@ public:
         fRequireStandard = false;
         fMineBlocksOnDemand = false;
 
+        /*
         checkpointData = {
             {
                 {127620, uint256S("0xe5ab909fc029b253bad300ccf859eb509e03897e7853e8bfdde2710dbf248dd1")},
@@ -732,10 +751,11 @@ public:
 
         chainTxData = ChainTxData{
             // Data from rpc: getchaintxstats 4096 eecbeafc4b338901e3dfb6eeaefc128ef477dfe1e6f0f96bd63da27caf113ddc
-            /* nTime    */ 1548745488,
-            /* nTxCount */ 356622,
-            /* dTxRate  */ 0.006
+             1548745488,
+             356622,
+             0.006
         };
+        */
 
         /* enable fallback fee on testnet */
         m_fallback_fee_enabled = true;
