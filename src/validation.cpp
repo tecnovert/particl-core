@@ -4411,9 +4411,11 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
             }
         } else
         {
-            bool fCheckPOW = true; // TODO: pass properly
-            if (fCheckPOW && !CheckProofOfWork(block.GetHash(), block.nBits, consensusParams, nHeight, Params().GetLastImportHeight()))
-                return state.DoS(50, false, REJECT_INVALID, "high-hash", false, "proof of work failed");
+            //assert(false);
+            // Only the genesis block should get here
+            if (block.GetHash() != consensusParams.hashGenesisBlock) {
+                return state.DoS(50, false, REJECT_INVALID, "bad-hash", false, "Unexpected PoW block found.");
+            }
 
             // Enforce rule that the coinbase/ ends with serialized block height
             // genesis block scriptSig size will be different

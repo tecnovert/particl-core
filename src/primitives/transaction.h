@@ -541,7 +541,7 @@ public:
                 if  (0 != GetVarInt(vData, ofs, nv, nb)) {
                     return false;
                 }
-                ofs += nv;
+                ofs += nb;
                 continue;
             }
             break;
@@ -569,7 +569,7 @@ public:
                 if  (0 != GetVarInt(vData, ofs, nv, nb)) {
                     return false;
                 }
-                ofs += nv;
+                ofs += nb;
                 continue;
             }
             if (vData[ofs] == DO_SMSG_FEE) {
