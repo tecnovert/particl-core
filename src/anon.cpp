@@ -42,7 +42,7 @@ bool VerifyMLSAG(const CTransaction &tx, CValidationState &state)
     if (nPlainValueOut > 0)
     {
         if (!secp256k1_pedersen_commit(secp256k1_ctx_blind,
-            &plainCommitment, zeroBlind, (uint64_t) nPlainValueOut, secp256k1_generator_h))
+            &plainCommitment, zeroBlind, (uint64_t) nPlainValueOut, &secp256k1_generator_const_h, &secp256k1_generator_const_g))
             return state.DoS(100, false, REJECT_INVALID, "bad-plain-commitment");
     };
 

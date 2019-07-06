@@ -66,6 +66,10 @@ struct Params {
     int csp2shTime;
     /** Time at which Paid SMSG becomes active */
     int64_t nPaidSmsgTime;
+    /** Time at which bulletproofs become active */
+    uint32_t bulletproof_time;
+    /** Time at which RCT become active */
+    uint32_t rct_time;
 
 
     /**

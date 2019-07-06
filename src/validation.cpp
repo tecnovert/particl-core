@@ -617,6 +617,11 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         *pfMissingInputs = false;
     }
 
+    const Consensus::Params &consensus = Params().GetConsensus();
+    state.fEnforceSmsgFees = nAcceptTime >= consensus.nPaidSmsgTime;
+    state.fBulletproofsActive = nAcceptTime >= consensus.bulletproof_time;
+    state.rct_active = nAcceptTime >= consensus.rct_time;
+
     if (!CheckTransaction(tx, state))
         return false; // state filled in by CheckTransaction
 
@@ -983,7 +988,6 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         // This is done last to help prevent CPU exhaustion denial-of-service attacks.
         PrecomputedTransactionData txdata(tx);
 
-        state.fEnforceSmsgFees = nAcceptTime >= chainparams.GetConsensus().nPaidSmsgTime;
         if (!CheckInputs(tx, state, view, true, scriptVerifyFlags, true, false, txdata)) {
             // SCRIPT_VERIFY_CLEANSTACK requires SCRIPT_VERIFY_WITNESS, so we
             // need to turn both off, and compare against just turning off CLEANSTACK
@@ -2248,6 +2252,11 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     assert(*pindex->phashBlock == block.GetHash());
     int64_t nTimeStart = GetTimeMicros();
 
+    const Consensus::Params &consensus = Params().GetConsensus();
+    state.fEnforceSmsgFees = block.nTime >= consensus.nPaidSmsgTime;
+    state.fBulletproofsActive = block.nTime >= consensus.bulletproof_time;
+    state.rct_active = block.nTime >= consensus.rct_time;
+
     // Check it again in case a previous version let a bad block in
     // NOTE: We don't currently (re-)invoke ContextualCheckBlock() or
     // ContextualCheckBlockHeader() here. This means that if we add a new
@@ -2451,7 +2460,6 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     // NOTE: Be careful tracking coin created, block reward is based on nMoneySupply
     CAmount nMoneyCreated = 0;
 
-    state.fEnforceSmsgFees = block.nTime >= chainparams.GetConsensus().nPaidSmsgTime;
     for (unsigned int i = 0; i < block.vtx.size(); i++)
     {
         const CTransaction &tx = *(block.vtx[i]);
@@ -4029,6 +4037,10 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     if (!CheckBlockHeader(block, state, consensusParams, fCheckPOW))
         return false;
 
+    state.fEnforceSmsgFees = block.nTime >= consensusParams.nPaidSmsgTime;
+    state.fBulletproofsActive = block.nTime >= consensusParams.bulletproof_time;
+    state.rct_active = block.nTime >= consensusParams.rct_time;
+
     // Check the merkle root.
     if (fCheckMerkleRoot) {
         bool mutated;
@@ -4946,11 +4958,10 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
 
     // Header is valid/has work, merkle tree and segwit merkle tree are good...RELAY NOW
     // (but if it does not build on our best tip, let the SendMessages loop relay it)
-    if (!IsInitialBlockDownload() && chainActive.Tip() == pindex->pprev)
-    {
-        if (!(state.nFlags & BLOCK_FAILED_DUPLICATE_STAKE))
-            GetMainSignals().NewPoWValidBlock(pindex, pblock);
-    };
+    if (!(state.nFlags & (BLOCK_STAKE_KERNEL_SPENT | BLOCK_FAILED_DUPLICATE_STAKE))
+        && !IsInitialBlockDownload() && chainActive.Tip() == pindex->pprev) {
+        GetMainSignals().NewPoWValidBlock(pindex, pblock);
+    }
 
     // Write block to history file
     if (fNewBlock) *fNewBlock = true;

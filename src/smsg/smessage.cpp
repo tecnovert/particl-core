@@ -883,7 +883,7 @@ int CSMSG::WriteIni()
 
 bool CSMSG::Start(std::shared_ptr<CWallet> pwalletIn, bool fDontStart, bool fScanChain)
 {
-    if (fDontStart)
+    if (fDontStart || Params().NetworkIDString() != "regtest")
     {
         LogPrintf("Secure messaging not started.\n");
         return false;

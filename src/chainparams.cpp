@@ -444,6 +444,8 @@ public:
         consensus.fAllowOpIsCoinstakeWithP2PKH = false;
         consensus.nPaidSmsgTime = 0x5C791EC0;   // 2019-03-01 12:00:00
         consensus.csp2shTime = 0x5C791EC0;      // 2019-03-01 12:00:00
+        consensus.bulletproof_time = 0x5D2DBC40;        // 2019-07-16 12:00:00
+        consensus.rct_time = 0x5D2DBC40;                // 2019-07-16 12:00:00
         consensus.powLimit = uint256S("000000000000bfffffffffffffffffffffffffffffffffffffffffffffffffff");
 
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
@@ -467,10 +469,10 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = 1510704000; // November 15th, 2017.
 
         // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x00000000000000000000000000000000000000000000004b45316e7283db9788");
+        consensus.nMinimumChainWork = uint256S("0x00000000000000000000000000000000000000000000005b068ad3d9a61ba9eb");
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0x4661d1cdf3b5a97df46c022aee44ce8be1e237797aac58f429fa981e52b8a6b2"); // 399670
+        consensus.defaultAssumeValid = uint256S("0xdd26591439f80ddb52c360209d0bb3f9d94a391ede0ec7b5b0dcdb9c0877be54"); // 474198
 
         consensus.nMinRCTOutputDepth = 12;
 
@@ -568,14 +570,15 @@ public:
                 { 357320,   uint256S("0x20b01f2bef93197bb014d27125939cd8d4f6a34257fdb498ae64c8644b8f2289")},
                 { 376100,   uint256S("0xff704cb42547da4efb2b32054c72c7682b7634ac34fda4ec88fe7badc666338c")},
                 { 399670,   uint256S("0x4661d1cdf3b5a97df46c022aee44ce8be1e237797aac58f429fa981e52b8a6b2")},
+                { 474198,   uint256S("0xdd26591439f80ddb52c360209d0bb3f9d94a391ede0ec7b5b0dcdb9c0877be54")},
             }
         };
 
         chainTxData = ChainTxData {
-            // Data from rpc: getchaintxstats 4096 4661d1cdf3b5a97df46c022aee44ce8be1e237797aac58f429fa981e52b8a6b2
-            /* nTime    */ 1551783648,
-            /* nTxCount */ 444327,
-            /* dTxRate  */ 0.008
+            // Data from rpc: getchaintxstats 4096 dd26591439f80ddb52c360209d0bb3f9d94a391ede0ec7b5b0dcdb9c0877be54
+            /* nTime    */ 1561383920,
+            /* nTxCount */ 526532,
+            /* dTxRate  */ 0.007
         };
 
         /* disable fallback fee on mainnet */
@@ -617,6 +620,8 @@ public:
         consensus.fAllowOpIsCoinstakeWithP2PKH = true; // TODO: clear for next testnet
         consensus.nPaidSmsgTime = 0;
         consensus.csp2shTime = 0x5C67FB40; // 2019-02-16 12:00:00
+        consensus.bulletproof_time = 0x5C67FB40;        // 2019-02-16 12:00:00
+        consensus.rct_time = 0;
 
         consensus.powLimit = uint256S("000000000005ffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
@@ -640,10 +645,10 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = 1493596800; // May 1st 2017
 
         // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000000000003d577d5f2d3d2c767");
+        consensus.nMinimumChainWork = uint256S("0x0000000000000000000000000000000000000000000000057289703e5c3616e7");
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0xeecbeafc4b338901e3dfb6eeaefc128ef477dfe1e6f0f96bd63da27caf113ddc"); // 331600
+        consensus.defaultAssumeValid = uint256S("0x08bbc92c831b864c809b575901e37aaa9aa2b2e38212594aedf2712a87267da9"); // 428386
 
         consensus.nMinRCTOutputDepth = 12;
 
@@ -721,14 +726,15 @@ public:
                 {259290, uint256S("0x58267bdf935a2e0716cb910d055b8cdaa019089a5f71c3db90765dc7101dc5dc")},
                 {312860, uint256S("0xaba2e3b2dcf1970b53b67c869325c5eefd3a107e62518fa4640ddcfadf88760d")},
                 {331600, uint256S("0xeecbeafc4b338901e3dfb6eeaefc128ef477dfe1e6f0f96bd63da27caf113ddc")},
+                {428386, uint256S("0x08bbc92c831b864c809b575901e37aaa9aa2b2e38212594aedf2712a87267da9")},
             }
         };
 
         chainTxData = ChainTxData{
-            // Data from rpc: getchaintxstats 4096 eecbeafc4b338901e3dfb6eeaefc128ef477dfe1e6f0f96bd63da27caf113ddc
-            /* nTime    */ 1548745488,
-            /* nTxCount */ 356622,
-            /* dTxRate  */ 0.006
+            // Data from rpc: getchaintxstats 4096 08bbc92c831b864c809b575901e37aaa9aa2b2e38212594aedf2712a87267da9
+            /* nTime    */ 1561384112,
+            /* nTxCount */ 464434,
+            /* dTxRate  */ 0.007
         };
 
         /* enable fallback fee on testnet */
@@ -753,6 +759,8 @@ public:
         consensus.fAllowOpIsCoinstakeWithP2PKH = false;
         consensus.nPaidSmsgTime = 0;
         consensus.csp2shTime = 0;
+        consensus.bulletproof_time = 0;
+        consensus.rct_time = 0;
 
         consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks

@@ -9,6 +9,70 @@
 #include <tinyformat.h>
 #include <utilstrencodings.h>
 
+bool ExtractCoinStakeInt64(const std::vector<uint8_t> &vData, DataOutputTypes get_type, CAmount &out)
+{
+    if (vData.size() < 5) { // First 4 bytes will be height
+        return false;
+    }
+    uint64_t nv;
+    size_t nb;
+    size_t ofs = 4;
+    while (ofs < vData.size()) {
+        uint8_t current_type = vData[ofs];
+        if (current_type == DO_VOTE || current_type == DO_SMSG_DIFFICULTY) {
+            ofs += 5;
+        } else
+        if (current_type == DO_DEV_FUND_CFWD || current_type == DO_SMSG_FEE) {
+            ofs++;
+            if  (0 != GetVarInt(vData, ofs, nv, nb)) {
+                return false;
+            }
+            if (get_type == current_type) {
+                out = nv;
+                return true;
+            }
+            ofs += nb;
+        } else {
+            break; // Unknown identifier byte
+        }
+    }
+    return false;
+}
+
+bool ExtractCoinStakeUint32(const std::vector<uint8_t> &vData, DataOutputTypes get_type, uint32_t &out)
+{
+    if (vData.size() < 5) { // First 4 bytes will be height
+        return false;
+    }
+    uint64_t nv;
+    size_t nb;
+    size_t ofs = 4;
+    while (ofs < vData.size()) {
+        uint8_t current_type = vData[ofs];
+        if (current_type == DO_VOTE || current_type == DO_SMSG_DIFFICULTY) {
+            if (vData.size() < ofs+5) {
+                return false;
+            }
+            if (get_type == current_type) {
+                memcpy(&out, &vData[ofs + 1], 4);
+                return true;
+            }
+            ofs += 5;
+        } else
+        if (current_type == DO_DEV_FUND_CFWD || current_type == DO_SMSG_FEE) {
+            ofs++;
+            if  (0 != GetVarInt(vData, ofs, nv, nb)) {
+                return false;
+            }
+            ofs += nb;
+        } else {
+            break; // Unknown identifier byte
+        }
+    }
+    return false;
+}
+
+
 std::string COutPoint::ToString() const
 {
     return strprintf("COutPoint(%s, %u)", hash.ToString().substr(0,10), n);

@@ -3,8 +3,8 @@ AC_PREREQ([2.60])
 define(_CLIENT_VERSION_MAJOR, 0)
 define(_CLIENT_VERSION_MINOR, 17)
 define(_CLIENT_VERSION_REVISION, 1)
-define(_CLIENT_VERSION_PARTICL, 4)
-define(_CLIENT_VERSION_BUILD, 1)
+define(_CLIENT_VERSION_PARTICL, 5)
+define(_CLIENT_VERSION_BUILD, 0)
 define(_CLIENT_VERSION_IS_RELEASE, true)
 define(_COPYRIGHT_YEAR, 2018)
 define(_COPYRIGHT_HOLDERS,[The %s developers])
@@ -1520,8 +1520,7 @@ if test x$need_bundled_univalue = xyes; then
   AC_CONFIG_SUBDIRS([src/univalue])
 fi
 
-#ac_configure_args="${ac_configure_args} --disable-shared --with-pic --with-bignum=no --enable-module-recovery --disable-jni --enable-module-ecdh --enable-module-rangeproof --enable-module-generator --enable-module-mlsag --enable-experimental"
-ac_configure_args="${ac_configure_args} --disable-shared --with-pic --with-bignum=no --enable-module-recovery --disable-jni --enable-module-ecdh --enable-module-rangeproof --enable-module-generator --enable-module-mlsag --enable-experimental --enable-endomorphism"
+ac_configure_args="${ac_configure_args} --disable-shared --with-pic --with-bignum=no --enable-module-recovery --disable-jni --enable-module-ecdh --enable-module-commitment --enable-module-rangeproof --enable-module-bulletproof --enable-module-generator --enable-module-mlsag --enable-experimental --enable-endomorphism"
 
 AC_CONFIG_SUBDIRS([src/secp256k1])
 

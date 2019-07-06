@@ -264,6 +264,7 @@ BOOST_AUTO_TEST_CASE(ext_key_index)
 
 BOOST_AUTO_TEST_CASE(test_TxOutRingCT)
 {
+    SetMockTime(1510000000);
     SelectParams(CBaseChainParams::TESTNET);
     CHDWallet *wallet = pwalletMain.get();
 
@@ -333,6 +334,10 @@ BOOST_AUTO_TEST_CASE(test_TxOutRingCT)
     GetStrongRandBytes(&r.vBlind[0], 32);
     BOOST_CHECK_MESSAGE(r.pkTo.IsValid(), "pubkeyto is not valid");
 
+    {
+    LOCK(cs_main);
+    LOCK(wallet->cs_wallet);
+
     BOOST_MESSAGE("---------------- Make RingCT Output : SetCTOutVData ---------------------\n");
     auto txout = MAKE_OUTPUT<CTxOutRingCT>();
     txout->pk = r.pkTo;
@@ -347,6 +352,7 @@ BOOST_AUTO_TEST_CASE(test_TxOutRingCT)
 
     BOOST_MESSAGE("---------------- Checking RingCT Output---------------------\n");
     CValidationState state;
+    state.rct_active = true;
     BOOST_CHECK_MESSAGE(CheckAnonOutput(state, (CTxOutRingCT*)txout.get()), "failed to check ringct output");
 
     BOOST_MESSAGE("---------------- Serialize Transaction with No Segwit ---------------------\n");
@@ -370,6 +376,7 @@ BOOST_AUTO_TEST_CASE(test_TxOutRingCT)
     BOOST_CHECK_MESSAGE(!CheckAnonOutput(state, (CTxOutRingCT*)txout_check.get()), "passed check ringct output");
 
     ECC_Stop_Stealth();
+    }
 }
 
 

@@ -47,7 +47,7 @@ class BlindTest(ParticlTestFramework):
         assert(len(ro) == 10)
 
         ro = nodes[0].getwalletinfo()
-        assert(isclose(ro['total_balance'], 99996.594196))
+        assert(isclose(ro['total_balance'], 99996.597968))
         assert(self.wait_for_mempool(nodes[1], txnHash))
 
         ro = nodes[1].getwalletinfo()
@@ -138,7 +138,7 @@ class BlindTest(ParticlTestFramework):
 
         ro = nodes[0].getwalletinfo()
         # Some of the balance will have staked
-        assert(isclose(ro['balance'] + ro['staked_balance'], 99996.09498274))
+        assert(isclose(ro['balance'] + ro['staked_balance'], 99996.09874074))
         availableBalance = ro['balance']
 
 
@@ -150,10 +150,10 @@ class BlindTest(ParticlTestFramework):
 
         nodes[0].syncwithvalidationinterfacequeue()
         ro = nodes[0].getwalletinfo()
-        assert(isclose(ro['total_balance'], 99996.09292874))
+        assert(isclose(ro['total_balance'], 99996.09670674))
 
         ro = nodes[1].getwalletinfo()
-        assert(isclose(ro['blind_balance'], 2.691068))
+        assert(isclose(ro['blind_balance'], 2.69666800))
 
         unspent = nodes[2].listunspentblind(minconf=0)
         assert(len(unspent[0]['stealth_address']))

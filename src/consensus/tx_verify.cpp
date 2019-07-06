@@ -221,7 +221,7 @@ bool CheckStandardOutput(CValidationState &state, const Consensus::Params& conse
 
 bool CheckBlindOutput(CValidationState &state, const CTxOutCT *p)
 {
-    if (p->vData.size() < 33 || p->vData.size() > 33 + 5)
+    if (p->vData.size() < 33 || p->vData.size() > 33 + 5 + 33)
         return state.DoS(100, false, REJECT_INVALID, "bad-ctout-ephem-size");
 
     size_t nRangeProofLen = 5134;
@@ -231,11 +231,19 @@ bool CheckBlindOutput(CValidationState &state, const CTxOutCT *p)
     if ((fBusyImporting) && fSkipRangeproof)
         return true;
 
-    uint64_t min_value, max_value;
-    int rv = secp256k1_rangeproof_verify(secp256k1_ctx_blind, &min_value, &max_value,
-        &p->commitment, p->vRangeproof.data(), p->vRangeproof.size(),
-        nullptr, 0,
-        secp256k1_generator_h);
+    uint64_t min_value = 0, max_value = 0;
+    int rv = 0;
+
+    if (state.fBulletproofsActive) {
+        rv = secp256k1_bulletproof_rangeproof_verify(secp256k1_ctx_blind,
+            blind_scratch, blind_gens, p->vRangeproof.data(), p->vRangeproof.size(),
+            nullptr, &p->commitment, 1, 64, &secp256k1_generator_const_h, nullptr, 0);
+    } else {
+        rv = secp256k1_rangeproof_verify(secp256k1_ctx_blind, &min_value, &max_value,
+            &p->commitment, p->vRangeproof.data(), p->vRangeproof.size(),
+            nullptr, 0,
+            secp256k1_generator_h);
+    }
 
     if (LogAcceptCategory(BCLog::RINGCT))
         LogPrintf("%s: rv, min_value, max_value %d, %s, %s\n", __func__,
@@ -249,10 +257,11 @@ bool CheckBlindOutput(CValidationState &state, const CTxOutCT *p)
 
 bool CheckAnonOutput(CValidationState &state, const CTxOutRingCT *p)
 {
-    if (Params().NetworkID() == "main")
-        return state.DoS(100, false, REJECT_INVALID, "AnonOutput in mainnet");
+    if (!state.rct_active) {
+        return state.DoS(100, false, REJECT_INVALID, "rctout-before-active");
+    }
 
-    if (p->vData.size() < 33 || p->vData.size() > 33 + 5)
+    if (p->vData.size() < 33 || p->vData.size() > 33 + 5 + 33)
         return state.DoS(100, false, REJECT_INVALID, "bad-rctout-ephem-size");
 
     size_t nRangeProofLen = 5134;
@@ -262,11 +271,19 @@ bool CheckAnonOutput(CValidationState &state, const CTxOutRingCT *p)
     if ((fBusyImporting) && fSkipRangeproof)
         return true;
 
-    uint64_t min_value, max_value;
-    int rv = secp256k1_rangeproof_verify(secp256k1_ctx_blind, &min_value, &max_value,
-        &p->commitment, p->vRangeproof.data(), p->vRangeproof.size(),
-        nullptr, 0,
-        secp256k1_generator_h);
+    uint64_t min_value = 0, max_value = 0;
+    int rv = 0;
+
+    if (state.fBulletproofsActive) {
+        rv = secp256k1_bulletproof_rangeproof_verify(secp256k1_ctx_blind,
+            blind_scratch, blind_gens, p->vRangeproof.data(), p->vRangeproof.size(),
+            nullptr, &p->commitment, 1, 64, &secp256k1_generator_const_h, nullptr, 0);
+    } else {
+        rv = secp256k1_rangeproof_verify(secp256k1_ctx_blind, &min_value, &max_value,
+            &p->commitment, p->vRangeproof.data(), p->vRangeproof.size(),
+            nullptr, 0,
+            secp256k1_generator_h);
+    }
 
     if (LogAcceptCategory(BCLog::RINGCT))
         LogPrintf("%s: rv, min_value, max_value %d, %s, %s\n", __func__,
@@ -577,14 +594,14 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
         memset(blindPlain, 0, 32);
         if (nValueIn > 0)
         {
-            if (!secp256k1_pedersen_commit(secp256k1_ctx_blind, &plainInCommitment, blindPlain, (uint64_t) nValueIn, secp256k1_generator_h))
+            if (!secp256k1_pedersen_commit(secp256k1_ctx_blind, &plainInCommitment, blindPlain, (uint64_t) nValueIn, &secp256k1_generator_const_h, &secp256k1_generator_const_g))
                 return state.Invalid(false, REJECT_INVALID, "commit-failed");
             vpCommitsIn.push_back(&plainInCommitment);
         };
 
         if (nPlainValueOut > 0)
         {
-            if (!secp256k1_pedersen_commit(secp256k1_ctx_blind, &plainOutCommitment, blindPlain, (uint64_t) nPlainValueOut, secp256k1_generator_h))
+            if (!secp256k1_pedersen_commit(secp256k1_ctx_blind, &plainOutCommitment, blindPlain, (uint64_t) nPlainValueOut, &secp256k1_generator_const_h, &secp256k1_generator_const_g))
                 return state.Invalid(false, REJECT_INVALID, "commit-failed");
             vpCommitsOut.push_back(&plainOutCommitment);
         };

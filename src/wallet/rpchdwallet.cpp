@@ -4445,8 +4445,8 @@ static UniValue SendToInner(const JSONRPCRequest &request, OutputTypes typeIn, O
         throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
     }
 
-    if (typeOut == OUTPUT_RINGCT && Params().NetworkID() == "main") {
-        throw std::runtime_error("Disabled on mainnet.");
+    if (typeOut == OUTPUT_RINGCT && GetTime() < Params().GetConsensus().rct_time) {
+        throw std::runtime_error("Anon transactions not yet activated.");
     }
 
     CAmount nTotal = 0;
@@ -6991,13 +6991,23 @@ static UniValue fundrawtransactionfrom(const JSONRPCRequest& request)
             size_t mlen = sizeof(msg);
             memset(msg, 0, mlen);
             uint64_t amountOut;
+            if (txout->GetPRangeproof()->size() < 1000) {
+                if (1 != secp256k1_bulletproof_rangeproof_rewind(secp256k1_ctx_blind, blind_gens,
+                    &amountOut, blindOut, txout->GetPRangeproof()->data(), txout->GetPRangeproof()->size(),
+                    0, txout->GetPCommitment(), &secp256k1_generator_const_h, r.nonce.begin(), NULL, 0)) {
+                    throw JSONRPCError(RPC_MISC_ERROR, strprintf("secp256k1_bulletproof_rangeproof_rewind failed, output %d.", n));
+                }
+
+                ExtractNarration(r.nonce, r.vData, r.sNarration);
+            } else
             if (1 != secp256k1_rangeproof_rewind(secp256k1_ctx_blind,
                 blindOut, &amountOut, msg, &mlen, r.nonce.begin(),
                 &min_value, &max_value,
                 txout->GetPCommitment(), txout->GetPRangeproof()->data(), txout->GetPRangeproof()->size(),
                 nullptr, 0,
-                secp256k1_generator_h))
+                secp256k1_generator_h)) {
                 throw JSONRPCError(RPC_MISC_ERROR, strprintf("secp256k1_rangeproof_rewind failed, output %d.", n));
+            }
             uint256 blind;
             memcpy(blind.begin(), blindOut, 32);
 
@@ -7049,7 +7059,7 @@ static UniValue fundrawtransactionfrom(const JSONRPCRequest& request)
             secp256k1_pedersen_commitment commitment;
             if (!secp256k1_pedersen_commit(secp256k1_ctx_blind,
                 &commitment, (const uint8_t*)(itb->second.begin()),
-                ita->second, secp256k1_generator_h))
+                ita->second, &secp256k1_generator_const_h, &secp256k1_generator_const_g))
                 throw JSONRPCError(RPC_MISC_ERROR, strprintf("secp256k1_pedersen_commit failed, output %d.", i));
 
             if (memcmp(txout->GetPCommitment()->data, commitment.data, 33) != 0)
@@ -7211,7 +7221,7 @@ static UniValue verifycommitment(const JSONRPCRequest &request)
     secp256k1_pedersen_commitment commitment;
     if (!secp256k1_pedersen_commit(secp256k1_ctx_blind,
         &commitment, blind.begin(),
-        nValue, secp256k1_generator_h))
+        nValue, &secp256k1_generator_const_h, &secp256k1_generator_const_g))
         throw JSONRPCError(RPC_MISC_ERROR, strprintf("secp256k1_pedersen_commit failed."));
 
     if (memcmp(vchCommitment.data(), commitment.data, 33) != 0)

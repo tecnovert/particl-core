@@ -51,7 +51,12 @@ enum DataOutputTypes
     DO_FEE                  = 6,
     DO_DEV_FUND_CFWD        = 7,
     DO_FUND_MSG             = 8,
+    DO_SMSG_FEE             = 9,
+    DO_SMSG_DIFFICULTY      = 10,
 };
+
+bool ExtractCoinStakeInt64(const std::vector<uint8_t> &vData, DataOutputTypes get_type, CAmount &out);
+bool ExtractCoinStakeUint32(const std::vector<uint8_t> &vData, DataOutputTypes get_type, uint32_t &out);
 
 inline bool IsParticlTxVersion(int nVersion)
 {
@@ -290,10 +295,14 @@ public:
 
     virtual secp256k1_pedersen_commitment *GetPCommitment() { return nullptr; };
     virtual std::vector<uint8_t> *GetPRangeproof() { return nullptr; };
+    virtual std::vector<uint8_t> *GetPData() { return nullptr; };
 
 
     virtual bool GetCTFee(CAmount &nFee) const { return false; };
+    virtual bool SetCTFee(CAmount &nFee) { return false; };
     virtual bool GetDevFundCfwd(CAmount &nCfwd) const { return false; };
+    virtual bool GetSmsgFeeRate(CAmount &nCfwd) const { return false; };
+    virtual bool GetSmsgDifficulty(uint32_t &compact) const { return false; };
 
     std::string ToString() const;
 };
@@ -418,6 +427,11 @@ public:
     {
         return &vRangeproof;
     };
+
+    std::vector<uint8_t> *GetPData() override
+    {
+        return &vData;
+    };
 };
 
 class CTxOutRingCT : public CTxOutBase
@@ -471,6 +485,11 @@ public:
     {
         return &vRangeproof;
     };
+
+    std::vector<uint8_t> *GetPData() override
+    {
+        return &vData;
+    };
 };
 
 class CTxOutData : public CTxOutBase
@@ -493,38 +512,41 @@ public:
         s >> vData;
     };
 
+    std::vector<uint8_t> *GetPData() override
+    {
+        return &vData;
+    };
+
     bool GetCTFee(CAmount &nFee) const override
     {
-        if (vData.size() < 2 || vData[0] != DO_FEE)
+        if (vData.size() < 2 || vData[0] != DO_FEE) {
             return false;
+        }
 
         size_t nb;
         return (0 == GetVarInt(vData, 1, (uint64_t&)nFee, nb));
     };
 
+    bool SetCTFee(CAmount &nFee) override
+    {
+        vData.clear();
+        vData.push_back(DO_FEE);
+        return (0 == PutVarInt(vData, nFee));
+    }
+
     bool GetDevFundCfwd(CAmount &nCfwd) const override
     {
-        if (vData.size() < 5)
-            return false;
+        return ExtractCoinStakeInt64(vData, DO_DEV_FUND_CFWD, nCfwd);
+    };
 
-        size_t ofs = 4; // first 4 bytes will be height
-        while (ofs < vData.size())
-        {
-            if (vData[ofs] == DO_VOTE)
-            {
-                ofs += 5;
-                continue;
-            };
-            if (vData[ofs] == DO_DEV_FUND_CFWD)
-            {
-                ofs++;
-                size_t nb;
-                return (0 == GetVarInt(vData, ofs, (uint64_t&)nCfwd, nb));
-            };
-            break;
-        };
+    bool GetSmsgFeeRate(CAmount &fee_rate) const override
+    {
+        return ExtractCoinStakeInt64(vData, DO_SMSG_FEE, fee_rate);
+    };
 
-        return false;
+    bool GetSmsgDifficulty(uint32_t &compact) const override
+    {
+        return ExtractCoinStakeUint32(vData, DO_SMSG_DIFFICULTY, compact);
     };
 };
 
@@ -877,18 +899,34 @@ public:
 
     bool GetCTFee(CAmount &nFee) const
     {
-        if (vpout.size() < 2 || vpout[0]->nVersion != OUTPUT_DATA)
+        if (vpout.size() < 2 || vpout[0]->nVersion != OUTPUT_DATA) {
             return false;
-
+        }
         return vpout[0]->GetCTFee(nFee);
     }
 
     bool GetDevFundCfwd(CAmount &nCfwd) const
     {
-        if (vpout.size() < 1 || vpout[0]->nVersion != OUTPUT_DATA)
+        if (vpout.size() < 1 || vpout[0]->nVersion != OUTPUT_DATA) {
             return false;
-
+        }
         return vpout[0]->GetDevFundCfwd(nCfwd);
+    }
+
+    bool GetSmsgFeeRate(CAmount &fee_rate) const
+    {
+        if (vpout.size() < 1 || vpout[0]->nVersion != OUTPUT_DATA) {
+            return false;
+        }
+        return vpout[0]->GetSmsgFeeRate(fee_rate);
+    }
+
+    bool GetSmsgDifficulty(uint32_t &compact) const
+    {
+        if (vpout.size() < 1 || vpout[0]->nVersion != OUTPUT_DATA) {
+            return false;
+        }
+        return vpout[0]->GetSmsgDifficulty(compact);
     }
 
     friend bool operator==(const CTransaction& a, const CTransaction& b)
