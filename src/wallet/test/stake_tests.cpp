@@ -131,6 +131,39 @@ static void AddAnonTxn(CHDWallet *pwallet, CBitcoinAddress &address, CAmount amo
     SyncWithValidationInterfaceQueue();
 }
 
+static CTransactionRef CreateTxn(CHDWallet *pwallet, CBitcoinAddress &address, CAmount amount, int type_in, int type_out, int nRingSize = 5)
+{
+    auto locked_chain = pwallet->chain().lock();
+    LOCK(pwallet->cs_wallet);
+    LockAssertion lock(::cs_main);
+
+    BOOST_REQUIRE(address.IsValid());
+
+    std::vector<CTempRecipient> vecSend;
+    std::string sError;
+    CTempRecipient r;
+    r.nType = type_out;
+    r.SetAmount(amount);
+    r.address = address.Get();
+    vecSend.push_back(r);
+
+    CTransactionRef tx_new;
+    CWalletTx wtx(pwallet, tx_new);
+    CTransactionRecord rtx;
+    CAmount nFee;
+    CCoinControl coinControl;
+    if (type_in == OUTPUT_STANDARD) {
+        BOOST_CHECK(0 == pwallet->AddStandardInputs(*locked_chain, wtx, rtx, vecSend, true, nFee, &coinControl, sError));
+    } else
+    if (type_in == OUTPUT_CT) {
+        BOOST_CHECK(0 == pwallet->AddBlindedInputs(*locked_chain, wtx, rtx, vecSend, true, nFee, &coinControl, sError));
+    } else {
+        int nInputsPerSig = 1;
+        BOOST_CHECK(0 == pwallet->AddAnonInputs(*locked_chain, wtx, rtx, vecSend, true, nRingSize, nInputsPerSig, nFee, &coinControl, sError));
+    }
+    return wtx.tx;
+}
+
 static void DisconnectTip(CBlock &block, CBlockIndex *pindexDelete, CCoinsViewCache &view, const CChainParams &chainparams)
 {
     BlockValidationState state;
@@ -141,8 +174,138 @@ static void DisconnectTip(CBlock &block, CBlockIndex *pindexDelete, CCoinsViewCa
     UpdateTip(pindexDelete->pprev, chainparams);
 };
 
+#include <chrono>
+
+void timeAddToWallet(const char *test_name, const char *ismine, CHDWallet *pw, CTransactionRef &tx)
+{
+    CWalletTx::Confirmation confirm;
+    LOCK(cs_main);
+    LOCK(pw->cs_wallet);
+    auto start = std::chrono::steady_clock::now();
+    pw->AddToWalletIfInvolvingMe(tx, confirm, true);
+    auto end = std::chrono::steady_clock::now();
+    auto diff = end - start;
+    printf("%s %s took %ld ns (%ld ms)\n", test_name, ismine, std::chrono::duration_cast<std::chrono::nanoseconds>(diff).count(), std::chrono::duration_cast<std::chrono::milliseconds>(diff).count());
+}
+
+BOOST_AUTO_TEST_CASE(wallet_timing_test)
+{
+    CHDWallet *pwallet = pwalletMain.get();
+    {
+        LOCK(pwallet->cs_wallet);
+        pwallet->SetLastBlockProcessed(::ChainActive().Height(), ::ChainActive().Tip()->GetBlockHash());
+    }
+
+    //printf("std::chrono::high_resolution_clock::period::num %ld\n", std::chrono::high_resolution_clock::period::num);
+    //printf("std::chrono::high_resolution_clock::period::den %ld\n", std::chrono::high_resolution_clock::period::den);
+    //printf("std::chrono::high_resolution_clock::is_steady   %d\n", std::chrono::high_resolution_clock::is_steady);
+
+    printf("std::chrono::steady_clock::period::num %ld\n", std::chrono::steady_clock::period::num);
+    printf("std::chrono::steady_clock::period::den %ld\n", std::chrono::steady_clock::period::den);
+    printf("std::chrono::steady_clock::is_steady   %d\n", std::chrono::steady_clock::is_steady);
+
+    uint64_t wallet_creation_flags = 0;
+    SecureString passphrase;
+    std::string error;
+    std::vector<std::string> warnings;
+
+    WalletLocation location("a");
+    std::shared_ptr<CHDWallet> pwallet_a = std::static_pointer_cast<CHDWallet>(CWallet::CreateWalletFromFile(*m_chain.get(), location, error, warnings, wallet_creation_flags));
+    BOOST_REQUIRE(pwallet_a.get());
+    pwallet_a->Initialise();
+    AddWallet(pwallet_a);
+
+
+    WalletLocation location_b("b");
+    std::shared_ptr<CHDWallet> pwallet_b = std::static_pointer_cast<CHDWallet>(CWallet::CreateWalletFromFile(*m_chain.get(), location_b, error, warnings, wallet_creation_flags));
+    BOOST_REQUIRE(pwallet_b.get());
+    pwallet_b->Initialise();
+    AddWallet(pwallet_b);
+
+    {
+        LOCK(pwallet_a->cs_wallet);
+        pwallet_a->SetLastBlockProcessed(::ChainActive().Height(), ::ChainActive().Tip()->GetBlockHash());
+    }
+    {
+        LOCK(pwallet_b->cs_wallet);
+        pwallet_b->SetLastBlockProcessed(::ChainActive().Height(), ::ChainActive().Tip()->GetBlockHash());
+    }
+
+    UniValue rv;
+    BOOST_CHECK_NO_THROW(rv = CallRPC("listwallets"));
+    printf("listwallets %s\n", rv.write().c_str());
+
+    BOOST_CHECK_NO_THROW(rv = CallRPC("extkeyimportmaster tprv8ZgxMBicQKsPeK5mCpvMsd1cwyT1JZsrBN82XkoYuZY1EVK7EwDaiL9sDfqUU5SntTfbRfnRedFWjg5xkDG5i3iwd3yP7neX5F2dtdCojk4", "a"));
+    // Import the key to the last 5 outputs in the regtest genesis coinbase
+    BOOST_CHECK_NO_THROW(rv = CallRPC("extkeyimportmaster tprv8ZgxMBicQKsPe3x7bUzkHAJZzCuGqN6y28zFFyg5i7Yqxqm897VCnmMJz6QScsftHDqsyWW5djx6FzrbkF9HSD3ET163z1SzRhfcWxvwL4G", "a"));
+    BOOST_CHECK_NO_THROW(rv = CallRPC("getnewextaddress lblHDKey", "a"));
+
+    BOOST_CHECK_NO_THROW(rv = CallRPC("getnewaddress addr", "a"));
+    CBitcoinAddress addr_a(StripQuotes(rv.write()));
+    BOOST_CHECK_NO_THROW(rv = CallRPC("getnewstealthaddress sx_addr", "a"));
+    CBitcoinAddress sx_addr_a(StripQuotes(rv.write()));
+
+    BOOST_CHECK_NO_THROW(rv = CallRPC("getwalletinfo", "a"));
+    printf("getwalletinfo a %s\n", rv.write().c_str());
+
+
+    BOOST_CHECK_NO_THROW(rv = CallRPC("extkeyimportmaster \"expect trouble pause odor utility palace ignore arena disorder frog helmet addict\"", "b"));
+
+    BOOST_CHECK_NO_THROW(rv = CallRPC("getnewaddress addr", "b"));
+    CBitcoinAddress addr_b(StripQuotes(rv.write()));
+    BOOST_CHECK_NO_THROW(rv = CallRPC("getnewstealthaddress sx_addr", "b"));
+    CBitcoinAddress sx_addr_b(StripQuotes(rv.write()));
+
+    {
+    const char *test_name = "plain->plain";
+    CTransactionRef tx1, tx2;
+    tx1 = CreateTxn(pwallet_a.get(), addr_a, 1000, OUTPUT_STANDARD, OUTPUT_STANDARD);
+    tx2 = CreateTxn(pwallet_a.get(), addr_b, 1000, OUTPUT_STANDARD, OUTPUT_STANDARD);
+    timeAddToWallet(test_name, "not owned", pwallet_b.get(), tx1);
+    timeAddToWallet(test_name, "owned", pwallet_b.get(), tx2);
+    //BOOST_CHECK_NO_THROW(rv = CallRPC("getwalletinfo", "b")); printf("getwalletinfo b %s\n", rv.write().c_str());
+    }
+    {
+    const char *test_name = "plain->plain, sx addr";
+    CTransactionRef tx1, tx2;
+    tx1 = CreateTxn(pwallet_a.get(), sx_addr_a, 10000, OUTPUT_STANDARD, OUTPUT_STANDARD);
+    tx2 = CreateTxn(pwallet_a.get(), sx_addr_b, 10000, OUTPUT_STANDARD, OUTPUT_STANDARD);
+    timeAddToWallet(test_name, "not owned", pwallet_b.get(), tx1);
+    timeAddToWallet(test_name, "owned", pwallet_b.get(), tx2);
+    //BOOST_CHECK_NO_THROW(rv = CallRPC("getwalletinfo", "b")); printf("getwalletinfo b %s\n", rv.write().c_str());
+    }
+
+    {
+    const char *test_name = "plain->blind";
+    CTransactionRef tx1, tx2;
+    tx1 = CreateTxn(pwallet_a.get(), sx_addr_a, 10000, OUTPUT_STANDARD, OUTPUT_CT);
+    tx2 = CreateTxn(pwallet_a.get(), sx_addr_b, 10000, OUTPUT_STANDARD, OUTPUT_CT);
+    timeAddToWallet(test_name, "not owned", pwallet_b.get(), tx1);
+    timeAddToWallet(test_name, "owned", pwallet_b.get(), tx2);
+    //BOOST_CHECK_NO_THROW(rv = CallRPC("getwalletinfo", "b")); printf("getwalletinfo b %s\n", rv.write().c_str());
+    }
+
+    {
+    const char *test_name = "plain->anon";
+    CTransactionRef tx1, tx2;
+    tx1 = CreateTxn(pwallet_a.get(), sx_addr_a, 10000, OUTPUT_STANDARD, OUTPUT_RINGCT);
+    tx2 = CreateTxn(pwallet_a.get(), sx_addr_b, 10000, OUTPUT_STANDARD, OUTPUT_RINGCT);
+    timeAddToWallet(test_name, "not owned", pwallet_b.get(), tx1);
+    timeAddToWallet(test_name, "owned", pwallet_b.get(), tx2);
+    //BOOST_CHECK_NO_THROW(rv = CallRPC("getwalletinfo", "b")); printf("getwalletinfo b %s\n", rv.write().c_str());
+    }
+
+
+    RemoveWallet(pwallet_a);
+    pwallet_a.reset();
+
+    RemoveWallet(pwallet_b);
+    pwallet_b.reset();
+}
+
 BOOST_AUTO_TEST_CASE(stake_test)
 {
+    //return;
     SeedInsecureRand();
     CHDWallet *pwallet = pwalletMain.get();
     {
@@ -347,6 +510,10 @@ BOOST_AUTO_TEST_CASE(stake_test)
 
         StakeNBlocks(pwallet, 2);
         CCoinControl coinControl;
+
+        BOOST_CHECK_NO_THROW(rv = CallRPC("getwalletinfo"));
+        printf("[rm] getwalletinfo %s\n", rv.write().c_str());
+        printf("[rm] pwallet->GetAvailableAnonBalance(&coinControl) %ld\n", pwallet->GetAvailableAnonBalance(&coinControl));
         BOOST_CHECK(30 * COIN == pwallet->GetAvailableAnonBalance(&coinControl));
 
         BOOST_CHECK(::ChainActive().Tip()->nAnonOutputs == 4);
