@@ -240,6 +240,7 @@ int CLedgerDevice::GetPubKey(const std::vector<uint32_t> &vPath, CPubKey &pk, st
     in[apduSize++] = 1 + 4 * lenPath; // num bytes to follow
     in[apduSize++] = lenPath;
     for (size_t k = 0; k < vPath.size(); k++, apduSize+=4) {
+        printf("[rm] GetPubKey path %d\n", vPath[k]);
         WriteBE32(&in[apduSize], vPath[k]);
     }
 
@@ -551,7 +552,36 @@ int CLedgerDevice::PrepareTransaction(CMutableTransaction &tx, const CCoinsViewC
         }
     }
 
-    // finalizeInputFull
+
+    // finalizeInputFull change path
+
+    printf("[rm] change_pos %d\n", change_pos);
+    printf("[rm] change_path.size() %x\n", change_path.size());
+    if (change_pos > -1) {
+        if (change_path.size() > MAX_BIP32_PATH) {
+            return errorN(1, sError, __func__, "Change path too long %d.", change_path.size());
+        }
+        apduSize = 0;
+        in[apduSize++] = BTCHIP_CLA;
+        in[apduSize++] = BTCHIP_INS_HASH_INPUT_FINALIZE_FULL;
+        in[apduSize++] = 0xFF;
+        in[apduSize++] = 0x00;
+        in[apduSize++] = change_path.size() * 4;
+        for (size_t k = 0; k < change_path.size(); k++, apduSize+=4) {
+            printf("[rm] change_path %d\n", change_path[k]);
+            WriteBE32(&in[apduSize], change_path[k]);
+        }
+
+        result = sendApduHidHidapi(handle, 1, in, apduSize, out, sizeof(out), &sw);
+        if (sw != SW_OK || result < 0) {
+            printf("[rm] sendApduHidHidapi failed result %d, %d\n", result, sw);
+            return errorN(1, sError, __func__, "Dongle error: %.4x %s", sw, GetLedgerString(sw));
+        }
+        printf("[rm] sendApduHidHidapi result %d\n", result);
+    }
+
+
+    // finalizeInputFull outputs
 
     std::vector<uint8_t> vOutputData;
     part::PutVarInt(vOutputData, tx.vpout.size());
