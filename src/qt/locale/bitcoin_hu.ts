@@ -550,6 +550,10 @@
         <translation>Hiba: %1</translation>
     </message>
     <message>
+        <source>Warning: %1</source>
+        <translation>Vigyázz: %1</translation>
+    </message>
+    <message>
         <source>Date: %1
 </source>
         <translation>Dátum:  %1
@@ -806,6 +810,10 @@
         <translation>A tárcához tartozó privát kulcsok letiltása. Azok a tárcák, melyeknél a privát kulcsok le vannak tiltva, nem tartalmaznak privát kulcsokat és nem tartalmazhatnak HD magot vagy importált privát kulcsokat. Ez azoknál a tárcáknál ideális, melyeket csak megfigyelésre használnak.</translation>
     </message>
     <message>
+        <source>Disable Private Keys</source>
+        <translation>Kapcsold ki a Privát Kódot</translation>
+    </message>
+    <message>
         <source>Make a blank wallet. Blank wallets do not initially have private keys or scripts. Private keys and addresses can be imported, or an HD seed can be set, at a later time.</source>
         <translation>Üres tárca készítése. Az üres tárcák kezdetben nem tartalmaznak privát kulcsokat vagy szkripteket. Később lehetséges a privát kulcsok vagy címek importálása avagy egy HD mag beállítása.</translation>
     </message>
@@ -813,7 +821,11 @@
         <source>Make Blank Wallet</source>
         <translation>Üres tárca készítése</translation>
     </message>
-    </context>
+    <message>
+        <source>Create</source>
+        <translation>Létrehozás</translation>
+    </message>
+</context>
 <context>
     <name>EditAddressDialog</name>
     <message>
@@ -2156,6 +2168,10 @@
         <translation>Por-határ:</translation>
     </message>
     <message>
+        <source>A too low fee might result in a never confirming transaction (read the tooltip)</source>
+        <translation>A túl alacsony illeték a tranzakció soha be nem teljesülését eredményezheti (olvassa el az elemleírást)</translation>
+    </message>
+    <message>
         <source>Confirmation time target:</source>
         <translation>Várható megerősítési idő:</translation>
     </message>
@@ -2232,8 +2248,20 @@
         <translation>Később növelheti a tranzakció díját (lásd Replace-By-Fee, BIP-125).</translation>
     </message>
     <message>
+        <source>Please, review your transaction.</source>
+        <translation>Kérjük, hogy ellenőrizze le a tranzakcióját.</translation>
+    </message>
+    <message>
         <source>Transaction fee</source>
         <translation>Tranzakciós díj</translation>
+    </message>
+    <message>
+        <source>Total Amount</source>
+        <translation>Teljes összeg</translation>
+    </message>
+    <message>
+        <source>To review recipient list click "Show Details..."</source>
+        <translation>A címzett lista ellenőrzéséhez kattintson a "További részletek" gombra.</translation>
     </message>
     <message>
         <source>Confirm send coins</source>
@@ -3058,7 +3086,11 @@
         <source>The wallet data was successfully saved to %1.</source>
         <translation>A tárca adatai sikeresen elmentve %1.</translation>
     </message>
-    </context>
+    <message>
+        <source>Cancel</source>
+        <translation>Bezárás</translation>
+    </message>
+</context>
 <context>
     <name>bitcoin-core</name>
     <message>

@@ -1,5 +1,5 @@
 ---
-name: "particl-linux-0.19.99.0"
+name: "particl-linux-0.20.1.1"
 enable_cache: true
 sudo: true
 distro: "ubuntu"
@@ -254,4 +254,4 @@ script: |
     rm -rf distsrc-${i}
   done
   mkdir -p ${OUTDIR}/src
-  git archive --output=${OUTDIR}/src/${DISTNAME}.tar.gz HEAD
+  git archive --prefix="${DISTNAME}/" --output=${OUTDIR}/src/${DISTNAME}.tar.gz HEAD

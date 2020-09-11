@@ -1,5 +1,5 @@
 ---
-name: "particl-osx-0.19.99.0"
+name: "particl-osx-0.20.1.1"
 enable_cache: true
 distro: "ubuntu"
 suites:
@@ -161,6 +161,6 @@ script: |
   done
 
   mkdir -p ${OUTDIR}/src
-  git archive --output=${OUTDIR}/src/${DISTNAME}.tar.gz HEAD
+  git archive --prefix="${DISTNAME}/" --output=${OUTDIR}/src/${DISTNAME}.tar.gz HEAD
 
   mv ${OUTDIR}/${DISTNAME}-x86_64-*.tar.gz ${OUTDIR}/${DISTNAME}-osx64.tar.gz
