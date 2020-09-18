@@ -1318,6 +1318,8 @@ public:
     bool GetKey(const CKeyID &address, CKey &keyOut) const override { return false; };
     bool GetPubKey(const CKeyID &address, CPubKey &pkOut) const override { return false; };
     bool GetKeyFromPool(CPubKey &key, bool internal = false) override { return false; };
+
+    virtual bool ShouldRescan() { return true; };
 };
 
 /**

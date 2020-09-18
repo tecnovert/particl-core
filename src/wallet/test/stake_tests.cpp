@@ -36,7 +36,6 @@ struct StakeTestingSetup: public TestingSetup {
         pwalletMain = std::make_shared<CHDWallet>(m_chain.get(), WalletLocation(), WalletDatabase::CreateMock());
         AddWallet(pwalletMain);
         pwalletMain->LoadWallet(fFirstRun);
-        pwalletMain->Initialise();
         pwalletMain->m_chain_notifications_handler = m_chain->handleNotifications({ pwalletMain.get(), [](CHDWallet*) {} });
 
         m_chain_client->registerRpcs();
