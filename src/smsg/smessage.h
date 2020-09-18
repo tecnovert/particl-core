@@ -15,6 +15,7 @@
 #include <interfaces/handler.h>
 
 #include <atomic>
+#include <condition_variable>
 #include <boost/signals2/signal.hpp>
 
 class UniValue;
@@ -511,6 +512,12 @@ public:
     uint16_t m_smsg_max_receive_count = SMSG_DEFAULT_MAXRCV;
 
     std::map<int64_t, int64_t> m_show_requests;
+
+    std::thread thread_smsg;
+    std::thread thread_smsg_pow;
+    std::condition_variable cv_ending;
+    std::mutex mtx_threads;
+    bool wake_threads = false;
 };
 
 double GetDifficulty(uint32_t compact);
