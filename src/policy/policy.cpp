@@ -135,7 +135,14 @@ bool IsStandard(const CScript& scriptPubKey, txnouttype& whichType)
 
 bool IsStandardTx(const CTransaction& tx, std::string& reason)
 {
-    if (!tx.IsParticlVersion() && (tx.nVersion > CTransaction::MAX_STANDARD_VERSION || tx.nVersion < 1)) {
+    const Consensus::Params& consensusParams = Params().GetConsensus();
+    if (tx.IsParticlVersion()) {
+        if (tx.GetParticlVersion() > PARTICL_TXN_VERSION) {
+            reason = "version";
+            return false;
+        }
+    } else
+    if (tx.nVersion > CTransaction::MAX_STANDARD_VERSION || tx.nVersion < 1) {
         reason = "version";
         return false;
     }
@@ -192,17 +199,16 @@ bool IsStandardTx(const CTransaction& tx, std::string& reason)
     for (const auto &txout : tx.vpout) {
         const CTxOutBase *p = txout.get();
 
-        if (!p->IsType(OUTPUT_STANDARD) && !p->IsType(OUTPUT_CT))
+        if (!p->IsType(OUTPUT_STANDARD) && !p->IsType(OUTPUT_CT)) {
             continue;
-
+        }
         if (!::IsStandard(*p->GetPScriptPubKey(), whichType)) {
             reason = "scriptpubkey";
             return false;
         }
-
-        if (whichType == TX_NULL_DATA)
+        if (whichType == TX_NULL_DATA) {
             nDataOut++;
-        else if ((whichType == TX_MULTISIG) && (!fIsBareMultisigStd)) {
+        } else if ((whichType == TX_MULTISIG) && (!fIsBareMultisigStd)) {
             reason = "bare-multisig";
             return false;
         } else if (IsDust(p, ::dustRelayFee)) {
@@ -346,14 +352,12 @@ bool IsWitnessStandard(const CTransaction& tx, const CCoinsViewCache& mapInputs)
             // into a stack. We do not check IsPushOnly nor compare the hash as these will be done later anyway.
             // If the check fails at this stage, we know that this txid must be a bad one.
 
-            if (!tx.IsParticlVersion())
-            {
+            if (!tx.IsParticlVersion()) {
                 if (!EvalScript(stack, tx.vin[i].scriptSig, SCRIPT_VERIFY_NONE, BaseSignatureChecker(), SigVersion::BASE))
                     return false;
-            } else
-            {
+            } else {
                 stack = tx.vin[i].scriptWitness.stack;
-            };
+            }
 
             if (stack.empty())
                 return false;

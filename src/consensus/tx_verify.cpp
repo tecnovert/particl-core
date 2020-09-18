@@ -330,6 +330,10 @@ bool CheckTransaction(const CTransaction& tx, CValidationState &state, bool fChe
 
     if (tx.IsParticlVersion()) {
         const Consensus::Params& consensusParams = Params().GetConsensus();
+        if (state.m_clamp_tx_version && tx.GetParticlVersion() != PARTICL_TXN_VERSION) {
+            return state.DoS(100, false, REJECT_INVALID, "bad-txn-version");
+        }
+
         if (tx.vpout.empty()) {
             return state.DoS(10, false, REJECT_INVALID, "bad-txns-vpout-empty");
         }

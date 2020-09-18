@@ -29,8 +29,7 @@ static const CRPCConvertParam vRPCConvertParams[] =
 {
     { "setmocktime", 0, "timestamp" },
     { "setmocktime", 1, "is_offset" },
-    { "generate", 0, "nblocks" },
-    { "generate", 1, "maxtries" },
+    { "pushdevfundsetting", 0, "setting" },
     { "generatetoaddress", 0, "nblocks" },
     { "generatetoaddress", 2, "maxtries" },
     { "getnetworkhashps", 0, "nblocks" },
