@@ -1296,6 +1296,8 @@ public:
 
     /** Add a KeyOriginInfo to the wallet */
     bool AddKeyOrigin(const CPubKey& pubkey, const KeyOriginInfo& info);
+
+    virtual bool ShouldRescan() { return true; };
 };
 
 /** A key allocated from the key pool. */

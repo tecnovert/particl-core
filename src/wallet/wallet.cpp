@@ -147,10 +147,6 @@ std::shared_ptr<CWallet> LoadWallet(interfaces::Chain& chain, const WalletLocati
         error = "Wallet loading failed.";
         return nullptr;
     }
-    if (fParticlMode && !((CHDWallet*)wallet.get())->Initialise()) {
-        error = "Particl wallet initialise failed.";
-        return nullptr;
-    }
 
     AddWallet(wallet);
     wallet->postInitProcess();
@@ -4529,7 +4525,7 @@ std::shared_ptr<CWallet> CWallet::CreateWalletFromFile(interfaces::Chain& chain,
         walletInstance->m_last_block_processed.SetNull();
     }
 
-    if (!fParticlMode) // Must rescan after hdwallet is loaded
+    if (walletInstance->ShouldRescan())
     if (tip_height && *tip_height != rescan_height)
     {
         //We can't rescan beyond non-pruned blocks, stop and throw an error

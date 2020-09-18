@@ -3,7 +3,8 @@
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-from test_framework.test_particl import ParticlTestFramework, connect_nodes_bi
+from test_framework.test_particl import ParticlTestFramework
+from test_framework.util import connect_nodes_bi
 from test_framework.messages import COIN
 
 
@@ -11,7 +12,7 @@ class DevFundTest(ParticlTestFramework):
     def set_test_params(self):
         self.setup_clean_chain = True
         self.num_nodes = 3
-        self.extra_args = [['-debug', '-noacceptnonstdtxn', '-reservebalance=10000000', '-stakethreadconddelayms=500', '-txindex=1', '-maxtxfee=1'] for i in range(self.num_nodes)]
+        self.extra_args = [['-debug', '-noacceptnonstdtxn', '-reservebalance=10000000', '-txindex=1', '-maxtxfee=1'] for i in range(self.num_nodes)]
 
     def skip_test_if_missing_module(self):
         self.skip_if_no_wallet()
@@ -55,7 +56,7 @@ class DevFundTest(ParticlTestFramework):
         tx_funded = nodes[1].fundrawtransaction(tx_hex, {'feeRate': 5.0})
         tx_fee = int(tx_funded['fee'] * COIN)
         tx_signed = nodes[1].signrawtransactionwithwallet(tx_funded['hex'])
-        sent_txid = nodes[0].sendrawtransaction(tx_signed['hex'], 0)
+        sent_txid = nodes[0].sendrawtransaction(tx_signed['hex'], True)
 
         nodes[0].walletsettings('stakelimit', {'height': 6})
         self.wait_for_height(nodes[0], 6)
@@ -75,7 +76,7 @@ class DevFundTest(ParticlTestFramework):
             coin_year_reward = int(2 * 1e6)  # 2%
 
             stakes_per_year = 365 * 24 * (60 * 60 // target_spacing)
-            return (base_supply // COIN) * coin_year_reward // stakes_per_year
+            return (moneysupply // COIN) * coin_year_reward // stakes_per_year
 
         expect_reward = get_coinstake_reward(base_supply)
         assert(expect_reward == 39637)
@@ -95,7 +96,8 @@ class DevFundTest(ParticlTestFramework):
         expect_foundation_payout = ((expect_reward * 10) // 100) * 8
         expect_foundation_payout += (((expect_reward + tx_fee) * 10) // 100)
         expect_foundation_payout += (((expect_reward + tx2_fee) * 10) // 100)
-        assert(nodes[2].getbalances()['mine']['staked'] * COIN == expect_foundation_payout)
+
+        assert(nodes[2].getwalletinfo()['staked_balance'] * COIN == expect_foundation_payout)
 
         expect_created = expect_reward * 12 - ((expect_reward * 10) // 100) * 2
 
