@@ -1,4 +1,14 @@
 
+0.18.1.8
+==============
+
+- Fixed walletsettings stakelimit display.
+- Fixed createwallet not adding new wallet to staking threads.
+- Fixed bug where sending from qt fails from wallet with empty name when multiple wallets are loaded.
+- Fixed inconsistent txn records displayed in qt after loading another wallet
+- Added rpc function to change dev fund settings in regtest.
+
+
 0.18.1.7
 ==============
 - wallet: Fix missing low amount error string.
