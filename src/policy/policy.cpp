@@ -135,7 +135,6 @@ bool IsStandard(const CScript& scriptPubKey, txnouttype& whichType)
 
 bool IsStandardTx(const CTransaction& tx, std::string& reason)
 {
-    const Consensus::Params& consensusParams = Params().GetConsensus();
     if (tx.IsParticlVersion()) {
         if (tx.GetParticlVersion() > PARTICL_TXN_VERSION) {
             reason = "version";

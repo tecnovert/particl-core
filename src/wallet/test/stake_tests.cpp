@@ -44,7 +44,7 @@ struct StakeTestingSetup: public TestingSetup {
         SetMockTime(0);
     }
 
-    ~StakeTestingSetup()
+    virtual ~StakeTestingSetup()
     {
         UnregisterValidationInterface(pwalletMain.get());
         RemoveWallet(pwalletMain);
