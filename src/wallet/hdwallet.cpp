@@ -2708,7 +2708,7 @@ bool CHDWallet::IsChange(const CTxOutBase *txout) const
     const CEKAKey *pak = nullptr;
     const CEKASCKey *pasc = nullptr;
     CExtKeyAccount *pa = nullptr;
-    bool isInvalid;
+    bool isInvalid = false;
     isminetype mine = IsMine(scriptPubKey, idk, pak, pasc, pa, isInvalid);
     if (!mine) {
         return false;
@@ -2737,7 +2737,7 @@ bool CHDWallet::GetChangePath(const CScript &script_pubkey, std::vector<uint32_t
     const CEKAKey *pak = nullptr;
     const CEKASCKey *pasc = nullptr;
     CExtKeyAccount *pa = nullptr;
-    bool isInvalid;
+    bool isInvalid = false;
     isminetype mine = IsMine(script_pubkey, idk, pak, pasc, pa, isInvalid);
     if (!mine) {
         return false;
@@ -9981,7 +9981,7 @@ int CHDWallet::OwnStandardOut(const CTxOutStandard *pout, const CTxOutData *pdat
     const CEKAKey *pak = nullptr;
     const CEKASCKey *pasc = nullptr;
     CExtKeyAccount *pa = nullptr;
-    bool isInvalid;
+    bool isInvalid = false;
     isminetype mine = IsMine(pout->scriptPubKey, idk, pak, pasc, pa, isInvalid);
     if (!(mine & ISMINE_ALL)) {
         return 0;
@@ -10075,7 +10075,7 @@ int CHDWallet::OwnBlindOut(CHDWalletDB *pwdb, const uint256 &txhash, const CTxOu
     const CEKAKey *pak = nullptr;
     const CEKASCKey *pasc = nullptr;
     CExtKeyAccount *pa = nullptr;
-    bool isInvalid;
+    bool isInvalid = false;
     isminetype mine = IsMine(pout->scriptPubKey, idk, pak, pasc, pa, isInvalid);
     if (!(mine & ISMINE_ALL)) {
         return 0;
