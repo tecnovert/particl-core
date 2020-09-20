@@ -80,7 +80,7 @@ public:
         m_fallback_fee = CFeeRate(DEFAULT_FALLBACK_FEE_PART);
     }
 
-    ~CHDWallet()
+    virtual ~CHDWallet()
     {
         Finalise();
     }
