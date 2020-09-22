@@ -3580,7 +3580,7 @@ bool CHDWallet::SetChangeDest(const CCoinControl *coinControl, CTempRecipient &r
                 scriptStaking = GetScriptForDestination(idk);
             }
 
-            if (r.address.type() == typeid(ScriptHash) ||
+            if (r.address.type() == typeid(CScriptID) ||
                 r.address.type() == typeid(WitnessV0ScriptHash) ||
                 r.address.type() == typeid(CScriptID256)) {
                 // Pass through p2sh

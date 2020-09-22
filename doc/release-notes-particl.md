@@ -7,6 +7,8 @@
 - Fixed bug where sending from qt fails from wallet with empty name when multiple wallets are loaded.
 - Fixed inconsistent txn records displayed in qt after loading another wallet
 - Added rpc function to change dev fund settings in regtest.
+- wallet: p2sh change address works when coldstakingaddress is set.
+- qt: Added tooltips for anon options, display in spend confirm dialog.
 
 
 0.18.1.7
