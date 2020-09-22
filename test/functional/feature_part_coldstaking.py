@@ -306,14 +306,14 @@ class ColdStakingTest(ParticlTestFramework):
         ms_pubkeys0.append(nodes[0].getaddressinfo(ms_addrs0[0])['pubkey'])
         ms_pubkeys0.append(nodes[1].getaddressinfo(ms_addrs0[1])['pubkey'])
 
-        ms_addr0 = nodes[0].addmultisigaddress_part(1, ms_pubkeys0)  # ScriptHash
+        ms_addr0 = nodes[0].addmultisigaddress(1, ms_pubkeys0)  # ScriptHash
 
         ms_addrs1.append(nodes[0].getnewaddress())
         ms_addrs1.append(nodes[1].getnewaddress())
         ms_pubkeys1.append(nodes[0].getaddressinfo(ms_addrs1[0])['pubkey'])
         ms_pubkeys1.append(nodes[1].getaddressinfo(ms_addrs1[1])['pubkey'])
 
-        ms_addr1 = nodes[0].addmultisigaddress_part(1, ms_pubkeys1, '', False, True)  # CScriptID256
+        ms_addr1 = nodes[0].addmultisigaddress(1, ms_pubkeys1, '', False, True)  # CScriptID256
 
         coldstakingaddr = nodes[0].validateaddress(nodes[0].getnewaddress(), True)['stakeonly_address']
         for ms_addr in (ms_addr0['address'], ms_addr1['address']):
