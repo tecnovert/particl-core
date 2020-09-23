@@ -1396,7 +1396,6 @@ DBErrors CHDWallet::LoadWallet(bool& fFirstRunRet)
         return rv;
     }
 
-
     PostProcessUnloadSpent();
 
     auto locked_chain = chain().lock();
