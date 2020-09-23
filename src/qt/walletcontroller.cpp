@@ -178,7 +178,8 @@ void WalletControllerActivity::showProgressDialog(const QString& label_text)
 
 void WalletControllerActivity::destroyProgressDialog()
 {
-    assert(m_progress_dialog);
+    //assert(m_progress_dialog);
+    if (m_progress_dialog)
     delete m_progress_dialog;
     m_progress_dialog = nullptr;
 }
