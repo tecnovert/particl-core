@@ -643,7 +643,7 @@ bool CHDWallet::LoadAddressBook(CHDWalletDB *pwdb)
         ssValue >> data;
 
         // Can't use m_address_book.insert, loses &name
-        CTxDestination address = CBitcoinAddress(strAddress).Get();
+        CTxDestination address = DecodeDestination(strAddress);
         std::map<CTxDestination, CAddressBookData>::iterator mi = m_address_book.find(address);
         bool fUpdated = (mi != m_address_book.end() && !mi->second.IsChange());
 
@@ -1014,8 +1014,8 @@ isminetype CHDWallet::HaveAddress(const CTxDestination &dest)
         return IsMine(id);
     }
 
-    if (dest.type() == typeid(CExtKeyPair)) {
-        CExtKeyPair ek = boost::get<CExtKeyPair>(dest);
+    if (dest.type() == typeid(CExtPubKey)) {
+        CExtPubKey ek = boost::get<CExtPubKey>(dest);
         CKeyID id = ek.GetID();
         return HaveExtKey(id);
     }
@@ -2812,9 +2812,9 @@ void CHDWallet::ParseAddressForMetaData(const CTxDestination &addr, COutputRecor
             memcpy(&rec.vPath[1], &sxId, 4);
         };
     } else
-    if (addr.type() == typeid(CExtKeyPair))
+    if (addr.type() == typeid(CExtPubKey))
     {
-        CExtKeyPair ek = boost::get<CExtKeyPair>(addr);
+        CExtPubKey ek = boost::get<CExtPubKey>(addr);
         /*
         rec.vPath.resize(21);
         rec.vPath[0] = ORA_EXTKEY;
@@ -2926,8 +2926,8 @@ int CHDWallet::ExpandTempRecipients(std::vector<CTempRecipient> &vecSend, CStore
                 vecSend.insert(vecSend.begin() + (i+1), rd);
                 i++; // skip over inserted output
             } else {
-                if (r.address.type() == typeid(CExtKeyPair)) {
-                    CExtKeyPair ek = boost::get<CExtKeyPair>(r.address);
+                if (r.address.type() == typeid(CExtPubKey)) {
+                    CExtKeyPair ek = CExtKeyPair(boost::get<CExtPubKey>(r.address));
                     CPubKey pkDest;
                     uint32_t nChildKey;
                     if (0 != ExtKeyGetDestination(ek, pkDest, nChildKey)) {
@@ -3009,8 +3009,8 @@ int CHDWallet::ExpandTempRecipients(std::vector<CTempRecipient> &vecSend, CStore
                     WalletLogPrintf("Creating blind output to stealth generated address: %s\n", EncodeDestination(pkhash));
                 }
             } else
-            if (r.address.type() == typeid(CExtKeyPair)) {
-                CExtKeyPair ek = boost::get<CExtKeyPair>(r.address);
+            if (r.address.type() == typeid(CExtPubKey)) {
+                CExtKeyPair ek = CExtKeyPair(boost::get<CExtPubKey>(r.address));
                 uint32_t nDestChildKey;
                 if (0 != ExtKeyGetDestination(ek, r.pkTo, nDestChildKey)) {
                     return wserrorN(1, sError, __func__, "ExtKeyGetDestination failed.");
@@ -3285,14 +3285,14 @@ int CHDWallet::PostProcessTempRecipients(std::vector<CTempRecipient> &vecSend)
     for (size_t i = 0; i < vecSend.size(); ++i) {
         CTempRecipient &r = vecSend[i];
 
-        if (r.address.type() == typeid(CExtKeyPair)) {
-            CExtKeyPair ek = boost::get<CExtKeyPair>(r.address);
+        if (r.address.type() == typeid(CExtPubKey)) {
+            CExtKeyPair ek = CExtKeyPair(boost::get<CExtPubKey>(r.address));
             r.nChildKey+=1;
             ExtKeyUpdateLooseKey(ek, r.nChildKey, true);
         }
 
-        if (r.addressColdStaking.type() == typeid(CExtKeyPair)) {
-            CExtKeyPair ek = boost::get<CExtKeyPair>(r.addressColdStaking);
+        if (r.addressColdStaking.type() == typeid(CExtPubKey)) {
+            CExtKeyPair ek = CExtKeyPair(boost::get<CExtPubKey>(r.addressColdStaking));
             r.nChildKeyColdStaking+=1;
             ExtKeyUpdateLooseKey(ek, r.nChildKeyColdStaking, false);
         }
@@ -3417,8 +3417,8 @@ static bool ExpandChangeAddress(CHDWallet *phdw, CTempRecipient &r, std::string 
         return true;
     }
 
-    if (r.address.type() == typeid(CExtKeyPair)) {
-        CExtKeyPair ek = boost::get<CExtKeyPair>(r.address);
+    if (r.address.type() == typeid(CExtPubKey)) {
+        CExtKeyPair ek = CExtKeyPair(boost::get<CExtPubKey>(r.address));
         uint32_t nChildKey;
 
         if (0 != phdw->ExtKeyGetDestination(ek, r.pkTo, nChildKey)) {
@@ -3541,8 +3541,8 @@ bool CHDWallet::SetChangeDest(const CCoinControl *coinControl, CTempRecipient &r
             r.addressColdStaking = destStake;
 
             CScript scriptStaking;
-            if (r.addressColdStaking.type() == typeid(CExtKeyPair)) {
-                CExtKeyPair ek = boost::get<CExtKeyPair>(r.addressColdStaking);
+            if (r.addressColdStaking.type() == typeid(CExtPubKey)) {
+                CExtKeyPair ek = CExtKeyPair(boost::get<CExtPubKey>(r.addressColdStaking));
                 uint32_t nChildKey;
 
                 CPubKey pkTemp;
@@ -8062,7 +8062,7 @@ int CHDWallet::NewExtKeyFromAccount(CHDWalletDB *pwdb, const CKeyID &idAccount,
         }
 
         vPath.push_back(nNewChildNo);
-        SetAddressBook(pwdb, sekOut->kp, plabel, "receive", vPath, false, fBech32);
+        SetAddressBook(pwdb, MakeExtPubKey(sekOut->kp), plabel, "receive", vPath, false, fBech32);
     }
 
     if (!pwdb->WriteExtAccount(idAccount, *sea)
@@ -8104,7 +8104,7 @@ int CHDWallet::NewExtKeyFromAccount(std::string &sLabel, CStoredExtKey *sekOut,
             return werrorN(1, "%s TxnCommit failed.", __func__);
         }
     }
-    AddressBookChangedNotify(sekOut->kp, CT_NEW);
+    AddressBookChangedNotify(MakeExtPubKey(sekOut->kp), CT_NEW);
     return 0;
 };
 
@@ -8174,9 +8174,10 @@ int CHDWallet::ExtKeyUpdateLooseKey(const CExtKeyPair &ek, uint32_t nKey, bool f
         }
     }
 
+    auto epk = MakeExtPubKey(ek);
     if (fAddToAddressBook
-        && !m_address_book.count(CTxDestination(ek))) {
-        SetAddressBook(ek, "", "");
+        && !m_address_book.count(CTxDestination(epk))) {
+        SetAddressBook(epk, "", "");
     }
     return 0;
 };
@@ -12266,8 +12267,8 @@ bool CHDWallet::GetScriptForAddress(CScript &script, const CBitcoinAddress &addr
         script = vecSend[0].scriptPubKey;
         *vData = vecSend[1].vData;
     } else
-    if (dest.type() == typeid(CExtKeyPair)) {
-        CExtKeyPair ek = boost::get<CExtKeyPair>(dest);
+    if (dest.type() == typeid(CExtPubKey)) {
+        CExtKeyPair ek = CExtKeyPair(boost::get<CExtPubKey>(dest));
         uint32_t nChildKey;
 
         CPubKey pkTemp;

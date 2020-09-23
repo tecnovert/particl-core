@@ -420,9 +420,9 @@ public:
         return false;
     }
 
-    bool operator()(const CExtKeyPair &ek) const {
+    bool operator()(const CExtPubKey &ek) const {
         script->clear();
-        LogPrintf("CScriptVisitor(CExtKeyPair) TODO\n");
+        LogPrintf("CScriptVisitor(CExtPubKey) TODO\n");
         return false;
     }
 
