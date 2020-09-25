@@ -2612,6 +2612,7 @@ static UniValue walletpassphrase(const JSONRPCRequest& request)
         }, nSleepTime);
     } else {
         RPCRunLaterErase(strprintf("lockwallet(%s)", pwallet->GetName()));
+        LOCK(pwallet->cs_wallet);
         pwallet->nRelockTime = 0;
     }
     return NullUniValue;

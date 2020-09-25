@@ -497,6 +497,7 @@ void RPCRunLater(const std::string& name, std::function<void()> func, int64_t nS
 
 void RPCRunLaterErase(const std::string &name)
 {
+    LOCK(g_deadline_timers_mutex);
     deadlineTimers.erase(name);
 }
 
