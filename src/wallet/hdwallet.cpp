@@ -2767,6 +2767,8 @@ bool CHDWallet::IsChange(const CTxOutBase *txout) const
     if (ps) {
         const CScript &scriptPubKey = *ps;
 
+        LOCK(cs_wallet);
+
         CKeyID idk;
         const CEKAKey *pak = nullptr;
         const CEKASCKey *pasc = nullptr;
@@ -2851,8 +2853,8 @@ void CHDWallet::ParseAddressForMetaData(const CTxDestination &addr, COutputRecor
     } else
     if (addr.type() == typeid(CExtKeyPair))
     {
-        CExtKeyPair ek = boost::get<CExtKeyPair>(addr);
         /*
+        CExtKeyPair ek = boost::get<CExtKeyPair>(addr);
         rec.vPath.resize(21);
         rec.vPath[0] = ORA_EXTKEY;
         CKeyID eid = ek.GetID()();
