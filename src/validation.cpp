@@ -3330,7 +3330,7 @@ bool FlushView(CCoinsViewCache *view, BlockValidationState& state, bool fDisconn
         for (const auto &it : view->spent_cache) {
             batch.Write(std::make_pair(DB_SPENTCACHE, it.first), it.second);
         }
-        if (state.m_spend_height > MIN_BLOCKS_TO_KEEP) {
+        if (state.m_spend_height > (int)MIN_BLOCKS_TO_KEEP) {
             ClearSpentCache(batch, state.m_spend_height - (MIN_BLOCKS_TO_KEEP+1));
         }
         if (!pblocktree->WriteBatch(batch)) {

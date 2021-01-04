@@ -515,7 +515,7 @@
     </message>
     <message>
         <source>Show the %1 help message to get a list with possible Particl command-line options</source>
-        <translation>显示%1帮助消息以获得可能包含Bitcoin命令行选项的列表</translation>
+        <translation>显示%1帮助消息以获得可能包含Particl命令行选项的列表</translation>
     </message>
     <message>
         <source>default wallet</source>

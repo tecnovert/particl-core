@@ -477,12 +477,12 @@
         <translation>Reindexing blocks on disk...</translation>
     </message>
     <message>
-        <location line="+367"/>
+        <location line="+369"/>
         <source>Proxy is &lt;b&gt;enabled&lt;/b&gt;: %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="-1136"/>
+        <location line="-1138"/>
         <source>Send coins to a Particl address</source>
         <translation>Send coins to a Particl address</translation>
     </message>
@@ -608,7 +608,7 @@
         <translation>%1 behind</translation>
     </message>
     <message>
-        <location line="+24"/>
+        <location line="+26"/>
         <source>Last received block was generated %1 ago.</source>
         <translation>Last received block was generated %1 ago.</translation>
     </message>
@@ -633,7 +633,7 @@
         <translation>Information</translation>
     </message>
     <message>
-        <location line="-81"/>
+        <location line="-83"/>
         <source>Up to date</source>
         <translation>Up to date</translation>
     </message>
@@ -738,7 +738,7 @@
         <translation>Catching up...</translation>
     </message>
     <message>
-        <location line="+50"/>
+        <location line="+52"/>
         <source>Error: %1</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1085,7 +1085,7 @@
 <context>
     <name>CreateWalletActivity</name>
     <message>
-        <location filename="../walletcontroller.cpp" line="+218"/>
+        <location filename="../walletcontroller.cpp" line="+219"/>
         <source>Creating Wallet &lt;b&gt;%1&lt;/b&gt;...</source>
         <translation type="unfinished"></translation>
     </message>
@@ -3181,7 +3181,7 @@
     <name>SendCoinsDialog</name>
     <message>
         <location filename="../forms/sendcoinsdialog.ui" line="+14"/>
-        <location filename="../sendcoinsdialog.cpp" line="+841"/>
+        <location filename="../sendcoinsdialog.cpp" line="+845"/>
         <source>Send Coins</source>
         <translation>Send Coins</translation>
     </message>
@@ -3274,7 +3274,17 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+116"/>
+        <location line="+37"/>
+        <source>Ring size for RCT txns.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+19"/>
+        <source>Inputs per RCT proof.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+66"/>
         <source>Transaction Fee:</source>
         <translation type="unfinished"></translation>
     </message>
@@ -3341,12 +3351,12 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="-883"/>
+        <location line="-889"/>
         <source>Dust:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+540"/>
+        <location line="+546"/>
         <source>Hide transaction fee settings</source>
         <translation type="unfinished"></translation>
     </message>
@@ -3406,7 +3416,7 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
         <translation>S&amp;end</translation>
     </message>
     <message>
-        <location filename="../sendcoinsdialog.cpp" line="-741"/>
+        <location filename="../sendcoinsdialog.cpp" line="-745"/>
         <source>Copy quantity</source>
         <translation type="unfinished"></translation>
     </message>
@@ -3476,7 +3486,7 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+59"/>
+        <location line="+63"/>
         <source>or</source>
         <translation type="unfinished"></translation>
     </message>
@@ -3486,7 +3496,7 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="-263"/>
+        <location line="-267"/>
         <source>Creates a Partially Signed Bitcoin Transaction (PSBT) for use with e.g. an offline %1 wallet, or a PSBT-compatible hardware wallet.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -3496,7 +3506,7 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+34"/>
+        <location line="+38"/>
         <source>Not signalling Replace-By-Fee, BIP-125.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -4672,7 +4682,7 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
 <context>
     <name>WalletController</name>
     <message>
-        <location filename="../walletcontroller.cpp" line="-221"/>
+        <location filename="../walletcontroller.cpp" line="-222"/>
         <source>Close wallet</source>
         <translation type="unfinished"></translation>
     </message>

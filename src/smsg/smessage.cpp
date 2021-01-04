@@ -937,7 +937,7 @@ bool CSMSG::Start(std::shared_ptr<CWallet> pwalletIn, std::vector<std::shared_pt
     thread_smsg_pow = std::thread(std::bind(&TraceThread<void (*)()>, "smsg-pow", &ThreadSecureMsgPow));
 
 #ifdef ENABLE_WALLET
-    m_wallet_load_handler = interfaces::MakeHandler(NotifyWalletAdded.connect(boost::bind(&ListenWalletAdded, this, _1)));
+    m_wallet_load_handler = interfaces::MakeHandler(NotifyWalletAdded.connect(std::bind(&ListenWalletAdded, this, std::placeholders::_1)));
 #endif
 
     return true;

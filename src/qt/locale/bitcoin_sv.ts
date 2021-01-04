@@ -3,7 +3,7 @@
     <name>AddressBookPage</name>
     <message>
         <source>Right-click to edit address or label</source>
-        <translation>Högerklicka för att redigera adressen eller etiketten.</translation>
+        <translation>Högerklicka för att redigera adress eller etikett.</translation>
     </message>
     <message>
         <source>Create a new address</source>
@@ -190,7 +190,7 @@ Försök igen.</translation>
     </message>
     <message>
         <source>Remember that encrypting your wallet cannot fully protect your particl from being stolen by malware infecting your computer.</source>
-        <translation>Kom ihåg att kryptering av din plånbok inte helt kan skydda dig från stöld av dina particls om skadlig kod infekterat din dator.</translation>
+        <translation>Kom ihåg att kryptering av din plånbok inte helt kan skydda dig från stöld av dina particl om skadlig kod infekterat din dator.</translation>
     </message>
     <message>
         <source>Wallet to be encrypted</source>
@@ -2001,6 +2001,10 @@ Försök igen.</translation>
         <translation>Ett valfritt belopp att begära. Lämna tomt eller ange noll för att inte begära ett specifikt belopp.</translation>
     </message>
     <message>
+        <source>An optional label to associate with the new receiving address (used by you to identify an invoice).  It is also attached to the payment request.</source>
+        <translation>An optional label to associate with the new receiving address (used by you to identify an invoice).  It is also attached to the payment request.</translation>
+    </message>
+    <message>
         <source>&amp;Create new receiving address</source>
         <translation>S&amp;kapa ny mottagaradress</translation>
     </message>
@@ -2350,6 +2354,10 @@ Notera: Då avgiften beräknas per byte kommer en avgift på 50 satoshi tas ut f
         <translation>Är du säker på att du vill skicka?</translation>
     </message>
     <message>
+        <source>Please, review your transaction proposal. This will produce a Partially Signed Particl Transaction (PSBT) which you can copy and then sign with e.g. an offline %1 wallet, or a PSBT-compatible hardware wallet.</source>
+        <translation>Pleasetransaktion, review your transaction proposal. This will produce a Partially Signed Particl Transaction (PSBT) which you can copy and then sign with e.g. an offline %1 wallet, or a PSBT-compatible hardware wallet.</translation>
+    </message>
+    <message>
         <source>or</source>
         <translation>eller</translation>
     </message>
@@ -2491,6 +2499,10 @@ Notera: Då avgiften beräknas per byte kommer en avgift på 50 satoshi tas ut f
     <message>
         <source>Remove this entry</source>
         <translation>Ta bort denna post</translation>
+    </message>
+    <message>
+        <source>The amount to send in the selected unit</source>
+        <translation>Beloppett att skicka i vald enhet</translation>
     </message>
     <message>
         <source>The fee will be deducted from the amount being sent. The recipient will receive less particl than you enter in the amount field. If multiple recipients are selected, the fee is split equally.</source>
@@ -3179,7 +3191,7 @@ Notera: Då avgiften beräknas per byte kommer en avgift på 50 satoshi tas ut f
     <name>WalletModel</name>
     <message>
         <source>Send Coins</source>
-        <translation>Skicka Particls</translation>
+        <translation>Skicka Particl</translation>
     </message>
     <message>
         <source>Fee bump error</source>
@@ -3723,7 +3735,7 @@ Notera: Då avgiften beräknas per byte kommer en avgift på 50 satoshi tas ut f
     </message>
     <message>
         <source>Insufficient funds</source>
-        <translation>Otillräckligt med particls</translation>
+        <translation>Otillräckligt med particl</translation>
     </message>
     <message>
         <source>Cannot upgrade a non HD split wallet without upgrading to support pre split keypool. Please use -upgradewallet=169900 or -upgradewallet with no version specified.</source>

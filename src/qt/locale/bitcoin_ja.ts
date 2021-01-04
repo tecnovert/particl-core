@@ -1079,7 +1079,7 @@
     <name>OpenURIDialog</name>
     <message>
         <source>Open particl URI</source>
-        <translation>bitcoin URIを開く</translation>
+        <translation>particl URIを開く</translation>
     </message>
     <message>
         <source>URI:</source>

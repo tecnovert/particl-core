@@ -247,9 +247,9 @@ BOOST_AUTO_TEST_CASE(op_iscoinstake_tests)
     CScript scriptSpend = CScript() << OP_DUP << OP_HASH160 << ToByteVector(id2) << OP_EQUALVERIFY << OP_CHECKSIG;
 
     CScript script = CScript() << OP_ISCOINSTAKE << OP_IF;
-    script.append(scriptStake);
+    script += scriptStake;
     script << OP_ELSE;
-    script.append(scriptSpend);
+    script += scriptSpend;
     script << OP_ENDIF;
 
     BOOST_CHECK(true == SplitConditionalCoinstakeScript(script, scriptOutA, scriptOutB));
