@@ -54,6 +54,7 @@
 #include <anon.h>
 #include <rctindex.h>
 #include <insight/insight.h>
+#include <node/coinstats.h>
 
 #include <string>
 
@@ -1969,6 +1970,7 @@ static bool AbortNode(BlockValidationState& state, const std::string& strMessage
  */
 int ApplyTxInUndo(Coin&& undo, CCoinsViewCache& view, const COutPoint& out)
 {
+    assert(false); // chain is organised before reindex happens
     bool fClean = true;
 
     if (view.HaveCoin(out)) fClean = false; // overwriting transaction output
@@ -1999,6 +2001,7 @@ int ApplyTxInUndo(Coin&& undo, CCoinsViewCache& view, const COutPoint& out)
  *  When FAILED is returned, view is left in an indeterminate state. */
 DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockIndex* pindex, CCoinsViewCache& view)
 {
+    assert(false); // chain is organised before reindex happens
     if (LogAcceptCategory(BCLog::HDWALLET))
         LogPrintf("%s: hash %s, height %d\n", __func__, block.GetHash().ToString(), pindex->nHeight);
 
@@ -2430,6 +2433,21 @@ static int64_t nTimeCallbacks = 0;
 static int64_t nTimeTotal = 0;
 static int64_t nBlocksTotal = 0;
 
+int64_t nTotalPlainRemoved = 0;
+int64_t nTotalPlainAdded = 0;
+
+int64_t nTotalBlindRemoved = 0;
+int64_t nTotalBlindAdded = 0;
+
+int64_t nTotalAnonRemoved = 0;
+int64_t nTotalAnonAdded = 0;
+
+int64_t nMoneySupplyAdj = 0;
+int64_t nTotalFees = 0;
+
+//std::map<CCmpPubKey, uint256> map_ki;
+std::map<uint256, uint256> map_ki;
+
 /** Apply the effects of this block (with given index) on the UTXO set represented by coins.
  *  Validity checks that depend on the UTXO set are also done; ConnectBlock()
  *  can fail if those validity checks fail (among other reasons). */
@@ -2440,6 +2458,55 @@ bool CChainState::ConnectBlock(const CBlock& block, BlockValidationState& state,
     assert(pindex);
     assert(*pindex->phashBlock == block.GetHash());
     int64_t nTimeStart = GetTimeMicros();
+
+    //if (pindex->nHeight > 0 && pindex->nHeight % 50000 == 0) {
+    //if (pindex->nHeight > 0 && 1) {
+
+    int check_period = gArgs.GetArg("-debugutxocheckperiod", 0);
+    if (check_period && pindex->nHeight > 0 && pindex->nHeight % check_period == 0) {
+        ::ChainstateActive().ForceFlushStateToDisk();
+        CCoinsStats stats;
+        stats.nTotalAmount = 0;
+        //GetUTXOStats(&::ChainstateActive().CoinsDB(), stats, CoinStatsHashType::NONE);
+
+        CCoinsView* view = &::ChainstateActive().CoinsDB();
+        std::unique_ptr<CCoinsViewCursor> pcursor(view->Cursor());
+
+        uint256 prevkey;
+        //std::map<uint32_t, Coin> outputs;
+        while (pcursor->Valid()) {
+            //interruption_point();
+            COutPoint key;
+            Coin coin;
+            if (pcursor->GetKey(key) && pcursor->GetValue(coin)) {
+                /*
+                if (!outputs.empty() && key.hash != prevkey) {
+                    //ApplyStats(stats, hash_obj, prevkey, outputs);
+                    //outputs.clear();
+                }
+                */
+
+                if (coin.nType == OUTPUT_STANDARD) {
+                    stats.nTotalAmount += coin.out.nValue;
+                }
+
+                CSpentIndexKey spent_index_key(key.hash, key.n);
+                CSpentIndexValue spent_index_value;
+                if (GetSpentIndex(spent_index_key, spent_index_value, nullptr)) {
+                    printf("[rm] coin spent! %s %d\n", key.hash.ToString().c_str(), key.n);
+                }
+
+                prevkey = key.hash;
+                //outputs[key.n] = std::move(coin);
+                stats.coins_count++;
+            } else {
+                printf("%s: unable to read value\n", __func__);
+            }
+            pcursor->Next();
+        }
+        //printf("GetUTXOStats %d,,,,,,,,,,,,,,,,,,,,%ld\n", pindex->nHeight, stats.nTotalAmount);
+        printf("GetUTXOStats %d,%ld\n", pindex->nHeight-1, stats.nTotalAmount);
+    }
 
     const Consensus::Params &consensus = Params().GetConsensus();
     state.SetStateInfo(block.nTime, pindex->nHeight, consensus, fParticlMode, (fBusyImporting && fSkipRangeproof));
@@ -2612,12 +2679,23 @@ bool CChainState::ConnectBlock(const CBlock& block, BlockValidationState& state,
     int nInputs = 0;
     int64_t nSigOpsCost = 0;
     int64_t nAnonIn = 0;
+    int64_t nBlindIn = 0;
     int64_t nStakeReward = 0;
 
     blockundo.vtxundo.reserve(block.vtx.size() - (fParticlMode ? 0 : 1));
 
     // NOTE: Be careful tracking coin created, block reward is based on nMoneySupply
     CAmount nMoneyCreated = 0;
+    CAmount nMoneyCreatedAdj = 0;
+
+    CAmount nPlainRemoved = 0;
+    CAmount nPlainAdded = 0;
+
+    CAmount nBlindRemoved = 0;
+    CAmount nBlindAdded = 0;
+
+    CAmount nAnonRemoved = 0;
+    CAmount nAnonAdded = 0;
 
     for (unsigned int i = 0; i < block.vtx.size(); i++)
     {
@@ -2625,11 +2703,23 @@ bool CChainState::ConnectBlock(const CBlock& block, BlockValidationState& state,
         const uint256 txhash = tx.GetHash();
         nInputs += tx.vin.size();
 
+        int txAnonIn = 0;
+        int txBlindIn = 0;
+
+        CAmount nTxPlainRemoved = 0;
+        CAmount nTxPlainAdded = 0;
+
+        CAmount nTxBlindRemoved = 0;
+        CAmount nTxBlindAdded = 0;
+
+        CAmount nTxAnonRemoved = 0;
+        CAmount nTxAnonAdded = 0;
+
         TxValidationState tx_state;
         tx_state.SetStateInfo(block.nTime, pindex->nHeight, consensus, fParticlMode, (fBusyImporting && fSkipRangeproof));
+        CAmount txfee = 0;
         if (!tx.IsCoinBase())
         {
-            CAmount txfee = 0;
             if (!Consensus::CheckTxInputs(tx, tx_state, view, pindex->nHeight, txfee)) {
                 control.Wait();
                 // Any transaction validation failure in ConnectBlock is a block consensus failure
@@ -2637,14 +2727,14 @@ bool CChainState::ConnectBlock(const CBlock& block, BlockValidationState& state,
                             tx_state.GetRejectReason(), tx_state.GetDebugMessage());
                 return error("%s: Consensus::CheckTxInputs: %s, %s", __func__, tx.GetHash().ToString(), state.ToString());
             }
-            if (tx.IsCoinStake())
-            {
+            if (tx.IsCoinStake()) {
                 // Block reward is passed back in txfee (nPlainValueOut - nPlainValueIn)
                 nStakeReward += txfee;
                 nMoneyCreated += nStakeReward;
-            } else
-            {
+                nMoneyCreatedAdj += nStakeReward;
+            } else {
                 nFees += txfee;
+                nTotalFees += txfee;
             }
             if (!MoneyRange(nFees)) {
                 control.Wait();
@@ -2670,19 +2760,29 @@ bool CChainState::ConnectBlock(const CBlock& block, BlockValidationState& state,
                 return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-txns-nonfinal");
             }
 
+
             if (tx.IsParticlVersion()) {
                 // Update spent inputs
                 for (size_t j = 0; j < tx.vin.size(); j++) {
                     const CTxIn input = tx.vin[j];
                     if (input.IsAnonInput()) {
                         nAnonIn++;
+                        txAnonIn++;
                         continue;
                     }
-
                     const Coin &coin = view.AccessCoin(input.prevout);
+
+                    if (coin.nType == OUTPUT_CT) {
+                        nBlindIn++;
+                        txBlindIn++;
+                    }
 
                     if (coin.nType != OUTPUT_CT) {
                         view.spent_cache.emplace_back(input.prevout, SpentCoin(coin, pindex->nHeight));
+                    }
+                    {
+                        CAmount nValue = coin.nType == OUTPUT_CT ? 0 : coin.out.nValue;
+                        nTxPlainRemoved += nValue;
                     }
                     if (!fAddressIndex && !fSpentIndex) {
                         continue;
@@ -2714,6 +2814,7 @@ bool CChainState::ConnectBlock(const CBlock& block, BlockValidationState& state,
                         // and to find the amount and address from an input
                         view.spentIndex.push_back(std::make_pair(CSpentIndexKey(input.prevout.hash, input.prevout.n), CSpentIndexValue(txhash, j, pindex->nHeight, nValue, scriptType, hashAddress)));
                     }
+
                 }
 
                 if (smsg::fSecMsgEnabled && tx_state.m_funds_smsg) {
@@ -2738,6 +2839,7 @@ bool CChainState::ConnectBlock(const CBlock& block, BlockValidationState& state,
             std::vector<CScriptCheck> vChecks;
             bool fCacheResults = fJustCheck; /* Don't cache results if we're actually connecting blocks (still consult the cache, though) */
             //TxValidationState tx_state;
+
             if (fScriptChecks && !CheckInputScripts(tx, tx_state, view, flags, fCacheResults, fCacheResults, txsdata[i], g_parallel_script_checks ? &vChecks : nullptr)) {
                 control.Wait();
                 // Any transaction validation failure in ConnectBlock is a block consensus failure
@@ -2746,6 +2848,7 @@ bool CChainState::ConnectBlock(const CBlock& block, BlockValidationState& state,
                 return error("ConnectBlock(): CheckInputScripts on %s failed with %s",
                     txhash.ToString(), state.ToString());
             }
+
             control.Add(vChecks);
 
             blockundo.vtxundo.push_back(CTxUndo());
@@ -2756,10 +2859,15 @@ bool CChainState::ConnectBlock(const CBlock& block, BlockValidationState& state,
             CTxUndo undoDummy;
             UpdateCoins(tx, view, undoDummy, pindex->nHeight);
             nMoneyCreated += tx.GetValueOut();
+            nMoneyCreatedAdj += tx.GetValueOut();
         }
 
         if (view.nLastRCTOutput == 0) {
             view.nLastRCTOutput = pindex->pprev ? pindex->pprev->nAnonOutputs : 0;
+        }
+
+        if (txAnonIn) {
+            assert(tx_state.m_has_anon_input);
         }
 
         // Index rct outputs and keyimages
@@ -2780,6 +2888,16 @@ bool CChainState::ConnectBlock(const CBlock& block, BlockValidationState& state,
                         const CCmpPubKey &ki = *((CCmpPubKey*)&vKeyImages[k*33]);
 
                         view.keyImages.push_back(std::make_pair(ki, txhash));
+
+                        uint256 key_x;
+                        memcpy(key_x.data(), ki.data() + 1, 32);
+
+                        auto it = map_ki.find(key_x);
+                        if (it != map_ki.end()) {
+                            printf("Duplicate key image! %s\n", txhash.ToString().c_str());
+                        } else {
+                            map_ki[key_x] = txhash;
+                        }
                     }
                 }
             }
@@ -2845,6 +2963,74 @@ bool CChainState::ConnectBlock(const CBlock& block, BlockValidationState& state,
                 view.addressUnspentIndex.push_back(std::make_pair(CAddressUnspentKey(scriptType, uint256(hashBytes.data(), hashBytes.size()), txhash, k), CAddressUnspentValue(nValue, *pScript, pindex->nHeight)));
             }
         }
+
+        int numTxAnonOut = 0;
+        int numTxBlindOut = 0;
+        for (unsigned int k = 0; k < tx.vpout.size(); k++) {
+            if (tx.vpout[k]->IsType(OUTPUT_STANDARD)) {
+                nTxPlainAdded += tx.vpout[k]->GetValue();
+            } else
+            if (tx.vpout[k]->IsType(OUTPUT_CT)) {
+                numTxBlindOut++;
+            } else
+            if (tx.vpout[k]->IsType(OUTPUT_RINGCT)) {
+                numTxAnonOut++;
+            }
+        }
+
+        if (numTxAnonOut) {
+            assert(tx_state.m_has_anon_output);
+        }
+
+        if (txAnonIn > 0) { // spending anon
+            CAmount ctfee;
+            assert(tx.GetCTFee(ctfee));
+            // fee will be added to coinstaketx
+            nTxAnonRemoved = nTxPlainAdded + ctfee;
+        }
+        if (txBlindIn > 0) { // spending blind
+            CAmount ctfee;
+            assert(tx.GetCTFee(ctfee));
+            // fee will be added to coinstaketx
+            nTxBlindRemoved = nTxPlainAdded + ctfee;
+        }
+
+        if (numTxAnonOut > 0 && nTxPlainRemoved > 0) {
+            CAmount ctfee;
+            assert(tx.GetCTFee(ctfee));
+            nTxAnonAdded = nTxPlainRemoved - (nTxPlainAdded + ctfee);
+            //printf("nAnonAdded %ld\n", nAnonAdded);
+        }
+        if (numTxBlindOut > 0 && nTxPlainRemoved > 0) {
+            CAmount ctfee;
+            assert(tx.GetCTFee(ctfee));
+            nTxBlindAdded = nTxPlainRemoved - (nTxPlainAdded + ctfee);
+            //printf("nBlindAdded %ld\n", nBlindAdded);
+        }
+
+        if (gArgs.GetBoolArg("-debugprinttxns", false)) {
+            printf(",%s,%s,%ld,%ld,%ld,%ld,%ld,%ld,%ld\n",
+                txhash.ToString().c_str(),
+                tx.IsCoinBase() ? "coinbase" : tx.IsCoinStake() ? "coinstake" : "",
+                txfee,
+                nTxPlainAdded,
+                nTxPlainRemoved,
+                nTxBlindAdded,
+                nTxBlindRemoved,
+                nTxAnonAdded,
+                nTxAnonRemoved
+                );
+        }
+
+        // Update per block accumulators
+        nPlainAdded += nTxPlainAdded;
+        nPlainRemoved += nTxPlainRemoved;
+
+        nBlindRemoved += nTxBlindRemoved;
+        nBlindAdded += nTxBlindAdded;
+
+        nAnonRemoved += nTxAnonRemoved;
+        nAnonAdded += nTxAnonAdded;
     }
 
     int64_t nTime3 = GetTimeMicros(); nTimeConnect += nTime3 - nTime2;
@@ -2860,6 +3046,7 @@ bool CChainState::ConnectBlock(const CBlock& block, BlockValidationState& state,
         if (block.nTime >= consensus.clamp_tx_version_time) {
             nMoneyCreated -= nFees;
         }
+        nMoneyCreatedAdj -= nFees;
         if (block.IsProofOfStake()) { // Only the genesis block isn't proof of stake
             CTransactionRef txCoinstake = block.vtx[0];
             CTransactionRef txPrevCoinstake = nullptr;
@@ -3021,6 +3208,7 @@ bool CChainState::ConnectBlock(const CBlock& block, BlockValidationState& state,
         return true;
 
     pindex->nMoneySupply = (pindex->pprev ? pindex->pprev->nMoneySupply : 0) + nMoneyCreated;
+    nMoneySupplyAdj += nMoneyCreatedAdj;
     pindex->nAnonOutputs = view.nLastRCTOutput;
     setDirtyBlockIndex.insert(pindex); // pindex has changed, must save to disk
 
@@ -3033,6 +3221,56 @@ bool CChainState::ConnectBlock(const CBlock& block, BlockValidationState& state,
         setDirtyBlockIndex.insert(pindex);
     }
 
+
+    nTotalBlindRemoved += nBlindRemoved;
+    nTotalBlindAdded += nBlindAdded;
+
+    nTotalAnonAdded += nAnonAdded;
+    nTotalAnonRemoved += nAnonRemoved;
+
+    nTotalPlainRemoved += nPlainRemoved;
+    nTotalPlainAdded += nPlainAdded;
+
+    CAmount diffPlain = nTotalPlainAdded - nTotalPlainRemoved;
+    CAmount diffBlind = nTotalBlindAdded - nTotalBlindRemoved;
+    CAmount diffAnon = nTotalAnonAdded - nTotalAnonRemoved;
+
+
+    // (diffPlain + diffBlind + diffAnon) should == nMoneySupplyAdj
+
+    if (gArgs.GetBoolArg("-debugprintextratotals", false)) {
+        printf(",plain,%ld,%ld,%ld\n", nTotalPlainAdded, nTotalPlainRemoved, diffPlain);
+        printf(",blind,%ld,%ld,%ld\n", nTotalBlindAdded, nTotalBlindRemoved, diffBlind);
+        printf(",anon,%ld,%ld,%ld\n", nTotalAnonAdded, nTotalAnonRemoved, diffAnon);
+        printf(",3d ms,%ld,%ld,%ld\n", diffPlain + diffBlind + diffAnon, nMoneySupplyAdj, nMoneySupplyAdj-(diffPlain + diffBlind + diffAnon));
+        //printf(",da+db dp-(da+db),%ld,%ld\n", diffAnon + diffBlind, diffPlain-(diffAnon + diffBlind));
+        printf(",da+db,%ld\n", diffAnon + diffBlind);
+        printf(",aa+ab ra+rb (aa+ab)-(ra+rb),%ld,%ld,%ld\n", nTotalBlindAdded + nTotalAnonAdded, nTotalBlindRemoved + nTotalAnonRemoved, (nTotalBlindAdded + nTotalAnonAdded) - (nTotalBlindRemoved + nTotalAnonRemoved));
+    }
+
+    printf("%d,%s,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld\n",
+        pindex->nHeight,
+        block.GetHash().ToString().c_str(),
+        nFees,
+        nStakeReward,
+        nMoneyCreated,
+        pindex->nMoneySupply,
+        nMoneyCreatedAdj,
+        nMoneySupplyAdj,
+        pindex->nAnonOutputs,
+        nPlainRemoved,
+        nPlainAdded,
+        nPlainAdded - nPlainRemoved,
+        nAnonAdded,
+        nAnonRemoved,
+        diffAnon,
+        nBlindAdded,
+        nBlindRemoved,
+        diffBlind,
+        nTotalPlainAdded,
+        nTotalPlainRemoved,
+        diffPlain,
+        diffPlain + diffBlind + diffAnon);
 
     if (fTimestampIndex) {
         unsigned int logicalTS = pindex->nTime;

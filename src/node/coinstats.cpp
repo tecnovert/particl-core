@@ -12,6 +12,7 @@
 #include <uint256.h>
 #include <util/system.h>
 #include <validation.h>
+#include <insight/insight.h>
 
 #include <map>
 
@@ -109,6 +110,13 @@ static bool GetUTXOStats(CCoinsView* view, CCoinsStats& stats, T hash_obj, const
                 ApplyStats(stats, hash_obj, prevkey, outputs);
                 outputs.clear();
             }
+
+            CSpentIndexKey spent_index_key(key.hash, key.n);
+            CSpentIndexValue spent_index_value;
+            if (GetSpentIndex(spent_index_key, spent_index_value, nullptr)) {
+                printf("[rm] coin spent %s %d\n", key.hash.ToString().c_str(), key.n);
+            }
+
             prevkey = key.hash;
             outputs[key.n] = std::move(coin);
             stats.coins_count++;

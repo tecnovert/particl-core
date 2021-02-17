@@ -88,6 +88,7 @@ bool GetTimestampIndex(const unsigned int &high, const unsigned int &low, const 
 
 bool GetSpentIndex(CSpentIndexKey &key, CSpentIndexValue &value, const CTxMemPool *pmempool)
 {
+    assert(fSpentIndex);
     if (!fSpentIndex) {
         return false;
     }

@@ -645,6 +645,9 @@ void SetupServerArgs(NodeContext& node)
     hidden_args.emplace_back("-newserverkeypairzmq");
     hidden_args.emplace_back("-whitelistzmq=<IP address or network>");
 #endif
+    argsman.AddArg("-debugutxocheckperiod=<n>", strprintf("DEBUG (default: %u, 0 = off)", 0), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::DEBUG_TEST);
+    argsman.AddArg("-debugprinttxns", "DEBUG (default: false)", ArgsManager::ALLOW_ANY, OptionsCategory::RPC);
+    argsman.AddArg("-debugprintextratotals", "DEBUG (default: false)", ArgsManager::ALLOW_ANY, OptionsCategory::RPC);
 
     argsman.AddArg("-checkblocks=<n>", strprintf("How many blocks to check at startup (default: %u, 0 = all)", DEFAULT_CHECKBLOCKS), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::DEBUG_TEST);
     argsman.AddArg("-checklevel=<n>", strprintf("How thorough the block verification of -checkblocks is: %s (0-4, default: %u)", Join(CHECKLEVEL_DOC, ", "), DEFAULT_CHECKLEVEL), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::DEBUG_TEST);
@@ -842,6 +845,33 @@ static void ThreadImport(ChainstateManager& chainman, std::vector<fs::path> vImp
 
     // -reindex
     if (fReindex) {
+
+        printf(""
+        "nHeight,"
+        "Hash(),"
+        "nFees,"
+        "nStakeReward,"
+        "nMoneyCreated,"
+        "nMoneySupply,"
+        "nMoneyCreatedAdj,"
+        "nMoneySupplyAdj,"
+        "nAnonOutputs,"
+        "nPlainRemoved,"
+        "nPlainAdded,"
+        "nPlainAdded - nPlainRemoved,"
+        "nAnonAdded,"
+        "nAnonRemoved,"
+        "diff anon,"
+        "nBlindAdded,"
+        "nBlindRemoved,"
+        "diff blind,"
+        "nTotalPlainAdded,"
+        "nTotalPlainRemoved,"
+        "diff plain,"
+        "diff plain + blind + anon"
+        "\n");
+
+
         int nFile = 0;
         while (true) {
             FlatFilePos pos(nFile, 0);
