@@ -139,6 +139,9 @@ typedef int64_t NodeId;
 
 /** Default for -stopatheight */
 static const int DEFAULT_STOPATHEIGHT = 0;
+// Particl
+static const bool DEFAULT_ACCEPT_ANON_TX = false;
+static const bool DEFAULT_ACCEPT_BLIND_TX = false;
 
 
 struct BlockHasher
