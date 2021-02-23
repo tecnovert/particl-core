@@ -685,6 +685,9 @@ void SetupServerArgs()
     gArgs.AddArg("-displaylocaltime", "Display human readable time strings in local timezone (default: false)", false, OptionsCategory::RPC);
     gArgs.AddArg("-displayutctime", "Display human readable time strings in UTC (default: false)", false, OptionsCategory::RPC);
 
+    gArgs.AddArg("-acceptanontxn", strprintf("Relay and mine \"anon\" transactions (default: %u)", DEFAULT_ACCEPT_ANON_TX), false, OptionsCategory::RPC);
+    gArgs.AddArg("-acceptblindtxn", strprintf("Relay and mine \"anon\" transactions (default: %u)", DEFAULT_ACCEPT_BLIND_TX), false, OptionsCategory::RPC);
+
 #if HAVE_DECL_DAEMON
     gArgs.AddArg("-daemon", "Run in the background as a daemon and accept commands", false, OptionsCategory::OPTIONS);
 #else

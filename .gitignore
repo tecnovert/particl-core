@@ -134,3 +134,7 @@ db4/
 
 # clang-check
 *.plist
+
+sanitizer-output
+ci/scratch
+*~

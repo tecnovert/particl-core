@@ -103,6 +103,7 @@ public:
     int m_spend_height = 0;
 
     bool m_clamp_tx_version = false;
+    bool m_exploit_fix_1 = false;
 
     void SetStateInfo(int64_t time, int spend_height, const Consensus::Params& consensusParams)
     {
@@ -114,6 +115,7 @@ public:
             m_spend_height = spend_height; // Pass through connectblock->checkblock
         }
         m_clamp_tx_version = time >= consensusParams.clamp_tx_version_time;
+        m_exploit_fix_1 = time >= consensusParams.exploit_fix_1_time;
     }
 };
 
