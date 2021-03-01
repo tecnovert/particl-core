@@ -1345,6 +1345,12 @@ bool AppInitParameterInteraction()
         fEnableReplacement = (std::find(vstrReplacementModes.begin(), vstrReplacementModes.end(), "fee") != vstrReplacementModes.end());
     }
 
+    std::string network = gArgs.GetChainName();
+    if (network == "testnet" || network == "regtest") { // TODO: Remove
+        gArgs.SoftSetBoolArg("-acceptanontxn", true);
+        gArgs.SoftSetBoolArg("-acceptblindtxn", true);
+    }
+
     return true;
 }
 
