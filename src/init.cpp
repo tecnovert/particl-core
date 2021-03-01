@@ -1338,6 +1338,11 @@ bool AppInitParameterInteraction()
 
     nMaxTipAge = gArgs.GetArg("-maxtipage", DEFAULT_MAX_TIP_AGE);
 
+    if (chainparams.IsTestChain() || chainparams.IsMockableChain()) { // TODO: Remove
+        gArgs.SoftSetBoolArg("-acceptanontxn", true);
+        gArgs.SoftSetBoolArg("-acceptblindtxn", true);
+    }
+
     return true;
 }
 
