@@ -1,3 +1,11 @@
+0.18.1.9
+==============
+
+- Emergency hardfork release.
+- Disables anon and blind transactions on mainnet.
+- filtertransactions can display blinding factors.
+- New mainnet checkpoint.
+
 
 0.18.1.8
 ==============
