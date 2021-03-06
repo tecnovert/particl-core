@@ -706,7 +706,7 @@ bool CHDWallet::LoadVoteTokens(CHDWalletDB *pwdb)
 
     int nBestHeight = chainActive.Height();
 
-    for (auto &v : vVoteTokensRead) {
+    for (const auto &v : vVoteTokensRead) {
         if (v.nEnd > nBestHeight - 1000) { // 1000 block buffer in case of reorg etc
             vVoteTokens.push_back(v);
             if (LogAcceptCategory(BCLog::HDWALLET)) {
@@ -727,7 +727,7 @@ bool CHDWallet::LoadVoteTokens(CHDWalletDB *pwdb)
 
 bool CHDWallet::GetVote(int nHeight, uint32_t &token)
 {
-    for (auto i = vVoteTokens.rbegin(); i != vVoteTokens.rend(); ++i) {
+    for (auto i = vVoteTokens.crbegin(); i != vVoteTokens.crend(); ++i) {
         if (i->nEnd < nHeight
             || i->nStart > nHeight) {
             continue;
@@ -2043,12 +2043,12 @@ CAmount CHDWallet::GetDebit(const CTransaction& tx, const isminefilter& filter) 
         return CWallet::GetDebit(tx, filter);
 
     CAmount nDebit = 0;
-    for (auto &txin : tx.vin)
-    {
+    for (const auto &txin : tx.vin) {
         nDebit += GetDebit(txin, filter);
-        if (!MoneyRange(nDebit))
+        if (!MoneyRange(nDebit)) {
             throw std::runtime_error(std::string(__func__) + ": value out of range");
-    };
+        }
+    }
     return nDebit;
 };
 
@@ -4845,7 +4845,7 @@ int CHDWallet::PickHidingOutputs(std::vector<std::vector<int64_t> > &vMI,
     // Must add real outputs to setHave before adding the decoys.
     std::vector<int64_t> real_inputs;
     real_inputs.reserve(setHave.size());
-    for (auto i : setHave) {
+    for (const auto &i : setHave) {
         real_inputs.push_back(i);
     }
 
@@ -8421,7 +8421,7 @@ bool CHDWallet::CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::
         FindStealthTransactions(*tx, mapNarr);
 
         if (!mapNarr.empty()) {
-            for (auto &item : mapNarr) {
+            for (const auto &item : mapNarr) {
                 mapValue[item.first] = item.second;
             }
         }
@@ -9409,7 +9409,7 @@ int CHDWallet::CheckForStealthAndNarration(const CTxOutBase *pb, const CTxOutDat
         CTxDestination address;
         if (!ExtractDestination(so->scriptPubKey, address)
             || address.type() != typeid(CKeyID)) {
-            WalletLogPrintf("%s: ExtractDestination failed.\n",  __func__);
+            //WalletLogPrintf("%s: ExtractDestination failed.\n",  __func__);
             return -1;
         }
 
@@ -9509,7 +9509,7 @@ bool CHDWallet::ScanForOwnedOutputs(const CTransaction &tx, size_t &nCT, size_t 
             CTxDestination address;
             if (!ExtractDestination(ctout->scriptPubKey, address)
                 || address.type() != typeid(CKeyID)) {
-                WalletLogPrintf("%s: ExtractDestination failed.\n", __func__);
+                //WalletLogPrintf("%s: ExtractDestination failed.\n", __func__);
                 continue;
             }
 
@@ -10938,7 +10938,7 @@ bool CHDWallet::SelectCoins(const std::vector<COutput>& vAvailableCoins, const C
 
     // coin control -> return all selected outputs (we want all selected to go into the transaction for sure)
     if (coin_control.HasSelected() && !coin_control.fAllowOtherInputs) {
-        for (auto &out : vCoins) {
+        for (const auto &out : vCoins) {
             COutPoint op(out.tx->GetHash(), out.i);
             if (!coin_control.IsSelected(op)) {
                 continue;
@@ -10960,7 +10960,7 @@ bool CHDWallet::SelectCoins(const std::vector<COutput>& vAvailableCoins, const C
     std::vector<COutPoint> vPresetInputs;
     coin_control.ListSelected(vPresetInputs);
 
-    for (auto &outpoint : vPresetInputs) {
+    for (const auto &outpoint : vPresetInputs) {
         MapWallet_t::const_iterator it = mapTempWallet.find(outpoint.hash);
         if (it != mapTempWallet.end()) {
             const CWalletTx *pcoin = &it->second;
@@ -11151,7 +11151,7 @@ bool CHDWallet::SelectBlindedCoins(const std::vector<COutputR> &vAvailableCoins,
         coinControl->ListSelected(vPresetInputs);
     }
 
-    for (auto &outpoint : vPresetInputs) {
+    for (const auto &outpoint : vPresetInputs) {
         MapRecords_t::const_iterator it;
         if ((it = mapTempRecords.find(outpoint.hash)) != mapTempRecords.end() // Must check mapTempRecords first, mapRecords may contain the same tx without the relevant output.
             || (it = mapRecords.find(outpoint.hash)) != mapRecords.end()) { // Allows non-wallet inputs
@@ -11395,7 +11395,7 @@ std::map<CTxDestination, std::vector<COutput>> CHDWallet::ListCoins(interfaces::
 
     AvailableCoins(locked_chain, availableCoins);
 
-    for (auto& coin : availableCoins) {
+    for (const auto& coin : availableCoins) {
         CTxDestination address;
         if (coin.fSpendable &&
             ExtractDestination(*(FindNonChangeParentOutput(*coin.tx->tx, coin.i)->GetPScriptPubKey()), address)) {
@@ -11461,7 +11461,7 @@ std::map<CTxDestination, std::vector<COutputR>> CHDWallet::ListCoins(interfaces:
         AvailableAnonCoins(locked_chain,  availableCoins, true, &coinControl);
     }
 
-    for (auto& coin : availableCoins) {
+    for (const auto& coin : availableCoins) {
         CTxDestination address;
         if (!coin.fSpendable) {
             continue;
@@ -12080,7 +12080,7 @@ size_t CHDWallet::CountColdstakeOutputs()
     int nMinDepth = 0, nMaxDepth = 0x7FFFFFFF;
     bool fIncludeImmature = true;
     AvailableCoins(*locked_chain, vAvailableCoins, false, &coinControl, nMinimumAmount, nMaximumAmount, nMinimumSumAmount, nMaximumCount, nMinDepth, nMaxDepth, fIncludeImmature);
-    for (auto &coin : vAvailableCoins) {
+    for (const auto &coin : vAvailableCoins) {
         assert(coin.i < (int)coin.tx->tx->GetNumVOuts());
         auto txoutBase = coin.tx->tx->vpout[coin.i];
         if (!txoutBase->IsStandardOutput()) {
@@ -12188,7 +12188,7 @@ uint64_t CHDWallet::GetStakeWeight() const
 
     uint64_t nWeight = 0;
 
-    for (auto pcoin : setCoins) {
+    for (const auto &pcoin : setCoins) {
         nWeight += pcoin.first->tx->vpout[pcoin.second]->GetValue();
     }
 
@@ -12980,7 +12980,7 @@ int64_t CalculateMaximumSignedTxSize(const CTransaction &tx, const CHDWallet *wa
     // Look up the inputs.  We should have already checked that this transaction
     // IsAllFromMe(ISMINE_SPENDABLE), so every input should already be in our
     // wallet, with a valid index into the vout array, and the ability to sign.
-    for (auto& input : tx.vin) {
+    for (const auto& input : tx.vin) {
         const auto mi = wallet->mapWallet.find(input.prevout.hash);
         if (mi != wallet->mapWallet.end()) {
             assert(input.prevout.n < mi->second.tx->GetNumVOuts());

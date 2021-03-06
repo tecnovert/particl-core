@@ -116,7 +116,8 @@ class AnonTest(ParticlTestFramework):
         txnHashes = [txnHash,]
 
         self.log.info('Test filtertransactions with type filter')
-        ro = nodes[1].filtertransactions({ 'type': 'anon', 'count': 20 })
+        ro = nodes[1].filtertransactions({'type': 'anon', 'count': 20, 'show_anon_spends': True})
+
         assert(len(ro) > 2)
         for t in ro:
             foundA = False
