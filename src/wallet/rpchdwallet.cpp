@@ -2653,7 +2653,8 @@ static void ParseOutputs(
     bool                 fWithReward,
     bool                 fBech32,
     bool                 hide_zero_coinstakes,
-    std::vector<CScript> &vDevFundScripts
+    std::vector<CScript> &vDevFundScripts,
+    bool                 show_change
 ) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
     UniValue entry(UniValue::VOBJ);
@@ -2686,7 +2687,7 @@ static void ParseOutputs(
         entry.pushKV("abandoned", wtx.isAbandoned());
     }
 
-    // staked
+    // Staked
     if (!listStaked.empty()) {
         if (wtx.GetDepthInMainChain() < 1) {
             entry.pushKV("category", "orphaned_stake");
@@ -2710,7 +2711,7 @@ static void ParseOutputs(
         }
         amount += -nFee;
     } else {
-        // sent
+        // Sent
         if (!listSent.empty()) {
             for (const auto &s : listSent) {
                 UniValue output(UniValue::VOBJ);
@@ -2729,7 +2730,7 @@ static void ParseOutputs(
             }
         }
 
-        // received
+        // Received
         if (!listReceived.empty()) {
             for (const auto &r : listReceived) {
                 UniValue output(UniValue::VOBJ);
@@ -2854,7 +2855,8 @@ static void ParseRecords(
     const std::string          &category_filter,
     int                         type,
     bool                        show_blinding_factors,
-    bool                        show_anon_spends
+    bool                        show_anon_spends,
+    bool                        show_change
 ) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
     std::vector<std::string> addresses, amounts;
@@ -2920,20 +2922,24 @@ static void ParseRecords(
     for (const auto &record : rtx.vout) {
         UniValue output(UniValue::VOBJ);
 
-        if (record.nFlags & ORF_CHANGE) {
-            continue;
-        }
-        if (record.nFlags & ORF_OWN_ANY) {
-            nOwned++;
-        }
-        if (record.nFlags & ORF_FROM) {
-            nFrom++;
-        }
-        if (record.nFlags & ORF_OWN_WATCH) {
-            nWatchOnly++;
-        }
-        if (record.nFlags & ORF_LOCKED) {
-            nLockedOutputs++;
+        bool is_change = record.nFlags & ORF_CHANGE;
+        if (is_change) {
+            if (!show_change) {
+                continue;
+            }
+        } else {
+            if (record.nFlags & ORF_OWN_ANY) {
+                nOwned++;
+            }
+            if (record.nFlags & ORF_FROM) {
+                nFrom++;
+            }
+            if (record.nFlags & ORF_OWN_WATCH) {
+                nWatchOnly++;
+            }
+            if (record.nFlags & ORF_LOCKED) {
+                nLockedOutputs++;
+            }
         }
 
         CBitcoinAddress addr;
@@ -3003,7 +3009,11 @@ static void ParseRecords(
         if (!(record.nFlags & ORF_OWN_ANY)) {
             amount *= -1;
         }
-        totalAmount += amount;
+        if (record.nFlags & ORF_CHANGE) {
+            output.__pushKV("is_change", "true");
+        } else {
+            totalAmount += amount;
+        }
         amounts.push_back(ToString(amount));
         output.__pushKV("amount", ValueFromAmount(amount));
         output.__pushKV("vout", record.n);
@@ -3083,7 +3093,6 @@ static void ParseRecords(
                 nOutput += record.nValue;
             }
         }
-
         entry.__pushKV("amount", ValueFromAmount(nOutput-nInput));
     } else {
         entry.__pushKV("amount", ValueFromAmount(totalAmount));
@@ -3166,6 +3175,7 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
                             {"hide_zero_coinstakes", RPCArg::Type::BOOL, /* default */ "false", "Hide coinstake transactions without a balance change"},
                             {"show_blinding_factors", RPCArg::Type::BOOL, /* default */ "false", "Display blinding factors for blinded outputs"},
                             {"show_anon_spends", RPCArg::Type::BOOL, /* default */ "false", "Display inputs for anon transactions"},
+                            {"show_change", RPCArg::Type::BOOL, /* default */ "false", "Display change outputs (for anon and blind txns)"},
                         },
                         "options"},
                 },
@@ -3203,6 +3213,7 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
     bool hide_zero_coinstakes = false;
     bool show_blinding_factors = false;
     bool show_anon_spends = false;
+    bool show_change = false;
 
     if (!request.params[0].isNull()) {
         const UniValue &options = request.params[0].get_obj();
@@ -3221,6 +3232,7 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
                 {"hide_zero_coinstakes",    UniValueType(UniValue::VBOOL)},
                 {"show_blinding_factors",   UniValueType(UniValue::VBOOL)},
                 {"show_anon_spends",        UniValueType(UniValue::VBOOL)},
+                {"show_change",             UniValueType(UniValue::VBOOL)},
             },
             true, // allow null
             false // strict
@@ -3328,6 +3340,9 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
         if (options["show_anon_spends"].isBool()) {
             show_anon_spends = options["show_anon_spends"].get_bool();
         }
+        if (options["show_change"].isBool()) {
+            show_change = options["show_change"].get_bool();
+        }
     }
 
     if (show_blinding_factors || show_anon_spends) {
@@ -3370,7 +3385,8 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
                 fWithReward,
                 fBech32,
                 hide_zero_coinstakes,
-                vDevFundScripts);
+                vDevFundScripts,
+                show_change);
         tit++;
     }
 
@@ -3398,7 +3414,8 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
                 category,
                 type_i,
                 show_blinding_factors,
-                show_anon_spends);
+                show_anon_spends,
+                show_change);
         rit++;
     }
 
