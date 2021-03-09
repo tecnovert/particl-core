@@ -16,13 +16,76 @@
 #include <uint256.h>
 #include <util/strencodings.h>
 #include <util/system.h>
+#include <univalue.h>
 
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
 
+#include <test/data/ct_unspent_txids.json.h>
+
 BOOST_FIXTURE_TEST_SUITE(bloom_tests, BasicTestingSetup)
 
+BOOST_AUTO_TEST_CASE(bloom_ct_tainted)
+{
+    UniValue json;
+    std::string json_data(json_tests::ct_unspent_txids,
+                          json_tests::ct_unspent_txids + sizeof(json_tests::ct_unspent_txids));
+    if (!json.read(json_data) || !json.isArray()) {
+        BOOST_ERROR("Parse error.");
+        return;
+    }
+
+    std::vector<uint256> ct_unspent, ct_unspent_tainted;
+    const UniValue &tests = json.get_array();
+    for (unsigned int i = 0; i < tests.size(); i++) {
+        UniValue test = tests[i];
+        int tainted = test[1].get_int();
+        if (tainted) {
+            ct_unspent_tainted.push_back(uint256S(test[0].get_str()));
+            BOOST_CHECK(test[0].get_str() == ct_unspent_tainted.back().ToString());
+        } else {
+            ct_unspent.push_back(uint256S(test[0].get_str()));
+            BOOST_CHECK(test[0].get_str() == ct_unspent.back().ToString());
+        }
+    }
+
+    printf("ct_unspent.size() %ld\n", ct_unspent.size());
+    printf("ct_unspent_tainted.size() %ld\n", ct_unspent_tainted.size());
+    CBloomFilter filter(1600, 0.004, 0, BLOOM_UPDATE_NONE);
+    for (const auto &txid : ct_unspent_tainted) {
+        filter.insert(txid);
+    }
+
+    CDataStream stream(SER_NETWORK, PROTOCOL_VERSION);
+    stream << filter;
+
+    std::string str_hex = HexStr(stream);
+    std::vector<uint8_t> filter_data = ParseHex(str_hex);
+
+    CDataStream stream_out(Span<const unsigned char>(filter_data.data(), filter_data.size()), SER_NETWORK, PROTOCOL_VERSION);
+
+    CBloomFilter filter_out;
+    stream >> filter_out;
+
+    for (const auto &txid : ct_unspent_tainted) {
+        BOOST_CHECK(filter_out.contains(txid));
+    }
+
+    for (const auto &txid : ct_unspent) {
+        BOOST_CHECK(!filter_out.contains(txid));
+        //printf("txid %s\n", txid.ToString().c_str());
+    }
+    printf("stream.size() %ld\n", stream.size());
+    printf("stream %s\n", str_hex.c_str());
+    printf("unsigned char tainted_ct_output_filter_data[] = {\n  ");
+    for (size_t i = 0; i < filter_data.size(); ++i) {
+        printf("0x%02x%s", filter_data[i], i < filter_data.size() - 1 ? ", " : "");
+        if ((i + 1) % 12 == 0) printf("\n  ");
+    }
+    printf("\n};\nunsigned int tainted_ct_output_filter_data_len = %ld;\n", filter_data.size());
+}
+/*
 BOOST_AUTO_TEST_CASE(bloom_create_insert_serialize)
 {
     CBloomFilter filter(3, 0.01, 0, BLOOM_UPDATE_ALL);
@@ -513,5 +576,5 @@ BOOST_AUTO_TEST_CASE(rolling_bloom)
     }
     g_mock_deterministic_tests = false;
 }
-
+*/
 BOOST_AUTO_TEST_SUITE_END()
