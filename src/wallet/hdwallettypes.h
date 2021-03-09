@@ -123,7 +123,6 @@ public:
 
     std::vector<COutPoint> vin;  // When inputs are anon vin stores processed prevouts
     std::vector<COutputRecord> vout;
-    std::vector<CCmpPubKey> vkeyimages;
 
     int InsertOutput(COutputRecord &r);
     bool EraseOutput(uint16_t n);
@@ -191,9 +190,6 @@ public:
         READWRITE(nFee);
         READWRITE(vin);
         READWRITE(vout);
-        try { READWRITE(vkeyimages); } catch(std::exception &e) {
-            // old format
-        }
     }
 };
 
