@@ -240,7 +240,7 @@ bool CHDWallet::ProcessWalletSettings(std::string &sError)
     // Set defaults
     m_collapse_spent_mode = 0;
     m_min_collapse_depth = 3;
-    m_mixin_selection_mode = 1;
+    m_mixin_selection_mode_default = 1;
 
     UniValue json;
     if (GetSetting("unloadspent", json)) {
@@ -260,7 +260,7 @@ bool CHDWallet::ProcessWalletSettings(std::string &sError)
 
     if (GetSetting("anonoptions", json)) {
         if (!json["mixinselection"].isNull()) {
-            try { m_mixin_selection_mode = json["mixinselection"].get_int();
+            try { m_mixin_selection_mode_default = json["mixinselection"].get_int();
             } catch (std::exception &e) {
                 AppendError(sError, "\"mixinselection\" not integer.");
             }
@@ -2355,6 +2355,12 @@ bool CHDWallet::IsTrusted(interfaces::Chain::Lock& locked_chain, const uint256 &
 
     // Trusted if all inputs are from us and are in the mempool:
     for (const auto &txin : ptx->vin) {
+        if (txin.IsAnonInput()) {
+            if (ptx->vin.size() == rtx.vin.size()) { // All inputs are from wallet, rtx.vin is mapped
+                return true;
+            }
+            return false;
+        }
         // Transactions not sent by us: not trusted
         MapRecords_t::const_iterator rit = mapRecords.find(txin.prevout.hash);
         if (rit != mapRecords.end()) {
@@ -2715,7 +2721,7 @@ CAmount CHDWallet::GetAvailableAnonBalance(const CCoinControl* coinControl) cons
     CAmount balance = 0;
     std::vector<COutputR> vCoins;
     AvailableAnonCoins(*locked_chain, vCoins, true, coinControl);
-    for (const COutputR& out : vCoins) {
+    for (const COutputR &out : vCoins) {
         if (out.fSpendable) {
             const COutputRecord *oR = out.rtx->second.GetOutput(out.i);
             if (!oR)
@@ -2734,7 +2740,7 @@ CAmount CHDWallet::GetAvailableBlindBalance(const CCoinControl* coinControl) con
     CAmount balance = 0;
     std::vector<COutputR> vCoins;
     AvailableBlindedCoins(*locked_chain, vCoins, true, coinControl);
-    for (const COutputR& out : vCoins) {
+    for (const COutputR &out : vCoins) {
         if (out.fSpendable) {
             const COutputRecord *oR = out.rtx->second.GetOutput(out.i);
             if (!oR) {
@@ -3221,6 +3227,9 @@ int CHDWallet::AddCTData(const CCoinControl *coinControl, CTxOutBase *txout, CTe
     }
 
     uint64_t nValue = r.nAmount;
+    if (coinControl && coinControl->m_debug_exploit_anon > 0) {
+        nValue += coinControl->m_debug_exploit_anon;
+    }
     if (!secp256k1_pedersen_commit(secp256k1_ctx_blind,
         pCommitment, (uint8_t*)r.vBlind.data(),
         nValue, &secp256k1_generator_const_h, &secp256k1_generator_const_g)) {
@@ -3901,7 +3910,7 @@ int CHDWallet::AddStandardInputs(interfaces::Chain::Lock& locked_chain, CWalletT
                 auto &r = vecSend[i];
 
                 if (r.nType == OUTPUT_CT || r.nType == OUTPUT_RINGCT) {
-                    if ((int)i == nLastBlindedOutput) {
+                    if ((int)i == nLastBlindedOutput && coinControl->m_debug_exploit_anon == 0) {
                         r.vBlind.resize(32);
                         // Last to-be-blinded value: compute from all other blinding factors.
                         // sum of output blinding values must equal sum of input blinding values
@@ -4366,9 +4375,14 @@ int CHDWallet::AddBlindedInputs(interfaces::Chain::Lock& locked_chain, CWalletTx
                 }
             }
 
-            if (!coinControl->m_addChangeOutput) {
-                nFeeRet += nChange;
-            } else {
+            if (coinControl->m_spend_frozen_blinded) {
+                assert(!coinControl->m_addChangeOutput);
+                if (nChange > DEFAULT_FALLBACK_FEE_PART) {
+                    return wserrorN(1, sError, __func__, _("Change too high for frozen blinded spend.").translated);
+                }
+            }
+
+            if (coinControl->m_addChangeOutput) {
                 // Insert a sender-owned 0 value output which becomes the change output if needed
                 CTempRecipient r;
                 r.nType = OUTPUT_CT;
@@ -4401,6 +4415,8 @@ int CHDWallet::AddBlindedInputs(interfaces::Chain::Lock& locked_chain, CWalletTx
 
                 nChangePosInOut = coinControl->nChangePos;
                 InsertChangeAddress(r, vecSend, nChangePosInOut);
+            } else {
+                nFeeRet += nChange;
             }
 
             // Fill vin
@@ -4515,33 +4531,33 @@ int CHDWallet::AddBlindedInputs(interfaces::Chain::Lock& locked_chain, CWalletTx
                     nFeeRet -= extraFeePaid;
                 }
 
-                if (nSubtractFeeFromAmount) {
-                    if (nValueOutPlain + nFeeRet == nValueIn) {
-                        // blinded input value == plain output value
-                        // blinding factor will be 0 for change
-                        // an observer could see sum blinded inputs must match plain outputs, avoid by forcing a 1sat change output
+                if (nSubtractFeeFromAmount &&
+                    !coinControl->m_spend_frozen_blinded &&
+                    nValueOutPlain + nFeeRet == nValueIn) {
+                    // blinded input value == plain output value
+                    // blinding factor will be 0 for change (if spending all outputs from a tx)
+                    // an observer could see sum blinded inputs must match plain outputs, avoid by forcing a 1sat change output
 
-                        bool fFound = false;
-                        for (auto &r : vecSend) {
-                            if (r.nType == OUTPUT_STANDARD
-                                && r.nAmountSelected > 0
-                                && r.fSubtractFeeFromAmount
-                                && !r.fChange) {
-                                LogPrint(BCLog::HDWALLET, "%s: Reducing plain output %d by 1sat to force non 0 change.\n", __func__, r.n);
-                                r.SetAmount(r.nAmountSelected-1);
-                                fFound = true;
-                                nValue -= 1;
-                                break;
-                            }
+                    bool fFound = false;
+                    for (auto &r : vecSend) {
+                        if (r.nType == OUTPUT_STANDARD
+                            && r.nAmountSelected > 0
+                            && r.fSubtractFeeFromAmount
+                            && !r.fChange) {
+                            LogPrint(BCLog::HDWALLET, "%s: Reducing plain output %d by 1sat to force non 0 change.\n", __func__, r.n);
+                            r.SetAmount(r.nAmountSelected-1);
+                            fFound = true;
+                            nValue -= 1;
+                            break;
                         }
-
-                        if (!fFound || !(--nSubFeeTries)) {
-                            return wserrorN(1, sError, __func__, _("Unable to reduce plain output to add blind change.").translated);
-                        }
-
-                        pick_new_inputs = false;
-                        continue;
                     }
+
+                    if (!fFound || !(--nSubFeeTries)) {
+                        return wserrorN(1, sError, __func__, _("Unable to reduce plain output to add blind change.").translated);
+                    }
+
+                    pick_new_inputs = false;
+                    continue;
                 }
 
                 break; // Done, enough fee included.
@@ -4666,6 +4682,7 @@ int CHDWallet::AddBlindedInputs(interfaces::Chain::Lock& locked_chain, CWalletTx
                 if (r.vBlind[k] != 0) break;
             }
             if (k == 32) {
+                // bulletproof_rangeproof checks for 0
                 return wserrorN(1, sError, __func__, "Zero blind sum.");
             }
             if (0 != AddCTData(coinControl, pout, r, sError)) {
@@ -4678,6 +4695,15 @@ int CHDWallet::AddBlindedInputs(interfaces::Chain::Lock& locked_chain, CWalletTx
         vData.resize(1);
         if (0 != part::PutVarInt(vData, nFeeRet)) {
             return werrorN(1, "%s: PutVarInt %d failed\n", __func__, nFeeRet);
+        }
+        if (coinControl->m_spend_frozen_blinded) {
+            // Embed the blinding factor in the change data output
+            vData.push_back(DO_MASK);
+            size_t start = vData.size();
+            vData.resize(start + 32);
+            if (!secp256k1_pedersen_blind_sum(secp256k1_ctx_blind, vData.data() + start, &vpBlinds[0], vpBlinds.size(), nBlindedInputs)) {
+                return wserrorN(1, sError, __func__, "secp256k1_pedersen_blind_sum failed.");
+            }
         }
 
         if (sign) {
@@ -4800,9 +4826,13 @@ int CHDWallet::AddBlindedInputs(interfaces::Chain::Lock& locked_chain, CWalletTx
 };
 
 int CHDWallet::PlaceRealOutputs(std::vector<std::vector<int64_t> > &vMI, size_t &nSecretColumn, size_t nRingSize, std::set<int64_t> &setHave,
-    const std::vector<std::pair<MapRecords_t::const_iterator,unsigned int> > &vCoins, std::vector<uint8_t> &vInputBlinds, std::string &sError)
+    const std::vector<std::pair<MapRecords_t::const_iterator,unsigned int> > &vCoins, std::vector<uint8_t> &vInputBlinds, const CCoinControl *coinControl, std::string &sError)
 {
-    if (nRingSize < MIN_RINGSIZE || nRingSize > MAX_RINGSIZE) {
+    assert(coinControl);
+    // Allow incorrect ring-size for testing
+    size_t min_ringsize = Params().IsMockableChain() ? MIN_RINGSIZE : Params().GetConsensus().m_min_ringsize_post_hf2;
+    if (nRingSize < MIN_RINGSIZE || nRingSize > MAX_RINGSIZE ||
+        (!coinControl->m_spend_frozen_blinded && nRingSize < min_ringsize)) {
         return wserrorN(1, sError, __func__, _("Ring size out of range [%d, %d]").translated, MIN_RINGSIZE, MAX_RINGSIZE);
     }
 
@@ -4855,20 +4885,24 @@ int CHDWallet::PlaceRealOutputs(std::vector<std::vector<int64_t> > &vMI, size_t 
 };
 
 int CHDWallet::PickHidingOutputs(interfaces::Chain::Lock& locked_chain, std::vector<std::vector<int64_t> > &vMI,
-    size_t nSecretColumn, size_t nRingSize, std::set<int64_t> &setHave, std::string &sError)
+    size_t nSecretColumn, size_t nRingSize, std::set<int64_t> &setHave, const CCoinControl *coinControl, std::string &sError)
 {
-    AssertLockHeld(cs_main);
-    if (nRingSize < MIN_RINGSIZE || nRingSize > MAX_RINGSIZE) {
+    assert(coinControl);
+    LOCK(cs_main);
+
+    const Consensus::Params &consensusParams = Params().GetConsensus();
+    bool exploit_fix_2_active = GetTime() >= consensusParams.exploit_fix_2_time;
+    size_t min_ringsize = Params().IsMockableChain() ? MIN_RINGSIZE : Params().GetConsensus().m_min_ringsize_post_hf2; // Allow incorrect size for testing
+    if (nRingSize < min_ringsize || nRingSize > MAX_RINGSIZE) {
         return wserrorN(1, sError, __func__, _("Ring size out of range [%d, %d]").translated, MIN_RINGSIZE, MAX_RINGSIZE);
     }
 
-    int nBestHeight = locked_chain.getHeightInt();
-    const Consensus::Params& consensusParams = Params().GetConsensus();
+    int nBestHeight = ::ChainActive().Height();
     size_t nInputs = vMI.size();
     int64_t nLastRCTOutIndex = locked_chain.getAnonOutputs();
 
     // Remove outputs without required depth
-    while (nLastRCTOutIndex > 1){
+    while (nLastRCTOutIndex > 1) {
         CAnonOutput ao;
         if (!pblocktree->ReadRCTOutput(nLastRCTOutIndex, ao)) {
             return wserrorN(1, sError, __func__, _("Anon output not found in db, %d").translated, nLastRCTOutIndex);
@@ -4881,7 +4915,7 @@ int CHDWallet::PickHidingOutputs(interfaces::Chain::Lock& locked_chain, std::vec
     }
 
     if (LogAcceptCategory(BCLog::HDWALLET)) {
-        WalletLogPrintf("%s: Last index %d, inputs %d, ring size %d, selection mode %d.\n", __func__, nLastRCTOutIndex, nInputs, nRingSize, m_mixin_selection_mode);
+        WalletLogPrintf("%s: Last index %d, inputs %d, ring size %d, selection mode %d.\n", __func__, nLastRCTOutIndex, nInputs, nRingSize, coinControl->m_mixin_selection_mode);
     }
     if (nLastRCTOutIndex < (int64_t)(nInputs * nRingSize)) {
         return wserrorN(1, sError, __func__, _("Not enough anon outputs exist, last: %d, required: %d").translated, nLastRCTOutIndex, nInputs * nRingSize);
@@ -4902,11 +4936,16 @@ int CHDWallet::PickHidingOutputs(interfaces::Chain::Lock& locked_chain, std::vec
     static const double range_blur = 0.3;
     int64_t ranges[max_groups];
 
-    if (m_mixin_selection_mode == 1) {
+    int64_t min_anon_input = 1;
+    if (exploit_fix_2_active) {
+        min_anon_input = consensusParams.m_frozen_anon_index + 1;
+    }
+
+    if (coinControl->m_mixin_selection_mode == 1) {
         for (int j = 0; j < max_groups; j++) {
             ranges[j] = expect_aos_per_period * range_periods[j];
 
-            int64_t output_id = nLastRCTOutIndex - std::min(nLastRCTOutIndex-1, std::max(int64_t(1), ranges[j]));
+            int64_t output_id = nLastRCTOutIndex - std::min(nLastRCTOutIndex-1, std::max(min_anon_input, ranges[j]));
             CAnonOutput ao;
             if (!pblocktree->ReadRCTOutput(output_id, ao)) {
                 return wserrorN(1, sError, __func__, _("Anon output not found in db, %d").translated, output_id);
@@ -4926,6 +4965,7 @@ int CHDWallet::PickHidingOutputs(interfaces::Chain::Lock& locked_chain, std::vec
         }
     }
 
+    size_t used_presets = 0;
     for (size_t k = 0; k < nInputs; ++k)
     for (size_t i = 0; i < nRingSize; ++i) {
         if (i == nSecretColumn) {
@@ -4935,10 +4975,23 @@ int CHDWallet::PickHidingOutputs(interfaces::Chain::Lock& locked_chain, std::vec
         size_t j = 0;
         const static size_t nMaxTries = 1000;
         for (j = 0; j < nMaxTries; ++j) {
-            int64_t select_min = 1;
+            if (used_presets < coinControl->m_use_mixins.size()) {
+                int64_t nDecoy = coinControl->m_use_mixins[used_presets++];
+                if (setHave.count(nDecoy) > 0) {
+                    continue;
+                }
+                vMI[k][i] = nDecoy;
+                setHave.insert(nDecoy);
+                break;
+                if (LogAcceptCategory(BCLog::HDWALLET)) {
+                    WalletLogPrintf("Adding decoy %d, from presets.\n", nDecoy);
+                }
+            }
+
+            int64_t select_min = min_anon_input;
             int64_t select_max = nLastRCTOutIndex;
 
-            if (m_mixin_selection_mode == 1) {
+            if (coinControl->m_mixin_selection_mode == 1) {
                 static const int max_r = 1000;
                 int g_r = GetRandInt(max_r);
                 for (int j = 0; j < max_groups; j++) {
@@ -4951,10 +5004,10 @@ int CHDWallet::PickHidingOutputs(interfaces::Chain::Lock& locked_chain, std::vec
                 if (select_max <= 1) { // Select from entire range if too few mixins exist
                     select_max = nLastRCTOutIndex;
                 }
-                select_min = std::min(nLastRCTOutIndex, std::max(int64_t(1), select_min));
-                select_max = std::min(nLastRCTOutIndex, std::max(int64_t(1), select_max));
+                select_min = std::min(nLastRCTOutIndex, std::max(min_anon_input, select_min));
+                select_max = std::min(nLastRCTOutIndex, std::max(min_anon_input, select_max));
             } else
-            if (m_mixin_selection_mode == 2) {
+            if (coinControl->m_mixin_selection_mode == 2) {
                 int64_t select_range = 0;
                 int64_t select_near = 0;
                 if (GetRandInt(100) < 50) { // 50% chance of selecting within 5000 places of a random input
@@ -4968,9 +5021,9 @@ int CHDWallet::PickHidingOutputs(interfaces::Chain::Lock& locked_chain, std::vec
 
                 if (select_near) {
                     // Randomly offset the range
-                    select_near = std::max(int64_t(1), int64_t((select_near - select_range) + (select_range * 2.0) * GetRandDoubleUnit()));
+                    select_near = std::max(min_anon_input, int64_t((select_near - select_range) + (select_range * 2.0) * GetRandDoubleUnit()));
 
-                    select_min = std::min(nLastRCTOutIndex, std::max(int64_t(1), select_near - select_range));
+                    select_min = std::min(nLastRCTOutIndex, std::max(min_anon_input, select_near - select_range));
                     select_max = std::min(nLastRCTOutIndex, select_near + select_range);
 
                     int64_t num_blocks, num_aos = select_max - select_min;
@@ -4990,7 +5043,7 @@ int CHDWallet::PickHidingOutputs(interfaces::Chain::Lock& locked_chain, std::vec
                                 WalletLogPrintf("%s: Adjusting range, anon-outputs %d, blocks %d, ratio %f.\n", __func__, num_aos, num_blocks, ratio);
                             }
                             select_range *= ratio;
-                            select_min = std::min(nLastRCTOutIndex, std::max(int64_t(1), select_near - select_range));
+                            select_min = std::min(nLastRCTOutIndex, std::max(min_anon_input, select_near - select_range));
                             select_max = std::min(nLastRCTOutIndex, select_near + select_range);
                         }
                     }
@@ -5028,10 +5081,11 @@ int CHDWallet::AddAnonInputs(interfaces::Chain::Lock& locked_chain, CWalletTx &w
     bool sign, size_t nRingSize, size_t nInputsPerSig, CAmount &nFeeRet, const CCoinControl *coinControl, std::string &sError)
 {
     assert(coinControl);
-    if (nRingSize < MIN_RINGSIZE || nRingSize > MAX_RINGSIZE) {
+    size_t min_ringsize = Params().IsMockableChain() ? MIN_RINGSIZE : Params().GetConsensus().m_min_ringsize_post_hf2; // Allow incorrect size for testing
+    if (nRingSize < MIN_RINGSIZE || nRingSize > MAX_RINGSIZE ||
+        (!coinControl->m_spend_frozen_blinded && nRingSize < min_ringsize)) {
         return wserrorN(1, sError, __func__, _("Ring size out of range").translated);
     }
-
     if (nInputsPerSig < 1 || nInputsPerSig > MAX_ANON_INPUTS) {
         return wserrorN(1, sError, __func__, _("Num inputs per signature out of range").translated);
     }
@@ -5106,9 +5160,15 @@ int CHDWallet::AddAnonInputs(interfaces::Chain::Lock& locked_chain, CWalletTx &w
                 }
             }
 
-            // Insert a sender-owned 0 value output that becomes the change output if needed
-            {
-                // Fill an output to ourself
+            if (coinControl->m_spend_frozen_blinded) {
+                assert(!coinControl->m_addChangeOutput);
+                if (nChange > DEFAULT_FALLBACK_FEE_PART) {
+                    return wserrorN(1, sError, __func__, _("Change too high for frozen blinded spend.").translated);
+                }
+            }
+
+            if (coinControl->m_addChangeOutput) {
+                // Insert a sender-owned 0 value output that becomes the change output if needed
                 CTempRecipient r;
                 r.nType = OUTPUT_RINGCT;
 
@@ -5125,6 +5185,8 @@ int CHDWallet::AddAnonInputs(interfaces::Chain::Lock& locked_chain, CWalletTx &w
 
                 nChangePosInOut = coinControl->nChangePos;
                 InsertChangeAddress(r, vecSend, nChangePosInOut);
+            } else {
+                nFeeRet += nChange;
             }
 
             int nSignSigs = 0;
@@ -5208,7 +5270,7 @@ int CHDWallet::AddAnonInputs(interfaces::Chain::Lock& locked_chain, CWalletTx &w
                     vCoins(setCoins.begin() + nTotalInputs, setCoins.begin() + nTotalInputs + nSigInputs);
                 nTotalInputs += nSigInputs;
 
-                if (0 != PlaceRealOutputs(vMI[l], vSecretColumns[l], nSigRingSize, setHave, vCoins, vInputBlinds[l], sError)) {
+                if (0 != PlaceRealOutputs(vMI[l], vSecretColumns[l], nSigRingSize, setHave, vCoins, vInputBlinds[l], coinControl, sError)) {
                     return 1; // sError is set
                 }
             }
@@ -5219,7 +5281,8 @@ int CHDWallet::AddAnonInputs(interfaces::Chain::Lock& locked_chain, CWalletTx &w
                 uint32_t nSigInputs, nSigRingSize;
                 txin.GetAnonInfo(nSigInputs, nSigRingSize);
 
-                if (0 != PickHidingOutputs(locked_chain, vMI[l], vSecretColumns[l], nSigRingSize, setHave, sError)) {
+                if (nSigRingSize > 1 &&
+                    0 != PickHidingOutputs(locked_chain, vMI[l], vSecretColumns[l], nSigRingSize, setHave, coinControl, sError)) {
                     return 1; // sError is set
                 }
 
@@ -7640,7 +7703,7 @@ int CHDWallet::NewStealthKeyFromAccount(
     uint32_t nChildBkp = sek->nHGenerated;
 
     CKey kScan, kSpend;
-    uint32_t nScanOut, nSpendOut;
+    uint32_t nScanOut = 0, nSpendOut = 0;
     if (pscankey_num) {
         if (0 != sek->DeriveKey(kScan, *pscankey_num, nScanOut, true)) {
             return werrorN(1, "%s Derive failed.", __func__);
@@ -7949,7 +8012,7 @@ int CHDWallet::NewStealthKeyV2FromAccount(
 
     CKey kScan;
     CPubKey pkSpend;
-    uint32_t nScanOut, nSpendGenerated;
+    uint32_t nScanOut = 0, nSpendGenerated = 0;
     if (pscankey_num) {
         assert(pspendkey_num);
         if (0 != sekScan->DeriveKey(kScan, *pscankey_num, nScanOut, true)) {
@@ -8921,7 +8984,7 @@ bool CHDWallet::ProcessLockedStealthOutputs()
             continue;
         }
 
-        ec_point pkEphem;;
+        ec_point pkEphem;
         pkEphem.resize(EC_COMPRESSED_SIZE);
         memcpy(&pkEphem[0], sxKeyMeta.pkEphem.begin(), sxKeyMeta.pkEphem.size());
 
@@ -9900,7 +9963,9 @@ bool CHDWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, CWalletTx::
             }
         }
 
-        if (nCT > 0 || nRingCT > 0) {
+        // Tx spending frozen blinded won't have a change output, check for ct fee
+        CAmount nFee;
+        if (nCT > 0 || nRingCT > 0 || (!tx.IsCoinStake() && tx.GetCTFee(nFee))) {
             bool fExisted = mapRecords.count(tx.GetHash()) != 0;
             if (fExisted && !fUpdate) return false;
 
@@ -11166,6 +11231,8 @@ void CHDWallet::AvailableBlindedCoins(interfaces::Chain::Lock& locked_chain, std
     const int max_depth = {coinControl ? coinControl->m_max_depth : DEFAULT_MAX_DEPTH};
     //const bool fIncludeImmature = {coinControl ? coinControl->m_include_immature : false};  // Blinded coins can't stake
     const bool allow_locked = {coinControl ? coinControl->fAllowLocked : false};
+    const bool spend_frozen = {coinControl ? coinControl->m_spend_frozen_blinded : false};
+    const bool include_tainted_frozen = {coinControl ? coinControl->m_include_tainted_frozen : false};
 
     if (coinControl && coinControl->HasSelected()) {
         // Add specified coins which may not be in the chain
@@ -11194,9 +11261,20 @@ void CHDWallet::AvailableBlindedCoins(interfaces::Chain::Lock& locked_chain, std
     // a coin control object is provided, and has the avoid address reuse flag set to false, do we allow already used addresses
     bool allow_used_addresses = !IsWalletFlagSet(WALLET_FLAG_AVOID_REUSE) || (coinControl && !coinControl->m_avoid_address_reuse);
 
+    const Consensus::Params &consensusParams = Params().GetConsensus();
+    bool exploit_fix_2_active = GetTime() >= consensusParams.exploit_fix_2_time;
     for (MapRecords_t::const_iterator it = mapRecords.begin(); it != mapRecords.end(); ++it) {
         const uint256 &txid = it->first;
         const CTransactionRecord &rtx = it->second;
+
+        if (exploit_fix_2_active && rtx.block_height > 0) { // height 0 is mempool
+            if (!spend_frozen && rtx.block_height <= consensusParams.m_frozen_blinded_height) {
+                continue;
+            } else
+            if (spend_frozen && rtx.block_height > consensusParams.m_frozen_blinded_height) {
+                continue;
+            }
+        }
 
         // TODO: implement when moving coinbase and coinstake txns to mapRecords
         //if (pcoin->GetBlocksToMaturity() > 0)
@@ -11242,6 +11320,14 @@ void CHDWallet::AvailableBlindedCoins(interfaces::Chain::Lock& locked_chain, std
 
             if (r.nValue < nMinimumAmount || r.nValue > nMaximumAmount) {
                 continue;
+            }
+
+            if (spend_frozen && !include_tainted_frozen) {
+                if (r.nValue > consensusParams.m_max_tainted_value_out) {
+                    if (IsFrozenBlindOutput(txid)) {
+                        continue;
+                    }
+                }
             }
 
             if (coinControl && coinControl->HasSelected() && !coinControl->fAllowOtherInputs && !coinControl->IsSelected(COutPoint(txid, r.n))) {
@@ -11424,11 +11510,25 @@ void CHDWallet::AvailableAnonCoins(interfaces::Chain::Lock& locked_chain, std::v
     const int max_depth = {coinControl ? coinControl->m_max_depth : DEFAULT_MAX_DEPTH};
     const bool fIncludeImmature = {coinControl ? coinControl->m_include_immature : false};
     const bool allow_locked = {coinControl ? coinControl->fAllowLocked : false};
+    const bool spend_frozen = {coinControl ? coinControl->m_spend_frozen_blinded : false};
+    const bool include_tainted_frozen = {coinControl ? coinControl->m_include_tainted_frozen : false};
 
-    const Consensus::Params& consensusParams = Params().GetConsensus();
+    CHDWalletDB wdb(*database, "r");
+
+    const Consensus::Params &consensusParams = Params().GetConsensus();
+    bool exploit_fix_2_active = GetTime() >= consensusParams.exploit_fix_2_time;
     for (MapRecords_t::const_iterator it = mapRecords.begin(); it != mapRecords.end(); ++it) {
         const uint256 &txid = it->first;
         const CTransactionRecord &rtx = it->second;
+
+        if (exploit_fix_2_active && rtx.block_height > 0) { // height 0 is mempool
+            if (!spend_frozen && rtx.block_height <= consensusParams.m_frozen_blinded_height) {
+                continue;
+            } else
+            if (spend_frozen && rtx.block_height > consensusParams.m_frozen_blinded_height) {
+                continue;
+            }
+        }
 
         // TODO: implement when moving coinbase and coinstake txns to mapRecords
         //if (pcoin->GetBlocksToMaturity() > 0)
@@ -11436,8 +11536,8 @@ void CHDWallet::AvailableAnonCoins(interfaces::Chain::Lock& locked_chain, std::v
 
         int nDepth = GetDepthInMainChain(rtx);
         bool fMature = nDepth >= consensusParams.nMinRCTOutputDepth;
-        if (!fIncludeImmature
-            && !fMature) {
+        if (!fIncludeImmature &&
+            !fMature) {
             continue;
         }
 
@@ -11468,6 +11568,20 @@ void CHDWallet::AvailableAnonCoins(interfaces::Chain::Lock& locked_chain, std::v
 
             if (r.nValue < nMinimumAmount || r.nValue > nMaximumAmount) {
                 continue;
+            }
+
+            if (spend_frozen && !include_tainted_frozen) {
+                if (r.nValue > consensusParams.m_max_tainted_value_out) {
+                    // TODO: Store pubkey on COutputRecord - in scriptPubKey
+                    CStoredTransaction stx;
+                    int64_t index;
+                    if (!wdb.ReadStoredTx(txid, stx) ||
+                        !stx.tx->vpout[r.n]->IsType(OUTPUT_RINGCT) ||
+                        !pblocktree->ReadRCTOutputLink(((CTxOutRingCT*)stx.tx->vpout[r.n].get())->pk, index) ||
+                        !IsWhitelistedAnonOutput(index)) {
+                        continue;
+                    }
+                }
             }
 
             if (coinControl && coinControl->HasSelected() && !coinControl->fAllowOtherInputs && !coinControl->IsSelected(COutPoint(txid, r.n))) {
@@ -11502,14 +11616,6 @@ void CHDWallet::AvailableAnonCoins(interfaces::Chain::Lock& locked_chain, std::v
     random_shuffle(vCoins.begin(), vCoins.end(), GetRandInt);
     return;
 };
-
-/*
-bool CHDWallet::SelectAnonCoins(const std::vector<COutputR> &vAvailableCoins, const CAmount &nTargetValue, std::vector<std::pair<MapRecords_t::const_iterator,unsigned int> > &setCoinsRet, CAmount &nValueRet, const CCoinControl *coinControl) const
-{
-
-    return false;
-};
-*/
 
 const CTxOutBase* CHDWallet::FindNonChangeParentOutput(const CTransaction& tx, int output) const
 {
