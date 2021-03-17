@@ -120,7 +120,9 @@ BITCOIN_CORE_H = \
   chainparams.h \
   chainparamsbase.h \
   chainparamsseeds.h \
-  chainparamsimport.h \
+  chain/chainparamsimport.h \
+  chain/ct_tainted.h \
+  chain/tx_whitelist.h \
   checkpoints.h \
   checkqueue.h \
   clientversion.h \
@@ -285,7 +287,6 @@ libparticl_server_a_SOURCES = \
   addrdb.cpp \
   addrman.cpp \
   banman.cpp \
-  bloom.cpp \
   blockencodings.cpp \
   blockfilter.cpp \
   chain.cpp \
@@ -508,6 +509,7 @@ libparticl_consensus_a_SOURCES = \
 libparticl_common_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 libparticl_common_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libparticl_common_a_SOURCES = \
+  bloom.cpp \
   base58.cpp \
   bech32.cpp \
   chainparams.cpp \

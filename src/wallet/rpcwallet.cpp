@@ -163,7 +163,7 @@ void RecordTxToJSON(interfaces::Chain& chain, interfaces::Chain::Lock& locked_ch
         entry.pushKV("blockindex", rtx.nIndex);
         PushTime(entry, "blocktime", rtx.nBlockTime);
     } else {
-        entry.pushKV("trusted", phdw->IsTrusted(locked_chain, hash, rtx.blockHash));
+        entry.pushKV("trusted", phdw->IsTrusted(locked_chain, hash, rtx));
     }
 
     entry.pushKV("txid", hash.GetHex());
@@ -1868,7 +1868,7 @@ static void ListRecord(interfaces::Chain::Lock& locked_chain, CHDWallet *phdw, c
             entry.pushKV("blockindex", rtx.nIndex);
             PushTime(entry, "blocktime", rtx.nBlockTime);
         } else {
-            entry.pushKV("trusted", phdw->IsTrusted(locked_chain, hash, rtx.blockHash));
+            entry.pushKV("trusted", phdw->IsTrusted(locked_chain, hash, rtx));
         }
 
         entry.pushKV("txid", hash.ToString());
@@ -2232,13 +2232,15 @@ UniValue gettransaction(const JSONRPCRequest& request)
         return NullUniValue;
     }
 
-    if (request.fHelp || request.params.size() < 1 || request.params.size() > 2)
+    if (request.fHelp || request.params.size() < 1 || request.params.size() > 3)
         throw std::runtime_error(
             RPCHelpMan{"gettransaction",
                 "\nGet detailed information about in-wallet transaction <txid>\n",
                 {
                     {"txid", RPCArg::Type::STR, RPCArg::Optional::NO, "The transaction id"},
                     {"include_watchonly", RPCArg::Type::BOOL, /* default */ "false", "Whether to include watch-only addresses in balance calculation and details[]"},
+                    {"verbose", RPCArg::Type::BOOL, /* default */ "false",
+                            "Whether to include a `decoded` field containing the decoded transaction (equivalent to RPC decoderawtransaction)"},
                 },
                 RPCResult{
             "{\n"
@@ -2298,6 +2300,8 @@ UniValue gettransaction(const JSONRPCRequest& request)
         if(request.params[1].get_bool())
             filter = filter | ISMINE_WATCH_ONLY;
 
+    bool verbose = request.params[2].isNull() ? false : request.params[2].get_bool();
+
     UniValue entry(UniValue::VOBJ);
     auto it = pwallet->mapWallet.find(hash);
     if (it == pwallet->mapWallet.end()) {
@@ -2317,6 +2321,12 @@ UniValue gettransaction(const JSONRPCRequest& request)
                 if (CHDWalletDB(phdw->GetDBHandle()).ReadStoredTx(hash, stx)) { // TODO: cache / use mapTempWallet
                     std::string strHex = EncodeHexTx(*(stx.tx.get()), RPCSerializationFlags());
                     entry.pushKV("hex", strHex);
+
+                    if (verbose) {
+                        UniValue decoded(UniValue::VOBJ);
+                        TxToUniv(*(stx.tx.get()), uint256(), decoded, false);
+                        entry.pushKV("decoded", decoded);
+                    }
                 }
 
                 return entry;
