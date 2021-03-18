@@ -28,6 +28,9 @@
 #include <validation.h>
 #include <validationinterface.h>
 
+// Particl
+#include <insight/insight.h>
+
 #include <functional>
 
 const std::function<std::string(const char*)> G_TRANSLATION_FUN = nullptr;
@@ -42,7 +45,7 @@ std::ostream& operator<<(std::ostream& os, const uint256& num)
     return os;
 }
 
-BasicTestingSetup::BasicTestingSetup(const std::string& chainName, bool fParticlModeIn)
+BasicTestingSetup::BasicTestingSetup(const std::string& chainName, bool fParticlModeIn, bool with_balance_index)
     : m_path_root(fs::temp_directory_path() / "test_common_" PACKAGE_NAME / strprintf("%lu_%i", (unsigned long)GetTime(), (int)(InsecureRandRange(1 << 30))))
 {
     fParticlMode = fParticlModeIn;
@@ -50,6 +53,9 @@ BasicTestingSetup::BasicTestingSetup(const std::string& chainName, bool fParticl
     fs::create_directories(m_path_root);
     gArgs.ForceSetArg("-datadir", m_path_root.string());
     ClearDatadirCache();
+    if (with_balance_index) {
+        fBalancesIndex = true;
+    }
     SelectParams(chainName);
     ResetParams(chainName, fParticlMode);
     gArgs.ForceSetArg("-printtoconsole", "0");
@@ -77,7 +83,7 @@ BasicTestingSetup::~BasicTestingSetup()
     ECC_Stop();
 }
 
-TestingSetup::TestingSetup(const std::string& chainName, bool fParticlModeIn) : BasicTestingSetup(chainName, fParticlModeIn)
+TestingSetup::TestingSetup(const std::string& chainName, bool fParticlModeIn, bool with_balance_index) : BasicTestingSetup(chainName, fParticlModeIn, with_balance_index)
 {
     const CChainParams& chainparams = Params();
     // Ideally we'd move all the RPC tests to the functional testing framework
