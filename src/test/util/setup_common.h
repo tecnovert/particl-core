@@ -94,7 +94,7 @@ static inline void InsecureRandBytes(uint8_t *p, size_t n)
 struct BasicTestingSetup {
     ECCVerifyHandle globalVerifyHandle;
 
-    explicit BasicTestingSetup(const std::string& chainName = CBaseChainParams::MAIN, bool fParticlModeIn = false);
+    explicit BasicTestingSetup(const std::string& chainName = CBaseChainParams::MAIN, bool fParticlModeIn = false, bool with_balance_index = false);
     ~BasicTestingSetup();
 private:
     const fs::path m_path_root;
@@ -107,7 +107,7 @@ struct TestingSetup : public BasicTestingSetup {
     NodeContext m_node;
     boost::thread_group threadGroup;
 
-    explicit TestingSetup(const std::string& chainName = CBaseChainParams::MAIN, bool fParticlModeIn = false);
+    explicit TestingSetup(const std::string& chainName = CBaseChainParams::MAIN, bool fParticlModeIn = false, bool with_balance_index = false);
     ~TestingSetup();
 };
 

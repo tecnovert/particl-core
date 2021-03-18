@@ -115,6 +115,7 @@ static const bool DEFAULT_TXINDEX = false;
 static const char* const DEFAULT_BLOCKFILTERINDEX = "0";
 static const bool DEFAULT_CSINDEX = false;
 static const bool DEFAULT_ADDRESSINDEX = false;
+static const bool DEFAULT_BALANCESINDEX = false;
 static const bool DEFAULT_TIMESTAMPINDEX = false;
 static const bool DEFAULT_SPENTINDEX = false;
 static const unsigned int DEFAULT_DB_MAX_OPEN_FILES = 64; // set to 1000 for insight
