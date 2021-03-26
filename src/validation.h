@@ -254,7 +254,7 @@ static const uint64_t MIN_DISK_SPACE_FOR_BLOCK_FILES = 550 * 1024 * 1024;
  * @return True if state.IsValid()
  */
 bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<const CBlock> pblock, bool fForceProcessing, bool* fNewBlock, NodeId node_id = 0) LOCKS_EXCLUDED(cs_main);
-
+bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<const CBlock> pblock, CValidationState &state) LOCKS_EXCLUDED(cs_main);
 /**
  * Process incoming block headers.
  *

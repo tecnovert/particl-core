@@ -138,3 +138,4 @@ db4/
 sanitizer-output
 ci/scratch
 *~
+releases

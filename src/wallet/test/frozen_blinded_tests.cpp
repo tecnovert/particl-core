@@ -15,9 +15,6 @@
 
 #include <wallet/test/hdwallet_test_fixture.h>
 #include <chainparams.h>
-#include <miner.h>
-#include <pos/miner.h>
-#include <timedata.h>
 #include <coins.h>
 #include <net.h>
 #include <validation.h>
@@ -28,6 +25,7 @@
 #include <util/moneystr.h>
 
 #include <consensus/validation.h>
+#include <consensus/tx_verify.h>
 
 #include <chrono>
 #include <thread>
@@ -35,127 +33,8 @@
 #include <boost/test/unit_test.hpp>
 
 
-struct StakeTestingSetup: public TestingSetup {
-    StakeTestingSetup(const std::string& chainName = CBaseChainParams::REGTEST):
-        TestingSetup(chainName, /* fParticlMode */ true)
-    {
-        bool fFirstRun;
-        pwalletMain = std::make_shared<CHDWallet>(*m_chain, WalletLocation(), WalletDatabase::CreateMock());
-        AddWallet(pwalletMain);
-        pwalletMain->LoadWallet(fFirstRun);
-        RegisterValidationInterface(pwalletMain.get());
-
-        RegisterWalletRPCCommands(tableRPC);
-        RegisterHDWalletRPCCommands(tableRPC);
-        ECC_Start_Stealth();
-        ECC_Start_Blinding();
-        SetMockTime(0);
-    }
-
-    virtual ~StakeTestingSetup()
-    {
-        UnregisterValidationInterface(pwalletMain.get());
-        RemoveWallet(pwalletMain);
-        pwalletMain.reset();
-
-        mapStakeSeen.clear();
-        listStakeSeen.clear();
-        ECC_Stop_Stealth();
-        ECC_Stop_Blinding();
-    }
-
-    std::unique_ptr<interfaces::Chain> m_chain = interfaces::MakeChain();
-    std::unique_ptr<interfaces::Chain::Lock> m_locked_chain = m_chain->assumeLocked();  // Temporary. Removed in upcoming lock cleanup
-    std::shared_ptr<CHDWallet> pwalletMain;
-};
-
 BOOST_FIXTURE_TEST_SUITE(frozen_blinded_tests, StakeTestingSetup)
 
-
-void StakeNBlocks(CHDWallet *pwallet, size_t nBlocks)
-{
-    int nBestHeight;
-    size_t nStaked = 0;
-    size_t k, nTries = 10000;
-    for (k = 0; k < nTries; ++k) {
-        {
-            LOCK(cs_main);
-            nBestHeight = chainActive.Height();
-        }
-
-        int64_t nSearchTime = GetAdjustedTime() & ~Params().GetStakeTimestampMask(nBestHeight+1);
-        if (nSearchTime <= pwallet->nLastCoinStakeSearchTime) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(250));
-            continue;
-        }
-
-        CScript coinbaseScript;
-        std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(coinbaseScript, false));
-        BOOST_REQUIRE(pblocktemplate.get());
-
-        if (pwallet->SignBlock(pblocktemplate.get(), nBestHeight+1, nSearchTime)) {
-            CBlock *pblock = &pblocktemplate->block;
-
-            if (CheckStake(pblock)) {
-                nStaked++;
-            }
-        }
-
-        if (nStaked >= nBlocks) {
-            break;
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(250));
-    }
-    BOOST_REQUIRE(k < nTries);
-    SyncWithValidationInterfaceQueue();
-}
-
-static uint256 AddTxn(CHDWallet *pwallet, CTxDestination &dest, OutputTypes input_type, OutputTypes output_type, CAmount amount, CAmount exploit_amount=0, std::string expect_error="")
-{
-    uint256 txid;
-    BOOST_REQUIRE(IsValidDestination(dest));
-    {
-    auto locked_chain = pwallet->chain().lock();
-    LockAnnotation lock(::cs_main);
-    LOCK(pwallet->cs_wallet);
-
-    std::vector<CTempRecipient> vecSend;
-    std::string sError;
-    CTempRecipient r;
-    r.nType = output_type;
-    r.SetAmount(amount);
-    r.address = dest;
-    vecSend.push_back(r);
-
-    CTransactionRef tx_new;
-    CWalletTx wtx(pwallet, tx_new);
-    CTransactionRecord rtx;
-    CAmount nFee;
-    CCoinControl coinControl;
-    coinControl.m_debug_exploit_anon = exploit_amount;
-    int rv = input_type == OUTPUT_RINGCT ?
-        pwallet->AddAnonInputs(wtx, rtx, vecSend, true, 3, 1, nFee, &coinControl, sError) :
-        input_type == OUTPUT_CT ?
-        pwallet->AddBlindedInputs(wtx, rtx, vecSend, true, nFee, &coinControl, sError) :
-        pwallet->AddStandardInputs(wtx, rtx, vecSend, true, nFee, &coinControl, sError);
-    BOOST_REQUIRE(rv == 0);
-
-    CValidationState state;
-    wtx.BindWallet(pwallet);
-    rv = wtx.AcceptToMemoryPool(*locked_chain, maxTxFee, state);
-    if (expect_error.empty()) {
-        BOOST_REQUIRE(rv == 1);
-    } else {
-        BOOST_CHECK(state.GetRejectReason() == expect_error);
-        BOOST_REQUIRE(rv == 0);
-    }
-
-    txid = wtx.GetHash();
-    }
-    SyncWithValidationInterfaceQueue();
-
-    return txid;
-}
 
 std::vector<COutputR> GetAvailable(CHDWallet *pwallet, OutputTypes output_type, bool spend_frozen_blinded=false, bool include_tainted_frozen=false)
 {
@@ -176,6 +55,7 @@ std::vector<COutputR> GetAvailable(CHDWallet *pwallet, OutputTypes output_type, 
     }
     return vAvailableCoins;
 }
+
 
 BOOST_AUTO_TEST_CASE(frozen_blinded_test)
 {

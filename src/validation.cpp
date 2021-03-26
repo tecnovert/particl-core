@@ -1967,8 +1967,7 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
                 const std::vector<uint8_t> &vKeyImages = txin.scriptData.stack[0];
                 for (size_t k = 0; k < nInputs; ++k) {
                     const CCmpPubKey &ki = *((CCmpPubKey*)&vKeyImages[k*33]);
-
-                    view.keyImages.push_back(std::make_pair(ki, hash));
+                    view.keyImages[ki] = hash;
                 }
             }
         }
@@ -2681,21 +2680,11 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         // Index rct outputs and keyimages
         if (state.fHasAnonOutput || state.fHasAnonInput) {
             COutPoint op(txhash, 0);
-            for (const auto &txin : tx.vin) {
-                if (txin.IsAnonInput()) {
-                    uint32_t nAnonInputs, nRingSize;
-                    txin.GetAnonInfo(nAnonInputs, nRingSize);
-                    if (txin.scriptData.stack.size() != 1
-                        || txin.scriptData.stack[0].size() != 33 * nAnonInputs) {
-                        control.Wait();
-                        return error("%s: Bad scriptData stack, %s.", __func__, txhash.ToString());
-                    }
-
-                    const std::vector<uint8_t> &vKeyImages = txin.scriptData.stack[0];
-                    for (size_t k = 0; k < nAnonInputs; ++k) {
-                        const CCmpPubKey &ki = *((CCmpPubKey*)&vKeyImages[k*33]);
-                        view.keyImages.push_back(std::make_pair(ki, txhash));
-                    }
+            for (const auto &ki : state.m_setHaveKI) {
+                // Test for duplicate keyimage used in block
+                if (!view.keyImages.insert(std::make_pair(ki, txhash)).second) {
+                    return state.DoS(100, error("ConnectBlock(): duplicate keyimage"),
+                             REJECT_INVALID, "bad-anonin-dup-ki");
                 }
             }
 
@@ -3576,7 +3565,9 @@ bool CChainState::ActivateBestChainStep(CValidationState& state, const CChainPar
                     if (!state.CorruptionPossible()) {
                         InvalidChainFound(vpindexToConnect.front());
                     }
-                    state = CValidationState();
+                    if (!state.m_preserve_state) {
+                        state = CValidationState();
+                    }
                     fInvalidFound = true;
                     fContinue = false;
                     break;
@@ -5283,6 +5274,28 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
         CheckDelayedBlocks(chainparams, pindex->GetBlockHash());
     }
 
+    return true;
+}
+
+bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<const CBlock> pblock, CValidationState &state)
+{
+    // Copy of ChainstateManager::ProcessNewBlock with state passthrough
+    CBlockIndex *pindex = nullptr;
+    bool fForceProcessing = true;
+    {
+        LOCK(cs_main);
+        bool ret = CheckBlock(*pblock, state, chainparams.GetConsensus());
+        if (ret) {
+            ret = g_chainstate.AcceptBlock(pblock, state, chainparams, &pindex, fForceProcessing, nullptr, nullptr);
+        }
+        if (!ret) {
+            return error("%s: AcceptBlock FAILED (%s)", __func__, state.GetRejectReason());
+        }
+    }
+    state.m_preserve_state = true; // else would be cleared
+    if (!g_chainstate.ActivateBestChain(state, chainparams, pblock) || !state.IsValid()) {
+        return error("%s: ActivateBestChain failed (%s)", __func__, state.GetRejectReason());
+    }
     return true;
 }
 
