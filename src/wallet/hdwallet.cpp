@@ -3842,7 +3842,6 @@ int CHDWallet::AddStandardInputs(interfaces::Chain::Lock& locked_chain, CWalletT
             }
 
             CAmount nValueOutPlain = 0;
-
             int nLastBlindedOutput = -1;
 
             if (!fOnlyStandardOutputs) {
@@ -3862,18 +3861,15 @@ int CHDWallet::AddStandardInputs(interfaces::Chain::Lock& locked_chain, CWalletT
                 if (0 != CreateOutput(txbout, r, sError)) {
                     return 1; // sError will be set
                 }
-
                 if (!CheckOutputValue(chain(), r, &*txbout, nFeeRet, sError)) {
                     return 1; // sError set
                 }
-
                 if (r.nType == OUTPUT_STANDARD) {
                     nValueOutPlain += r.nAmount;
                     if (r.fChange) {
                         nChangePosInOut = i;
                     }
                 }
-
                 if (r.nType == OUTPUT_CT || r.nType == OUTPUT_RINGCT) {
                     nLastBlindedOutput = i;
                 }
