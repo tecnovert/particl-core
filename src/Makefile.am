@@ -122,6 +122,7 @@ BITCOIN_CORE_H = \
   chainparamsseeds.h \
   chain/chainparamsimport.h \
   chain/ct_tainted.h \
+  chain/tx_blacklist.h \
   chain/tx_whitelist.h \
   checkpoints.h \
   checkqueue.h \
