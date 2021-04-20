@@ -5450,7 +5450,7 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
             return true;
         }
         if (!ret) {
-            if (fParticlMode) {
+            if (fParticlMode && state.GetResult() != BlockValidationResult::BLOCK_MISSING_PREV) {
                 // Mark block as invalid to prevent re-requesting from peer.
                 // Block will have been added to the block index in AcceptBlockHeader
                 CBlockIndex *pindex = g_blockman.AddToBlockIndex(*pblock);
