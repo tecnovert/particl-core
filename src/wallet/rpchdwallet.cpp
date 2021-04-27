@@ -3177,6 +3177,8 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
     auto locked_chain = pwallet->chain().lock();
     LOCK(pwallet->cs_wallet);
 
+    pwallet->WalletLogPrintf("filtertransactions.\n");
+
     unsigned int count     = 10;
     int          skip      = 0;
     isminefilter watchonly = ISMINE_SPENDABLE;
@@ -5678,6 +5680,7 @@ struct TracedTx {
 
 static void traceFrozenPrevout(const COutPoint &op_trace, const uint256 &txid_spentby, std::map<uint256, TracedTx> &traced_txs, UniValue &warnings)
 {
+    LogPrintf("traceFrozenPrevout: %s, %d.\n", op_trace.hash.ToString(), op_trace.n);
     std::vector<std::shared_ptr<CWallet> > wallets = GetWallets();
     for (auto &wallet : wallets) {
         CHDWallet *pwallet = GetParticlWallet(wallet.get());
@@ -5703,6 +5706,7 @@ static void traceFrozenPrevout(const COutPoint &op_trace, const uint256 &txid_sp
         }
         if (traced_tx.m_input_type != OUTPUT_STANDARD) {
             for (const auto &op : rtx.vin) {
+                pwallet->WalletLogPrintf("tracing %s, %d\n", op.hash.ToString(), op.n);
                 traceFrozenPrevout(op, op_trace.hash, traced_txs, warnings);
                 if (std::find(traced_tx.m_inputs.begin(), traced_tx.m_inputs.end(), op) == traced_tx.m_inputs.end()) {
                     traced_tx.m_inputs.push_back(op);
@@ -5719,6 +5723,7 @@ static void traceFrozenPrevout(const COutPoint &op_trace, const uint256 &txid_sp
         {
         auto locked_chain = pwallet->chain().lock();
         LOCK(pwallet->cs_wallet);
+        pwallet->WalletLogPrintf("Adding %s, %d\n", op_trace.hash.ToString(), op_trace.n);
         CHDWalletDB wdb(pwallet->GetDBHandle(), "r");
         CStoredTransaction stx;
         if (!wdb.ReadStoredTx(op_trace.hash, stx)) {
@@ -5829,6 +5834,7 @@ static void placeTracedInputTxns(const uint256 &spend_txid, const std::vector<CO
 
 static void traceFrozenOutputs(UniValue &rv, CAmount min_value, CAmount max_frozen_output_spendable, const UniValue &uv_extra_outputs, bool trace_frozen_dump_privkeys)
 {
+    LogPrintf("traceFrozenOutputs.\n");
     // Dump information necessary for an external script to trace blinded amounts back to plain values
     // Intentionally trace blacklisted anon outputs, will be picked up by the validation script
     UniValue errors(UniValue::VARR);
@@ -5836,8 +5842,7 @@ static void traceFrozenOutputs(UniValue &rv, CAmount min_value, CAmount max_froz
 
     std::map<uint256, TracedTx> traced_txs;
     std::vector<std::shared_ptr<CWallet> > wallets = GetWallets();
-    std::set<COutPoint> extra_txouts;  // Trace these outputs even if spent
-    std::set<COutPoint> top_level, set_forced;
+    std::set<COutPoint> top_level, set_forced, extra_txouts;  // Trace these outputs even if spent
 
     if (uv_extra_outputs.isArray()) {
         for (size_t i = 0; i < uv_extra_outputs.size(); ++i) {
@@ -5871,6 +5876,7 @@ static void traceFrozenOutputs(UniValue &rv, CAmount min_value, CAmount max_froz
         CHDWallet *pwallet = GetParticlWallet(wallet.get());
         auto locked_chain = pwallet->chain().lock();
         LOCK(pwallet->cs_wallet);
+        pwallet->WalletLogPrintf("Top level.\n");
 
         CHDWalletDB wdb(pwallet->GetDBHandle(), "r");
         for (MapRecords_t::const_iterator it = pwallet->mapRecords.begin(); it != pwallet->mapRecords.end(); ++it) {
@@ -5938,6 +5944,7 @@ static void traceFrozenOutputs(UniValue &rv, CAmount min_value, CAmount max_froz
                 total_traced += r.nValue;
                 num_traced++;
 
+                LogPrintf("txid, n: %s, %d.\n", txid.ToString(), r.n);
                 top_level.insert(op_trace);
                 if (force_include) {
                     set_forced.insert(op_trace);
@@ -5959,6 +5966,7 @@ static void traceFrozenOutputs(UniValue &rv, CAmount min_value, CAmount max_froz
 
     // Fill in all known tx outputs, external script needs to know them all to check tx outputs == txinputs
     for (auto &wallet : wallets) {
+        wallet->WalletLogPrintf("Filling in.\n");
         CHDWallet *pwallet = GetParticlWallet(wallet.get());
         auto locked_chain = pwallet->chain().lock();
         LOCK(pwallet->cs_wallet);
@@ -6145,6 +6153,10 @@ static UniValue debugwallet(const JSONRPCRequest &request)
     if (list_frozen_outputs + spend_frozen_output + trace_frozen_outputs > 1) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Multiple frozen blinded methods selected.");
     }
+
+    LogPrintf("list_frozen_outputs: %d.\n", list_frozen_outputs);
+    LogPrintf("spend_frozen_output: %d.\n", spend_frozen_output);
+    LogPrintf("trace_frozen_outputs: %d.\n", trace_frozen_outputs);
 
     EnsureWalletIsUnlocked(pwallet);
 
