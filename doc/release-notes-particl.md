@@ -13,6 +13,10 @@
   - If wallet rescans lookahead removal code would remove existing stealth addresses.
 - debugwallet inputs moved to a json object.
   - New downgrade_wallet option
+- New walletsettings stakingoptions minstakeablevalue option.
+  - Wallet won't try stake outputs with values lower than.
+- New walletsettings other minownedvalue option.
+  - Wallet won't track outputs with values lower than.
 
 
 0.19.2.5
