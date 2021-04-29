@@ -5683,7 +5683,17 @@ struct TracedTx {
 
 static void traceFrozenPrevout(const COutPoint &op_trace, const uint256 &txid_spentby, std::map<uint256, TracedTx> &traced_txs, UniValue &warnings)
 {
-    LogPrintf("traceFrozenPrevout: %s, %d.\n", op_trace.hash.ToString(), op_trace.n);
+    LogPrintf("traceFrozenPrevout: %s, %d, spentby %s.\n", op_trace.hash.ToString(), op_trace.n, txid_spentby.ToString());
+
+    auto mi_tx = traced_txs.find(op_trace.hash);
+    if (mi_tx != traced_txs.end()) {
+        auto mi_o = mi_tx->second.m_outputs.find(op_trace.n);
+        if (mi_o != mi_tx->second.m_outputs.end()) {
+            LogPrintf("traceFrozenPrevout: Skipping %s, %d, already have.\n", op_trace.hash.ToString(), op_trace.n);
+            return;
+        }
+    }
+
     std::vector<std::shared_ptr<CWallet> > wallets = GetWallets();
     for (auto &wallet : wallets) {
         CHDWallet *pwallet = GetParticlWallet(wallet.get());
@@ -5790,10 +5800,12 @@ static void placeTracedPrevout(const TracedOutput &txo, bool trace_frozen_dump_p
 
 static void placeTracedInputTxns(const uint256 &spend_txid, const std::vector<COutPoint> &inputs, const std::map<uint256, TracedTx> &traced_txs, bool trace_frozen_dump_privkeys, UniValue &rv)
 {
+    LogPrintf("placeTracedInputTxns spend_txid: %s.\n", spend_txid.ToString());
     std::set<uint256> added_txids;
 
     for (size_t i = 0; i < inputs.size(); ++i) {
         const auto &op = inputs[i];
+        LogPrintf("placeTracedInput %s.\n", op.ToString());
 
         CAmount spent_value = 0;
         if (added_txids.count(op.hash)) {
