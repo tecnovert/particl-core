@@ -21,6 +21,10 @@
   - New rpc command: getblockbalances
   - balancesindex tracks the amount of plain coin sent to and from blind and anon.
   - Coins can move between anon and blind but the sums should match.
+- New walletsettings stakingoptions minstakeablevalue option.
+  - Wallet won't try stake outputs with values lower than.
+- New walletsettings other minownedvalue option.
+  - Wallet won't track outputs with values lower than.
 
 
 0.19.2.5
