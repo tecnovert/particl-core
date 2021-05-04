@@ -276,8 +276,6 @@ void ThreadSecureMsg()
                         continue;
                     }
 
-                    fExists = 1; //found in g_connman->vNodes
-
                     LOCK(pnode->smsgData.cs_smsg_net);
                     int64_t ignoreUntil = GetTime() + SMSG_TIME_IGNORE;
                     pnode->smsgData.ignoreUntil = ignoreUntil;
