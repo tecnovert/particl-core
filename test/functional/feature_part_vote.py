@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2017-2019 The Particl Core developers
+# Copyright (c) 2017-2021 The Particl Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -26,9 +26,7 @@ class VoteTest(ParticlTestFramework):
     def run_test(self):
         nodes = self.nodes
 
-        ro = nodes[0].extkeyimportmaster('abandon baby cabbage dad eager fabric gadget habit ice kangaroo lab absorb')
-        assert(ro['account_id'] == 'aaaZf2qnNr5T7PWRmqgmusuu5ACnBcX2ev')
-        assert(nodes[0].getwalletinfo()['total_balance'] == 100000)
+        self.import_genesis_coins_a(nodes[0])
 
         ro = nodes[0].setvote(1, 2, 0, 10)
         assert(ro['result'] == 'Voting for option 2 on proposal 1')
@@ -60,6 +58,47 @@ class VoteTest(ParticlTestFramework):
         ro = nodes[0].tallyvotes(1, 0, 10)
         assert(ro['blocks_counted'] == 2)
         assert(ro['Option 3'] == '1, 50.00%')
+
+        nodes[0].setvote(0, 0, 0, 0)
+        assert(len(nodes[0].votehistory()) == 0)
+
+        ro = nodes[0].setvote(1, 1, 0, 2)
+        assert(len(nodes[0].votehistory()) == 1)
+        assert(len(nodes[0].votehistory(True, True)) == 0)
+        nodes[0].setvote(2, 1, 0, 100)
+        nodes[0].setvote(2, 2, 0, 100)
+
+        assert(len(nodes[0].votehistory()) == 3)
+        ro = nodes[0].votehistory(True, True)
+        assert(len(ro) == 1)
+        assert(ro[0]['option'] == 2)
+        nodes[0].setvote(2, 3, 100, 200)
+        ro = nodes[0].votehistory(True, True)
+        assert(len(ro) == 2)
+        assert(ro[0]['option'] == 2)
+        assert(ro[1]['option'] == 3)
+        nodes[0].setvote(2, 4, 100, 150)
+        ro = nodes[0].votehistory(True, True)
+        assert(ro[0]['option'] == 2)
+        assert(ro[1]['option'] == 4)
+        assert(ro[2]['option'] == 3)
+
+        nodes[0].setvote(2, 5, 160, 200)
+        ro = nodes[0].votehistory(True, True)
+        assert(len(ro) == 4)
+        assert(ro[0]['option'] == 2)
+        assert(ro[1]['option'] == 4)
+        assert(ro[2]['option'] == 3)
+        assert(ro[3]['option'] == 5)
+
+        nodes[0].setvote(2, 6, 140, 160)
+        ro = nodes[0].votehistory(True, True)
+        assert(len(ro) == 4)
+        assert(ro[0]['option'] == 2)
+        assert(ro[1]['option'] == 4)
+        assert(ro[2]['option'] == 6)
+        assert(ro[3]['option'] == 5)
+
 
 if __name__ == '__main__':
     VoteTest().main()

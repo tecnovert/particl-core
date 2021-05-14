@@ -1615,6 +1615,8 @@ bool CChainState::IsInitialBlockDownload() const
     if (m_cached_finished_ibd.load(std::memory_order_relaxed))
         return false;
 
+    static bool check_peer_height = gArgs.GetBoolArg("-checkpeerheight", true);
+
     LOCK(cs_main);
     if (m_cached_finished_ibd.load(std::memory_order_relaxed))
         return false;
@@ -1627,7 +1629,7 @@ bool CChainState::IsInitialBlockDownload() const
     if (m_chain.Tip()->nHeight > COINBASE_MATURITY
         && m_chain.Tip()->GetBlockTime() < (GetTime() - nMaxTipAge))
         return true;
-    if (fParticlMode
+    if (fParticlMode && check_peer_height
         && (GetNumPeers() < 1
             || m_chain.Tip()->nHeight < GetNumBlocksOfPeers()-10))
         return true;
@@ -2845,6 +2847,9 @@ bool CChainState::ConnectBlock(const CBlock& block, BlockValidationState& state,
         // Index rct outputs and keyimages
         if (tx_state.m_has_anon_output || tx_state.m_has_anon_input) {
             COutPoint op(txhash, 0);
+            if (tx_state.m_has_anon_input) {
+                assert(tx_state.m_setHaveKI.size());
+            }
             for (const auto &ki : tx_state.m_setHaveKI) {
                 // Test for duplicate keyimage used in block
                 if (!view.keyImages.insert(std::make_pair(ki, txhash)).second) {
@@ -5529,7 +5534,7 @@ bool ChainstateManager::ProcessNewBlock(const CChainParams& chainparams, const s
             return true;
         }
         if (!ret) {
-            if (fParticlMode) {
+            if (fParticlMode && state.GetResult() != BlockValidationResult::BLOCK_MISSING_PREV) {
                 // Mark block as invalid to prevent re-requesting from peer.
                 // Block will have been added to the block index in AcceptBlockHeader
                 CBlockIndex *pindex = ::ChainstateActive().m_blockman.AddToBlockIndex(*pblock);
