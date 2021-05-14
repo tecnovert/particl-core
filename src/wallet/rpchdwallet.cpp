@@ -1589,7 +1589,7 @@ static UniValue extkeyimportinternal(const JSONRPCRequest &request, bool fGenesi
         throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Unknown parameter '%s'", request.params[6].get_str()));
     }
 
-    LogPrintf("Importing master key and account with labels '%s', '%s'.\n", sLblMaster.c_str(), sLblAccount.c_str());
+    LogPrintf("%s Importing master key and account with labels '%s', '%s'.\n", pwallet->GetDisplayName(), sLblMaster.c_str(), sLblAccount.c_str());
 
     WalletRescanReserver reserver(*pwallet);
     if (!reserver.reserve()) {
@@ -4027,6 +4027,7 @@ static UniValue getstakinginfo(const JSONRPCRequest &request)
                         {RPCResult::Type::STR_AMOUNT, "reserve", "The reserve balance of the wallet in " + CURRENCY_UNIT},
                         {RPCResult::Type::STR_AMOUNT, "walletfoundationdonationpercent", "User set percentage of the block reward ceded to the foundation"},
                         {RPCResult::Type::STR_AMOUNT, "foundationdonationpercent", "Network enforced percentage of the block reward ceded to the foundation"},
+                        {RPCResult::Type::STR_AMOUNT, "minstakeablevalue", "The minimum value for an output to attempt staking in " + CURRENCY_UNIT},
                         {RPCResult::Type::NUM, "currentblocksize", "The last approximate block size in bytes"},
                         {RPCResult::Type::NUM, "currentblockweight", "The last block weight"},
                         {RPCResult::Type::NUM, "currentblocktx", "The number of transactions in the last block"},
@@ -4111,6 +4112,8 @@ static UniValue getstakinginfo(const JSONRPCRequest &request)
     if (pDevFundSettings && pDevFundSettings->nMinDevStakePercent > 0) {
         obj.pushKV("foundationdonationpercent", pDevFundSettings->nMinDevStakePercent);
     }
+
+    obj.pushKV("minstakeablevalue", pwallet->m_min_stakeable_value);
 
     obj.pushKV("currentblocksize", (uint64_t)nLastBlockSize);
     obj.pushKV("currentblocktx", (uint64_t)nLastBlockTx);
@@ -5746,6 +5749,15 @@ struct TracedTx {
 
 static void traceFrozenPrevout(const COutPoint &op_trace, const uint256 &txid_spentby, std::map<uint256, TracedTx> &traced_txs, UniValue &warnings)
 {
+    auto mi_tx = traced_txs.find(op_trace.hash);
+    if (mi_tx != traced_txs.end()) {
+        auto mi_o = mi_tx->second.m_outputs.find(op_trace.n);
+        if (mi_o != mi_tx->second.m_outputs.end()) {
+            LogPrintf("traceFrozenPrevout: Skipping %s, %d, already have.\n", op_trace.hash.ToString(), op_trace.n);
+            return;
+        }
+    }
+
     std::vector<std::shared_ptr<CWallet> > wallets = GetWallets();
     for (auto &wallet : wallets) {
         CHDWallet *pwallet = GetParticlWallet(wallet.get());
@@ -5846,6 +5858,7 @@ static void placeTracedPrevout(const TracedOutput &txo, bool trace_frozen_dump_p
     }
 }
 
+static std::set<std::pair<uint256, uint256> > set_placed;
 static void placeTracedInputTxns(const uint256 &spend_txid, const std::vector<COutPoint> &inputs, const std::map<uint256, TracedTx> &traced_txs, bool trace_frozen_dump_privkeys, UniValue &rv)
 {
     std::set<uint256> added_txids;
@@ -5882,7 +5895,13 @@ static void placeTracedInputTxns(const uint256 &spend_txid, const std::vector<CO
         uvtx.pushKV("wallet", tx.m_wallet_name);
 
         UniValue uv_inputs(UniValue::VARR);
-        placeTracedInputTxns(op.hash, tx.m_inputs, traced_txs, trace_frozen_dump_privkeys, uv_inputs);
+        auto placed_pair = std::make_pair(op.hash, spend_txid);
+        if (set_placed.count(placed_pair)) {
+            uvtx.pushKV("inputs", "repeat");
+        } else {
+            placeTracedInputTxns(op.hash, tx.m_inputs, traced_txs, trace_frozen_dump_privkeys, uv_inputs);
+            set_placed.insert(placed_pair);
+        }
         if (uv_inputs.size() > 0) {
             uvtx.pushKV("inputs", uv_inputs);
         }
@@ -6093,6 +6112,7 @@ static void traceFrozenOutputs(UniValue &rv, CAmount min_value, CAmount max_froz
 
         rv_txns.push_back(rv_tx);
     }
+    set_placed.clear();
 
     LogPrintf("traceFrozenOutputs() searched %d transactions.\n", num_searched);
 
@@ -6607,6 +6627,61 @@ static UniValue debugwallet(const JSONRPCRequest &request)
                 warnings.push_back(tmp);
             }
         }
+
+        {
+            pwallet->WalletLogPrintf("Checking for missing anon spends.\n");
+            CHDWalletDB wdb(pwallet->GetDatabase());
+            for (const auto &ri : pwallet->mapRecords) {
+                const uint256 &txid = ri.first;
+                const CTransactionRecord &rtx = ri.second;
+                CStoredTransaction stx;
+
+                for (const auto &r : rtx.vout) {
+                    if (r.nType != OUTPUT_RINGCT ||
+                        !(r.nFlags & ORF_OWNED)) {
+                        continue;
+                    }
+
+                    CCmpPubKey anon_pubkey, ki;
+                    auto add_error = [&] (std::string message) {
+                        UniValue tmp(UniValue::VOBJ);
+                        tmp.pushKV("type", message);
+                        tmp.pushKV("txid", txid.ToString());
+                        tmp.pushKV("n", r.n);
+                        errors.push_back(tmp);
+                    };
+                    if ((!stx.tx || stx.tx->GetHash() != txid)
+                        && !wdb.ReadStoredTx(txid, stx)) {
+                        add_error("Missing stored txn.");
+                        continue;
+                    }
+                    if (!stx.GetAnonPubkey(r.n, anon_pubkey)) {
+                        add_error("Could not get anon pubkey.");
+                        continue;
+                    }
+                    CKey spend_key;
+                    CKeyID apkid = anon_pubkey.GetID();
+                    if (!pwallet->GetKey(apkid, spend_key)) {
+                        add_error("Could not get anon spend key.");
+                        continue;
+                    }
+                    if (0 != GetKeyImage(ki, anon_pubkey, spend_key)) {
+                        add_error("Could not get keyimage.");
+                        continue;
+                    }
+                    uint256 txhashKI;
+                    bool spent_in_chain = pblocktree->ReadRCTKeyImage(ki, txhashKI);
+                    bool spent_in_wallet = pwallet->IsSpent(txid, r.n);
+
+                    if (spent_in_chain && !spent_in_wallet) {
+                        add_error("Spent in chain but not wallet.");
+                    } else
+                    if (!spent_in_chain && spent_in_wallet) {
+                        add_error("Spent in wallet but not chain.");
+                    }
+                }
+            }
+        }
     }
 
     result.pushKV("errors", errors);
@@ -6629,6 +6704,7 @@ static UniValue walletsettings(const JSONRPCRequest &request)
                 "  \"enabled\"                   (bool, optional, default=true) Toggle staking enabled on this wallet.\n"
                 "  \"stakecombinethreshold\"     (amount, optional, default=1000) Join outputs below this value.\n"
                 "  \"stakesplitthreshold\"       (amount, optional, default=2000) Split outputs above this value.\n"
+                "  \"minstakeablevalue\"         (amount, optional, default=0.00000001) Won't try stake outputs below this value.\n"
                 "  \"foundationdonationpercent\" (int, optional, default=0) Set the percentage of each block reward to donate to the foundation.\n"
                 "  \"rewardaddress\"             (string, optional, default=none) An address which the user portion of the block reward gets sent to.\n"
                 "  \"smsgfeeratetarget\"         (amount, optional, default=0) If non-zero an amount to move the smsgfeerate towards.\n"
@@ -6649,6 +6725,7 @@ static UniValue walletsettings(const JSONRPCRequest &request)
                 "\"other\" {\n"
                 "  \"onlyinstance\"              (bool, optional, default=true) Set to false if other wallets spending from the same keys exist.\n"
                 "  \"smsgenabled\"               (bool, optional, default=true) Set to false to have smsg ignore the wallet.\n"
+                "  \"minownedvalue\"             (amount, optional, default=0.00000001) Will ignore outputs below this value.\n"
                 "}\n"
                 "Omit the json object to print the settings group.\n"
                 "Pass an empty json object to clear the settings group.\n" +
@@ -6813,6 +6890,11 @@ static UniValue walletsettings(const JSONRPCRequest &request)
                     throw JSONRPCError(RPC_INVALID_PARAMETER, "stakesplitthreshold can't be negative.");
                 }
             } else
+            if (sKey == "minstakeablevalue") {
+                if (AmountFromValue(json["minstakeablevalue"]) < 0) {
+                    throw JSONRPCError(RPC_INVALID_PARAMETER, "minstakeablevalue can't be negative.");
+                }
+            } else
             if (sKey == "foundationdonationpercent") {
                 if (!json["foundationdonationpercent"].isNum()) {
                     throw JSONRPCError(RPC_INVALID_PARAMETER, "foundationdonationpercent must be a number.");
@@ -6876,6 +6958,11 @@ static UniValue walletsettings(const JSONRPCRequest &request)
             if (sKey == "smsgenabled") {
                 if (!json["smsgenabled"].isBool()) {
                     throw JSONRPCError(RPC_INVALID_PARAMETER, "smsgenabled must be boolean.");
+                }
+            } else
+            if (sKey == "minownedvalue") {
+                if (AmountFromValue(json["minownedvalue"]) < 0) {
+                    throw JSONRPCError(RPC_INVALID_PARAMETER, "minownedvalue can't be negative.");
                 }
             } else {
                 warnings.push_back("Unknown key " + sKey);
@@ -7086,6 +7173,7 @@ static UniValue setvote(const JSONRPCRequest &request)
                 "\nSet voting token.\n"
                 "Wallet will include this token in staked blocks from height_start to height_end.\n"
                 "Set proposal and/or option to 0 to stop voting.\n"
+                "Set all parameters to 0 to clear all vote settings.\n"
                 "The last added option valid for the current chain height will be applied." +
                 HELP_REQUIRING_PASSPHRASE,
                 {
@@ -7115,25 +7203,36 @@ static UniValue setvote(const JSONRPCRequest &request)
     uint32_t issue = request.params[0].get_int();
     uint32_t option = request.params[1].get_int();
 
-    if (issue > 0xFFFF)
+    if (issue > 0xFFFF) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Proposal out of range.");
-    if (option > 0xFFFF)
+    }
+    if (option > 0xFFFF) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Option out of range.");
+    }
 
     int nStartHeight = request.params[2].get_int();
     int nEndHeight = request.params[3].get_int();
 
-    if (nEndHeight < nStartHeight)
+    if (nEndHeight < nStartHeight && !(nEndHeight + nStartHeight + issue + option)) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "height_end must be after height_start.");
+    }
 
+    UniValue result(UniValue::VOBJ);
     uint32_t voteToken = issue | (option << 16);
 
     {
         LOCK(pwallet->cs_wallet);
-
         CHDWalletDB wdb(pwallet->GetDBHandle());
-
         std::vector<CVoteToken> vVoteTokens;
+
+        if (!(nEndHeight + nStartHeight + issue + option)) {
+            if (!wdb.EraseVoteTokens()) {
+                throw JSONRPCError(RPC_WALLET_ERROR, "EraseVoteTokens failed.");
+            }
+            pwallet->LoadVoteTokens(&wdb);
+            result.pushKV("result", "Erased all vote tokens.");
+            return result;
+        }
 
         wdb.ReadVoteTokens(vVoteTokens);
 
@@ -7146,8 +7245,6 @@ static UniValue setvote(const JSONRPCRequest &request)
 
         pwallet->LoadVoteTokens(&wdb);
     }
-
-    UniValue result(UniValue::VOBJ);
 
     if (issue < 1) {
         result.pushKV("result", "Cleared vote token.");
@@ -7166,7 +7263,8 @@ static UniValue votehistory(const JSONRPCRequest &request)
             RPCHelpMan{"votehistory",
                 "\nDisplay voting history of wallet.\n",
                 {
-                    {"current_only", RPCArg::Type::BOOL, /* default */ "false", "how only the currently active vote."},
+                    {"current_only", RPCArg::Type::BOOL, /* default */ "false", "Show only the currently active vote."},
+                    {"include_future", RPCArg::Type::BOOL, /* default */ "false", "Show future scheduled votes with \"current_only\"."},
                 },
                 RPCResult{
                     RPCResult::Type::ARR, "", "", {
@@ -7189,45 +7287,83 @@ static UniValue votehistory(const JSONRPCRequest &request)
     if (!wallet) return NullUniValue;
     CHDWallet *const pwallet = GetParticlWallet(wallet.get());
 
+    std::vector<CVoteToken> vVoteTokens;
+    {
+        LOCK(pwallet->cs_wallet);
+        CHDWalletDB wdb(pwallet->GetDatabase());
+        wdb.ReadVoteTokens(vVoteTokens);
+    }
+
     // Make sure the results are valid at least up to the most recent block
     // the user could have gotten from another RPC command prior to now
     pwallet->BlockUntilSyncedToCurrentChain();
 
+    bool current_only = request.params.size() > 0 ? GetBool(request.params[0]) : false;
+    bool include_future = request.params.size() > 1 ? GetBool(request.params[1]) : false;
+
     UniValue result(UniValue::VARR);
 
-    if (request.params.size() > 0) {
-        if (GetBool(request.params[0])) {
+    if (current_only) {
+        int nNextHeight = ::ChainActive().Height() + 1;
+
+        for (int i = (int) vVoteTokens.size(); i-- > 0; ) {
+            const auto &v = vVoteTokens[i];
+
+            int vote_start = v.nStart;
+            int vote_end = v.nEnd;
+            if (include_future) {
+                if (v.nEnd < nNextHeight) {
+                    continue;
+                }
+
+                // Check if occluded, result is ordered by start_height ASC
+                for (size_t ir = 0; ir < result.size(); ++ir) {
+                    int rs = result[ir]["from_height"].get_int();
+                    int re = result[ir]["to_height"].get_int();
+
+                    if (rs <= vote_start && vote_end >= re) {
+                        vote_start = re;
+                    }
+                    if (rs <= vote_end && re >= vote_end) {
+                        vote_end = rs;  // -1
+                    }
+                }
+                if (vote_end <= vote_start) {
+                    continue;
+                }
+            } else {
+                if (vote_end < nNextHeight
+                    || vote_start > nNextHeight) {
+                    continue;
+                }
+            }
+
+            if ((v.nToken >> 16) < 1
+                || (v.nToken & 0xFFFF) < 1) {
+                continue;
+            }
             UniValue vote(UniValue::VOBJ);
+            vote.pushKV("proposal", (int)(v.nToken & 0xFFFF));
+            vote.pushKV("option", (int)(v.nToken >> 16));
+            vote.pushKV("from_height", vote_start);
+            vote.pushKV("to_height", vote_end);
 
-            int nNextHeight = ::ChainActive().Height() + 1;
-
-            for (auto i = pwallet->vVoteTokens.crbegin(); i != pwallet->vVoteTokens.crend(); ++i) {
-                const auto &v = *i;
-                if (v.nEnd < nNextHeight
-                    || v.nStart > nNextHeight) {
-                    continue;
+            size_t k = 0;
+            for (k = 0; k < result.size(); k++) {
+                if (v.nStart < result[k]["from_height"].get_int()) {
+                    result.insert(k, vote);
+                    break;
                 }
-                if ((v.nToken >> 16) < 1
-                    || (v.nToken & 0xFFFF) < 1) {
-                    continue;
-                }
-                UniValue vote(UniValue::VOBJ);
-                vote.pushKV("proposal", (int)(v.nToken & 0xFFFF));
-                vote.pushKV("option", (int)(v.nToken >> 16));
-                vote.pushKV("from_height", v.nStart);
-                vote.pushKV("to_height", v.nEnd);
+            }
+            if (k >= result.size()) {
                 result.push_back(vote);
             }
-            return result;
+
+            if (!include_future) {
+                break;
+            }
         }
-    }
-
-    std::vector<CVoteToken> vVoteTokens;
-    {
-        LOCK(pwallet->cs_wallet);
-
-        CHDWalletDB wdb(pwallet->GetDBHandle());
-        wdb.ReadVoteTokens(vVoteTokens);
+        return result;
     }
 
     for (auto i = vVoteTokens.crbegin(); i != vVoteTokens.crend(); ++i) {
