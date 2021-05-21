@@ -2243,6 +2243,7 @@ static UniValue liststealthaddresses(const JSONRPCRequest &request)
                     {"options", RPCArg::Type::OBJ, /* default */ "", "JSON with options",
                         {
                             {"bech32", RPCArg::Type::BOOL, /* default */ "false", "Display addresses in bech32 format"},
+                            {"verbose", RPCArg::Type::BOOL, /* default */ "false", "Display extra details"},
                         },
                         "options"},
                 },
@@ -2276,14 +2277,19 @@ static UniValue liststealthaddresses(const JSONRPCRequest &request)
     bool fShowSecrets = request.params.size() > 0 ? GetBool(request.params[0]) : false;
 
     bool show_in_bech32 = false;
+    bool verbose = false;
     if (!request.params[1].isNull()) {
         const UniValue &options = request.params[1].get_obj();
         RPCTypeCheckObj(options,
             {
                 {"bech32",               UniValueType(UniValue::VBOOL)},
+                {"verbose",              UniValueType(UniValue::VBOOL)},
             }, true, false);
         if (options.exists("bech32")) {
             show_in_bech32 = options["bech32"].get_bool();
+        }
+        if (options.exists("verbose")) {
+            verbose = options["verbose"].get_bool();
         }
     }
 
@@ -2317,7 +2323,47 @@ static UniValue liststealthaddresses(const JSONRPCRequest &request)
 
             CStealthAddress sxAddr;
             aks.SetSxAddr(sxAddr);
-            objA.pushKV("Address", sxAddr.ToString(show_in_bech32));
+
+            bool is_v2_address = false;
+            if (verbose) {
+                const CExtKeyAccount *pa = nullptr;
+                const CEKAStealthKey *pask = nullptr;
+                bool mine = pwallet->IsMine(sxAddr, pa, pask);
+                if (mine && pa && pask) {
+                    CStoredExtKey *sek = pa->GetChain(pask->nScanParent);
+                    std::string sPath;
+                    if (sek) {
+                        std::vector<uint32_t> vPath;
+                        AppendChainPath(sek, vPath);
+                        vPath.push_back(pask->nScanKey);
+                        PathToString(vPath, sPath);
+                        objA.pushKV("scan_path", sPath);
+                    }
+                    sek = pa->GetChain(pask->akSpend.nParent);
+                    if (sek) {
+                        std::vector<uint32_t> vPath;
+                        AppendChainPath(sek, vPath);
+                        vPath.push_back(pask->akSpend.nKey);
+                        PathToString(vPath, sPath);
+                        objA.pushKV("spend_path", sPath);
+                    }
+
+                    mapEKValue_t::const_iterator it = sek->mapValue.find(EKVT_KEY_TYPE);
+                    if (it != sek->mapValue.end() && it->second.size() > 0 && it->second[0] == EKT_STEALTH_SPEND) {
+                        is_v2_address = true;
+                    }
+                }
+
+                int num_received = 0;
+                CKeyID idStealthKey = aks.GetID();
+                for (const auto &entry : pa->mapStealthChildKeys) {
+                    if (entry.second.idStealthKey == idStealthKey) {
+                        num_received++;
+                    }
+                }
+                objA.pushKV("received_addresses", num_received);
+            }
+            objA.pushKV("Address", sxAddr.ToString(show_in_bech32 || is_v2_address));
 
             if (fShowSecrets) {
                 objA.pushKV("Scan Secret", CBitcoinSecret(aks.skScan).ToString());
@@ -2341,7 +2387,7 @@ static UniValue liststealthaddresses(const JSONRPCRequest &request)
             arrayKeys.push_back(objA);
         }
 
-        if (arrayKeys.size() > 0){
+        if (arrayKeys.size() > 0) {
             rAcc.pushKV("Stealth Addresses", arrayKeys);
             result.push_back(rAcc);
         }
@@ -2425,7 +2471,7 @@ static UniValue deriverangekeys(const JSONRPCRequest &request)
                 {
                     {"start", RPCArg::Type::NUM, RPCArg::Optional::NO, "Start from key index."},
                     {"end", RPCArg::Type::NUM, /* default */ "start+1", "Stop deriving after key index."},
-                    {"key/id", RPCArg::Type::NUM, /* default */ "", "Account to derive from, default external chain of current account, set to empty (\"\") for default."},
+                    {"key/id", RPCArg::Type::STR, /* default */ "", "Account to derive from or \"external\",\"internal\",\"stealthv1\",\"stealthv2\". Defaults to external chain of current account. Set to empty (\"\") for default."},
                     {"hardened", RPCArg::Type::BOOL, /* default */ "false", "Derive hardened keys."},
                     {"save", RPCArg::Type::BOOL, /* default */ "false", "Save derived keys to the wallet."},
                     {"add_to_addressbook", RPCArg::Type::BOOL, /* default */ "false", "Add derived keys to address book, only applies when saving keys."},
@@ -2458,13 +2504,10 @@ static UniValue deriverangekeys(const JSONRPCRequest &request)
         nEnd = request.params[1].get_int();
     }
     if (nEnd < nStart) {
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "end can not be before start.");
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "\"end\" can not be before start.");
     }
     if (nStart < 0) {
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "start can not be negative.");
-    }
-    if (nEnd < 0) {
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "end can not be positive.");
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "\"start\" can not be negative.");
     }
     if (request.params.size() > 2) {
         sInKey = request.params[2].get_str();
@@ -2476,7 +2519,7 @@ static UniValue deriverangekeys(const JSONRPCRequest &request)
     bool f256bit = request.params.size() > 6 ? GetBool(request.params[6]) : false;
 
     if (!fSave && fAddToAddressBook) {
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "add_to_addressbook can't be set without save");
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "\"add_to_addressbook\" can't be set without save");
     }
     if (fSave || fHardened) {
         EnsureWalletIsUnlocked(pwallet);
@@ -2490,7 +2533,7 @@ static UniValue deriverangekeys(const JSONRPCRequest &request)
         CStoredExtKey *sek = nullptr;
         CExtKeyAccount *sea = nullptr;
         uint32_t nChain = 0;
-        if (sInKey.length() == 0) {
+        if (sInKey.length() == 0 || sInKey == "external") {
             if (pwallet->idDefaultAccount.IsNull()) {
                 throw JSONRPCError(RPC_WALLET_ERROR, "No default account set.");
             }
@@ -2503,6 +2546,86 @@ static UniValue deriverangekeys(const JSONRPCRequest &request)
             if (nChain < sea->vExtKeys.size()) {
                 sek = sea->vExtKeys[nChain];
             }
+        } else
+        if (sInKey == "internal") {
+            if (pwallet->idDefaultAccount.IsNull()) {
+                throw JSONRPCError(RPC_WALLET_ERROR, "No default account set.");
+            }
+            ExtKeyAccountMap::iterator mi = pwallet->mapExtAccounts.find(pwallet->idDefaultAccount);
+            if (mi == pwallet->mapExtAccounts.end()) {
+                throw JSONRPCError(RPC_WALLET_ERROR, "Unknown account.");
+            }
+            sea = mi->second;
+            nChain = sea->nActiveInternal;
+            if (nChain < sea->vExtKeys.size()) {
+                sek = sea->vExtKeys[nChain];
+            }
+        } else
+        if (sInKey == "stealthv1" || sInKey == "stealthv2") {
+            bool stealth_v2 = sInKey == "stealthv2";
+            if (fHardened) {
+                throw JSONRPCError(RPC_WALLET_ERROR, "Hardened option is invalid when deriving stealth addresses.");
+            }
+            if (f256bit) {
+                throw JSONRPCError(RPC_WALLET_ERROR, "256bit option is invalid when deriving stealth addresses.");
+            }
+
+            if (pwallet->idDefaultAccount.IsNull()) {
+                throw JSONRPCError(RPC_WALLET_ERROR, "No default account set.");
+            }
+            ExtKeyAccountMap::iterator mi = pwallet->mapExtAccounts.find(pwallet->idDefaultAccount);
+            if (mi == pwallet->mapExtAccounts.end()) {
+                throw JSONRPCError(RPC_WALLET_ERROR, "Unknown account.");
+            }
+            sea = mi->second;
+
+            CHDWalletDB wdb(pwallet->GetDatabase());  // May need to save keys or initialise the stealth v2 chains
+            if (!wdb.TxnBegin()) {
+                throw JSONRPCError(RPC_WALLET_ERROR, "TxnBegin failed.");
+            }
+            size_t num_keys = (nEnd - nStart) + 1;
+            CStealthAddress sxAddr;
+            CEKAStealthKey akStealth;
+            if (!stealth_v2) {
+                uint32_t nChain = sea->nActiveStealth;
+                CStoredExtKey *sek = sea->GetChain(nChain);
+                if (!sek) {
+                    throw JSONRPCError(RPC_WALLET_ERROR, "No active stealth chain found.");
+                }
+                uint32_t nKey = nStart * 2;
+                for (size_t k = 0; k < num_keys; ++k) {
+                    pwallet->NewStealthKeyFromAccount(nullptr, pwallet->idDefaultAccount, "", akStealth, 0, nullptr, false, &nKey, false /* add_to_lookahead */);
+                    nKey += 1;  // NewStealthKeyFromAccount advances nKey
+                    akStealth.SetSxAddr(sxAddr);
+                    result.push_back(sxAddr.ToString());
+
+                    if (fSave
+                        && !pwallet->HaveStealthAddress(sxAddr)
+                        && 0 != pwallet->SaveStealthAddress(&wdb, sea, akStealth, false)) {
+                        throw JSONRPCError(RPC_WALLET_ERROR, "SaveStealthAddress failed.");
+                    }
+                }
+            } else {
+                uint32_t nScanKey = nStart, nSpendKey = nStart;
+                for (size_t k = 0; k < num_keys; ++k) {
+                    pwallet->NewStealthKeyV2FromAccount(&wdb, pwallet->idDefaultAccount, "", akStealth, 0, nullptr, true, &nScanKey, &nSpendKey, false /* add_to_lookahead */);
+                    nScanKey += 1;
+                    nSpendKey += 1;
+                    akStealth.SetSxAddr(sxAddr);
+                    result.push_back(sxAddr.ToString(true));  // V2 stealth addresses are always formatted in bech32
+
+                    if (fSave
+                        && !pwallet->HaveStealthAddress(sxAddr)
+                        && 0 != pwallet->SaveStealthAddress(&wdb, sea, akStealth, true)) {
+                        throw JSONRPCError(RPC_WALLET_ERROR, "SaveStealthAddress failed");
+                    }
+                }
+            }
+            if (!wdb.TxnCommit()) {
+                throw JSONRPCError(RPC_WALLET_ERROR, "TxnCommit failed.");
+            }
+
+            return result;
         } else {
             CKeyID keyId;
             ExtractExtKeyId(sInKey, keyId, CChainParams::EXT_KEY_HASH);
@@ -4806,7 +4929,7 @@ static UniValue SendToInner(const JSONRPCRequest &request, OutputTypes typeIn, O
             }
             const UniValue &obj = outputs[k].get_obj();
 
-            std::string sAddress;
+            std::string sAddress, str_stake_address;;
             CAmount nAmount;
 
             if (obj.exists("address")) {
@@ -4864,12 +4987,48 @@ static UniValue SendToInner(const JSONRPCRequest &request, OutputTypes typeIn, O
                 }
                 sBlind = s;
             }
+            if (obj.exists("stakeaddress") && obj.exists("script")) {
+                throw JSONRPCError(RPC_TYPE_ERROR, "\"script\" and \"stakeaddress\" can't be used together.");
+            }
 
             if (0 != AddOutput(typeOut, vecSend, dest, nAmount, fSubtractFeeFromAmount, sNarr, sBlind, sError)) {
                 throw JSONRPCError(RPC_MISC_ERROR, strprintf("AddOutput failed: %s.", sError));
             }
 
+            if (obj.exists("stakeaddress")) {
+                if (typeOut != OUTPUT_STANDARD) {
+                    throw std::runtime_error("\"stakeaddress\" only works for standard outputs.");
+                }
+                CTempRecipient &r = vecSend.back();
+                str_stake_address = obj["stakeaddress"].get_str();
+                if (!IsValidDestinationString(str_stake_address, true)) {
+                    throw JSONRPCError(RPC_INVALID_PARAMETER, "\"stakeaddress\" is invalid");
+                }
+                CTxDestination destStake = DecodeDestination(str_stake_address, true);
+                CTxDestination destSpend = address.Get();
+                if (destSpend.type() == typeid(PKHash)) {
+                    throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid addrspend, can't be p2pkh.");
+                }
+                CScript scriptTrue = GetScriptForDestination(destStake);
+                CScript scriptFalse = GetScriptForDestination(destSpend);
+                if (scriptTrue.size() == 0) {
+                    throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid stake destination.");
+                }
+                if (scriptFalse.size() == 0) {
+                    throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid spend destination.");
+                }
+
+                r.scriptPubKey = CScript() << OP_ISCOINSTAKE << OP_IF;
+                r.scriptPubKey.append(scriptTrue);
+                r.scriptPubKey << OP_ELSE;
+                r.scriptPubKey.append(scriptFalse);
+                r.scriptPubKey << OP_ENDIF;
+                r.fScriptSet = true;
+            } else
             if (obj.exists("script")) {
+                if (typeOut != OUTPUT_STANDARD) {
+                    throw std::runtime_error("TODO: Currently setting a script only works for standard outputs.");
+                }
                 CTempRecipient &r = vecSend.back();
 
                 if (sAddress != "script") {
@@ -4880,10 +5039,6 @@ static UniValue SendToInner(const JSONRPCRequest &request, OutputTypes typeIn, O
                 std::vector<uint8_t> scriptData = ParseHex(sScript);
                 r.scriptPubKey = CScript(scriptData.begin(), scriptData.end());
                 r.fScriptSet = true;
-
-                if (typeOut != OUTPUT_STANDARD) {
-                    throw std::runtime_error("TODO: Currently setting a script only works for standard outputs.");
-                }
             }
         }
         nCommentOfs = 1;
@@ -5349,6 +5504,7 @@ UniValue sendtypeto(const JSONRPCRequest &request)
                                     {"blindingfactor", RPCArg::Type::STR_HEX, /* default */ "", "The blinding factor, 32 bytes and hex encoded."},
                                     {"subfee", RPCArg::Type::BOOL, /* default */ "", "The fee will be deducted from the amount being sent."},
                                     {"script", RPCArg::Type::STR_HEX, /* default */ "", "Hex encoded script, will override the address. \"address\" must be set to a blank string or placeholder value when \"script\" is used. "},
+                                    {"stakeaddress", RPCArg::Type::STR, /* default */ "", "If set the output will be sent to a coldstaking script."},
                                 },
                             },
                         },
