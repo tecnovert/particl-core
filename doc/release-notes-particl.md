@@ -2,19 +2,51 @@ Next Major Version
 ==============
 
 
-0.20.1.1
+0.19.x.x
 ==============
 
-- Added Czech bip39 wordlist.
-- No default account wallet warning is silenced if wallet was intentionally created empty.
-- Enable blockchain pruning.
-  - Requires a rolling index for chain reorgs and paid smsg validation.
-  - On the first run the rolling indices will be initialised.
-  - If you later run an older release use the -rebuildrollingindices flag to manually rebuild the indices again.
-- Added support for watchonly blinded outputs
-  - New 'blind_watchonly_visible' option for coincontrol on sendtypeto command.
-  - When 'blind_watchonly_visible' is set blinded outputs sent to stealth addresses can be uncovered with the scan secret only.
-    - Nonce is calculated as ECDH(ephem_secret + tweak, scan_public_key) and recovered with ECDH(scan_secret_key, ephem_public_key + G * tweak)
+- Add show_anon_spends option to filtertransactions.
+- Remove spurious "ExtractDestination failed" log messages.
+- Add show_change option to filtertransactions.
+- Transaction record format changed.
+  - Owned anon prevouts stored in vin, new vkeyimages attribute.
+  - Breaks backwards compatibility, to downgrade run `debugwallet {\"downgrade_wallet\":true}`.
+- Improved filtertransactions total amount for internal_transfer with anon inputs.
+- Display blocktime if < timereceived.
+- SaveStealthAddress updates counters.
+  - If wallet rescans lookahead removal code would remove existing stealth addresses.
+- debugwallet inputs moved to a json object, new options:
+  - downgrade_wallets: Downgrade wallet formatfor previous releases.
+  - list_frozen_outputs: List all spendable and unspendable frozen blinded outputs.
+  - spend_frozen_output: Spends the largest spendable frozen blinded output, after next hard fork.
+  - trace_frozen_outputs: Dumps amounts, blinding values and optionally spent anon keys to aid in validating frozen outputs.
+    - See: https://github.com/tecnovert/particl_debug_scripts/blob/main/trace_frozen.py
+  - detects missing anon spends.
+- New insight -balancesindex
+  - New rpc command: getblockbalances
+  - balancesindex tracks the amount of plain coin sent to and from blind and anon.
+  - Coins can move between anon and blind but the sums should match.
+- New walletsettings stakingoptions minstakeablevalue option.
+  - Wallet won't try stake outputs with values lower than.
+- New walletsettings other minownedvalue option.
+  - Wallet won't track outputs with values lower than.
+- setvote will clear all vote settings when all parameters are set to 0.
+- votehistory, new include_future parameter.
+  - If current_only and include_future are true, future scheduled votes will be displayed.
+- Fixed bug in wallet stealth address lookahead when rescanning.
+- deriverangekeys
+  - Can derive and save stealth addresses.
+  - Added shortcut for internal chain.
+- liststealthaddresses: New verbose parameter displays key paths and count of received addresses.
+- sendtypeto: New stakeaddress parameter on output, avoids buildscript step when sending to coldstaking scripts.
+
+
+0.19.2.5
+==============
+
+- Allow anon and blinded transaction on testnet.
+- filtertransactions can display blinding factors.
+- New mainnet checkpoint.
 
 
 0.19.2.4
