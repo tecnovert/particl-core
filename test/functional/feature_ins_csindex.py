@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-# Copyright (c) 2019 The Particl Core developers
+# Copyright (c) 2019-2021 The Particl Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-import json
 import re
+import json
 
 from test_framework.test_particl import ParticlTestFramework, connect_nodes_bi
 from test_framework.authproxy import JSONRPCException
@@ -65,7 +65,7 @@ class TxIndexTest(ParticlTestFramework):
         addrStake2_stakeonly = nodes[1].validateaddress(addrStake2, True)['stakeonly_address']
         toScript = nodes[1].buildscript({'recipe': 'ifcoinstake', 'addrstake': addrStake2_stakeonly, 'addrspend': addrSpend2})
         nodes[1].sendtypeto('part', 'part',
-                            [{'address': 'script', 'amount':12, 'script':toScript['hex']}])
+                            [{'address': 'script', 'amount': 12, 'script': toScript['hex']}])
 
         try:
             nodes[1].sendtoaddress(addrStake2_stakeonly, 12)
