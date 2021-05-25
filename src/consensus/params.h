@@ -133,6 +133,7 @@ struct Params {
      */
     bool signet_blocks{false};
     std::vector<uint8_t> signet_challenge;
+    bool m_pass_all_pow = false;
 };
 } // namespace Consensus
 
