@@ -351,7 +351,8 @@ void ThreadStakeMiner(size_t nThreadID, std::vector<std::shared_ptr<CWallet>> &v
             }
         }
 
-        if (num_nodes == 0 || ::ChainstateActive().IsInitialBlockDownload()) {
+        if ((num_nodes == 0 && gArgs.GetBoolArg("-checkpeerheight", true))
+            || ::ChainstateActive().IsInitialBlockDownload() ) {
             fIsStaking = false;
             fTryToSync = true;
             LogPrint(BCLog::POS, "%s: IsInitialBlockDownload\n", __func__);
@@ -359,7 +360,7 @@ void ThreadStakeMiner(size_t nThreadID, std::vector<std::shared_ptr<CWallet>> &v
             continue;
         }
 
-        if (nBestHeight < num_blocks_of_peers - 1) {
+        if (nBestHeight < num_blocks_of_peers - 1 && gArgs.GetBoolArg("-checkpeerheight", true)) {
             fIsStaking = false;
             LogPrint(BCLog::POS, "%s: nBestHeight < GetNumBlocksOfPeers(), %d, %d\n", __func__, nBestHeight, num_blocks_of_peers);
             condWaitFor(nThreadID, nMinerSleep * 4);

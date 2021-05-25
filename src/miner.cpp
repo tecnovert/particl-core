@@ -39,7 +39,7 @@ int64_t UpdateTime(CBlockHeader* pblock, const Consensus::Params& consensusParam
         pblock->nTime = nNewTime;
 
     // Updating time can change work required on testnet:
-    if (consensusParams.fPowAllowMinDifficultyBlocks)
+    if (consensusParams.fPowAllowMinDifficultyBlocks && !consensusParams.m_pass_all_pow)
         pblock->nBits = GetNextWorkRequired(pindexPrev, pblock, consensusParams);
 
     return nNewTime - nOldTime;
@@ -149,6 +149,25 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
 
     // Create coinbase transaction.
     CMutableTransaction coinbaseTx;
+    if (nHeight >= chainparams.GetConsensus().testnetp2_fork_height) {
+        pblock->nVersion = PARTICL_BLOCK_VERSION;
+
+        coinbaseTx.nVersion = PARTICL_TXN_VERSION;
+        coinbaseTx.SetType(TXN_COINBASE);
+        coinbaseTx.vin.resize(1);
+        coinbaseTx.vin[0].prevout.SetNull();
+        //coinbaseTx.vin[0].scriptSig = CScript() << nHeight << OP_0;
+        coinbaseTx.vin[0].scriptSig = CScript() << OP_RETURN << nHeight;
+        coinbaseTx.vpout.clear();
+
+        OUTPUT_PTR<CTxOutStandard> out = MAKE_OUTPUT<CTxOutStandard>();
+        out->nValue = nFees + GetBlockSubsidy(nHeight, chainparams.GetConsensus());
+        out->scriptPubKey = scriptPubKeyIn;
+        coinbaseTx.vpout.push_back(out);
+
+        pblock->vtx[0] = MakeTransactionRef(std::move(coinbaseTx));
+        pblocktemplate->vchCoinbaseCommitment = GenerateCoinbaseCommitment(*pblock, pindexPrev, chainparams.GetConsensus());
+    } else
     if (!fTestBlockValidity) {
         pblock->nVersion = PARTICL_BLOCK_VERSION;
         pblock->vtx[0] = MakeTransactionRef(std::move(coinbaseTx));
@@ -172,7 +191,13 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     // Fill in header
     pblock->hashPrevBlock  = pindexPrev->GetBlockHash();
     UpdateTime(pblock, chainparams.GetConsensus(), pindexPrev);
-    pblock->nBits          = GetNextWorkRequired(pindexPrev, pblock, chainparams.GetConsensus());
+    if (pindexPrev && chainparams.GetConsensus().m_pass_all_pow) {
+        // Reduce difficulty
+        pblock->nBits          = arith_uint256("000000000000ffffffffffffffffffffffffffffffffffffffffffffffffffff").GetCompact(); // pindexPrev->nBits;
+    } else {
+        pblock->nBits          = GetNextWorkRequired(pindexPrev, pblock, chainparams.GetConsensus());
+    }
+
     pblock->nNonce         = 0;
     pblocktemplate->vTxSigOpsCost[0] = WITNESS_SCALE_FACTOR * GetLegacySigOpCount(*pblock->vtx[0]);
     CValidationState state;
@@ -450,7 +475,11 @@ void IncrementExtraNonce(CBlock* pblock, const CBlockIndex* pindexPrev, unsigned
     ++nExtraNonce;
     unsigned int nHeight = pindexPrev->nHeight+1; // Height first in coinbase required for block.version=2
     CMutableTransaction txCoinbase(*pblock->vtx[0]);
-    txCoinbase.vin[0].scriptSig = (CScript() << nHeight << CScriptNum(nExtraNonce)) + COINBASE_FLAGS;
+    if (fParticlMode) {
+        txCoinbase.vin[0].scriptSig = (CScript() << CScriptNum(nExtraNonce) << OP_RETURN << nHeight);
+    } else {
+        txCoinbase.vin[0].scriptSig = (CScript() << nHeight << CScriptNum(nExtraNonce));
+    }
     assert(txCoinbase.vin[0].scriptSig.size() <= 100);
 
     pblock->vtx[0] = MakeTransactionRef(std::move(txCoinbase));

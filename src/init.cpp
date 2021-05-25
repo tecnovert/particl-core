@@ -460,6 +460,9 @@ void SetupServerArgs()
     const auto testnetChainParams = CreateChainParams(CBaseChainParams::TESTNET);
     const auto regtestChainParams = CreateChainParams(CBaseChainParams::REGTEST);
 
+    const auto testnetp2BaseParams = CreateBaseChainParams(CBaseChainParams::TESTNET_P2);
+    const auto testnetp2ChainParams = CreateChainParams(CBaseChainParams::TESTNET_P2);
+
     // Hidden Options
     std::vector<std::string> hidden_args = {
         "-dbcrashratio", "-forcecompactdb",
@@ -700,6 +703,7 @@ void SetupServerArgs()
 #endif
 
     hidden_args.emplace_back("-btcmode");
+    hidden_args.emplace_back("-checkpeerheight");
 
     // Add the hidden options
     gArgs.AddHiddenArgs(hidden_args);

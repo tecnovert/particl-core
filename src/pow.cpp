@@ -14,6 +14,9 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
 {
     assert(pindexLast != nullptr);
     unsigned int nProofOfWorkLimit = UintToArith256(params.powLimit).GetCompact();
+    if ((pindexLast->nHeight+1) >= params.testnetp2_fork_height) {
+        return nProofOfWorkLimit;
+    }
 
     // Only change once per difficulty adjustment interval
     if ((pindexLast->nHeight+1) % params.DifficultyAdjustmentInterval() != 0)
@@ -83,6 +86,9 @@ bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params&
     if (fNegative || bnTarget == 0 || fOverflow || bnTarget > UintToArith256(params.powLimit))
         return false;
 
+    if (params.m_pass_all_pow) {
+        return true;
+    }
     // Check proof of work matches claimed amount
     if (UintToArith256(hash) > bnTarget)
         return false;
@@ -94,17 +100,14 @@ bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params&
     int nBlockHeight, int nLastImportHeight)
 {
     arith_uint256 bnProofOfWorkLimit;
-    if (nBlockHeight < nLastImportHeight)
-    {
+    if (nBlockHeight < nLastImportHeight) {
         arith_uint256 nMinProofOfWorkLimit = arith_uint256("00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         arith_uint256 nMaxProofOfWorkLimit = UintToArith256(params.powLimit);
         arith_uint256 nStep = ((nMaxProofOfWorkLimit - nMinProofOfWorkLimit) / nLastImportHeight);
         bnProofOfWorkLimit = nMinProofOfWorkLimit + nStep * nBlockHeight;
-    } else
-    {
+    } else {
         bnProofOfWorkLimit = UintToArith256(params.powLimit);
-    };
-    
+    }
     bool fNegative;
     bool fOverflow;
     arith_uint256 bnTarget;

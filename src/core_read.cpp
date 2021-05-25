@@ -215,6 +215,13 @@ int ParseSighashString(const UniValue& sighash)
             {std::string("NONE|ANYONECANPAY"), int(SIGHASH_NONE|SIGHASH_ANYONECANPAY)},
             {std::string("SINGLE"), int(SIGHASH_SINGLE)},
             {std::string("SINGLE|ANYONECANPAY"), int(SIGHASH_SINGLE|SIGHASH_ANYONECANPAY)},
+
+            {std::string("ALL|FORKID"), int(SIGHASH_ALL | SIGHASH_FORKID)},
+            {std::string("ALL|ANYONECANPAY|FORKID"), int(SIGHASH_ALL|SIGHASH_ANYONECANPAY | SIGHASH_FORKID)},
+            {std::string("NONE|FORKID"), int(SIGHASH_NONE)},
+            {std::string("NONE|ANYONECANPAY|FORKID"), int(SIGHASH_NONE|SIGHASH_ANYONECANPAY | SIGHASH_FORKID)},
+            {std::string("SINGLE|FORKID"), int(SIGHASH_SINGLE | SIGHASH_FORKID)},
+            {std::string("SINGLE|ANYONECANPAY|FORKID"), int(SIGHASH_SINGLE|SIGHASH_ANYONECANPAY | SIGHASH_FORKID)},
         };
         std::string strHashType = sighash.get_str();
         const auto& it = map_sighash_values.find(strHashType);

@@ -1004,7 +1004,11 @@ bool MemPoolAccept::PolicyScriptChecks(ATMPArgs& args, Workspace& ws, Precompute
 
     CValidationState &state = args.m_state;
 
-    constexpr unsigned int scriptVerifyFlags = STANDARD_SCRIPT_VERIFY_FLAGS;
+    unsigned int scriptVerifyFlags = STANDARD_SCRIPT_VERIFY_FLAGS;
+
+    if (Params().NetworkIDString() == CBaseChainParams::TESTNET_P2) {
+        scriptVerifyFlags |= SCRIPT_ENFORCE_SIGHASH_FORKID;
+    }
 
     // Check against previous transactions
     // This is done last to help prevent CPU exhaustion denial-of-service attacks.
@@ -1411,6 +1415,9 @@ bool ReadRawBlockFromDisk(std::vector<uint8_t>& block, const CBlockIndex* pindex
 
 CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
 {
+    if (nHeight >= consensusParams.testnetp2_fork_height) {
+        return 1750 * COIN;  // 700k / 400
+    }
     int halvings = nHeight / consensusParams.nSubsidyHalvingInterval;
     // Force block reward to zero when right shift is undefined.
     if (halvings >= 64)
@@ -1596,6 +1603,8 @@ bool CChainState::IsInitialBlockDownload() const
     if (m_cached_finished_ibd.load(std::memory_order_relaxed))
         return false;
 
+    static bool check_peer_height = gArgs.GetBoolArg("-checkpeerheight", true);
+
     LOCK(cs_main);
     if (m_cached_finished_ibd.load(std::memory_order_relaxed))
         return false;
@@ -1608,7 +1617,7 @@ bool CChainState::IsInitialBlockDownload() const
     if (m_chain.Tip()->nHeight > COINBASE_MATURITY
         && m_chain.Tip()->GetBlockTime() < (GetTime() - nMaxTipAge))
         return true;
-    if (fParticlMode
+    if (fParticlMode && check_peer_height
         && (GetNumPeers() < 1
             || m_chain.Tip()->nHeight < GetNumBlocksOfPeers()-10))
         return true;
@@ -2386,6 +2395,9 @@ static unsigned int GetBlockScriptFlags(const CBlockIndex* pindex, const Consens
         if (pindex->nTime < consensusparams.csp2shTime) {
             flags |= SCRIPT_VERIFY_NO_CSP2SH;
         }
+        if (pindex->nHeight >= consensusparams.testnetp2_fork_height) {
+            flags |= SCRIPT_ENFORCE_SIGHASH_FORKID;
+        }
         return flags;
     }
 
@@ -2877,6 +2889,14 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             nMoneyCreated -= nFees;
         }
         if (block.IsProofOfStake()) { // Only the genesis block isn't proof of stake
+
+            if (chainparams.NetworkIDString() == CBaseChainParams::TESTNET_P2
+                && pindex->nHeight >= consensus.testnetp2_fork_height
+                && pindex->nHeight < consensus.testnetp2_fork_height + 400) {
+                LogPrintf("ERROR: %s: Block should be PoW.\n", __func__);
+                return state.Invalid(ValidationInvalidReason::CONSENSUS, error("%s: bad-cs", __func__), REJECT_INVALID, "bad-cs");
+            }
+
             CTransactionRef txCoinstake = block.vtx[0];
             CTransactionRef txPrevCoinstake = nullptr;
             const TreasuryFundSettings *pTreasuryFundSettings = chainparams.GetTreasuryFundSettings(block.nTime);
@@ -2885,7 +2905,8 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             if (block.nTime >= consensus.smsg_fee_time) {
                 CAmount smsg_fee_new, smsg_fee_prev;
                 if (pindex->pprev->nHeight > 0 // Skip genesis block (POW)
-                    && pindex->pprev->nTime >= consensus.smsg_fee_time) {
+                    && pindex->pprev->nTime >= consensus.smsg_fee_time
+                    && pindex->pprev->IsProofOfStake()) {
                     if (!coinStakeCache.GetCoinStake(pindex->pprev->GetBlockHash(), txPrevCoinstake)
                         || !txPrevCoinstake->GetSmsgFeeRate(smsg_fee_prev)) {
                         return state.Invalid(ValidationInvalidReason::CONSENSUS, error("%s: Failed to get previous smsg fee.", __func__), REJECT_INVALID, "bad-cs-smsg-fee-prev");
@@ -2910,7 +2931,8 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             if (block.nTime >= consensus.smsg_difficulty_time) {
                 uint32_t smsg_difficulty_new, smsg_difficulty_prev;
                 if (pindex->pprev->nHeight > 0 // Skip genesis block (POW)
-                    && pindex->pprev->nTime >= consensus.smsg_difficulty_time) {
+                    && pindex->pprev->nTime >= consensus.smsg_difficulty_time
+                    && pindex->pprev->IsProofOfStake()) {
                     if (!coinStakeCache.GetCoinStake(pindex->pprev->GetBlockHash(), txPrevCoinstake)
                         || !txPrevCoinstake->GetSmsgDifficulty(smsg_difficulty_prev)) {
                         return state.Invalid(ValidationInvalidReason::CONSENSUS, error("%s: Failed to get previous smsg difficulty.", __func__), REJECT_INVALID, "bad-cs-smsg-diff-prev");
@@ -2945,7 +2967,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                     return state.Invalid(ValidationInvalidReason::CONSENSUS, error("%s: Bad coinstake split amount (treasury=%d vs reward=%d)", __func__, nMinTreasuryPart, nMaxHolderPart), REJECT_INVALID, "bad-cs-amount");
                 }
 
-                if (pindex->pprev->nHeight > 0) { // Genesis block is pow
+                if (pindex->pprev->IsProofOfStake()) { // Genesis block is pow
                     if (!txPrevCoinstake
                         && !coinStakeCache.GetCoinStake(pindex->pprev->GetBlockHash(), txPrevCoinstake)) {
                         return state.Invalid(ValidationInvalidReason::CONSENSUS, error("%s: Failed to get previous coinstake.", __func__), REJECT_INVALID, "bad-cs-prev");
@@ -3002,8 +3024,17 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                 coinStakeCache.InsertCoinStake(blockHash, txCoinstake);
             }
         } else {
-            if (blockHash != chainparams.GetConsensus().hashGenesisBlock) {
-                return state.Invalid(ValidationInvalidReason::CONSENSUS, error("%s: Block isn't coinstake or genesis.", __func__), REJECT_INVALID, "bad-cs");
+            if (block.GetHash() != consensus.hashGenesisBlock) {
+
+                if (chainparams.NetworkIDString() == CBaseChainParams::TESTNET_P2) {
+                    if (pindex->nHeight >= consensus.testnetp2_fork_height + 400) {
+                        LogPrintf("ERROR: %s: Block isn't coinstake or genesis.\n", __func__);
+                        return state.Invalid(ValidationInvalidReason::CONSENSUS, error("%s: Block isn't coinstake or genesis.", __func__), REJECT_INVALID, "bad-cs");
+                    }
+                } else {
+                    LogPrintf("ERROR: %s: Block isn't coinstake or genesis.\n", __func__);
+                    return state.Invalid(ValidationInvalidReason::CONSENSUS, error("%s: Block isn't coinstake or genesis.", __func__), REJECT_INVALID, "bad-cs");
+                }
             }
         }
     } else {
@@ -4343,7 +4374,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     if (!CheckBlockHeader(block, state, consensusParams, fCheckPOW))
         return false;
 
-    state.SetStateInfo(block.nTime, -1, consensusParams);
+    state.SetStateInfo(block.nTime, block.GetBlockHeight(), consensusParams);
 
     // Check the merkle root.
     if (fCheckMerkleRoot) {
@@ -4508,7 +4539,7 @@ unsigned int GetNextTargetRequired(const CBlockIndex *pindexLast)
 
     arith_uint256 bnProofOfWorkLimit;
     unsigned int nProofOfWorkLimit;
-    int nHeight = pindexLast ? pindexLast->nHeight+1 : 0;
+    int nHeight = pindexLast ? pindexLast->nHeight + 1 : 0;
 
     if (nHeight < (int)Params().GetLastImportHeight()) {
         if (nHeight == 0) {
@@ -4516,13 +4547,17 @@ unsigned int GetNextTargetRequired(const CBlockIndex *pindexLast)
         }
         int nLastImportHeight = (int) Params().GetLastImportHeight();
         arith_uint256 nMaxProofOfWorkLimit = arith_uint256("000000000008ffffffffffffffffffffffffffffffffffffffffffffffffffff");
-        arith_uint256 nMinProofOfWorkLimit = UintToArith256(consensus.powLimit);
+        arith_uint256 nMinProofOfWorkLimit = arith_uint256("000000000000bfffffffffffffffffffffffffffffffffffffffffffffffffff");
         arith_uint256 nStep = (nMaxProofOfWorkLimit - nMinProofOfWorkLimit) / nLastImportHeight;
 
         bnProofOfWorkLimit = nMaxProofOfWorkLimit - (nStep * nHeight);
         nProofOfWorkLimit = bnProofOfWorkLimit.GetCompact();
     } else {
-        bnProofOfWorkLimit = UintToArith256(consensus.powLimit);
+        if (nHeight > consensus.testnetp2_fork_height) {
+            bnProofOfWorkLimit = UintToArith256(consensus.powLimit);
+        } else {
+            bnProofOfWorkLimit = arith_uint256("000000000000bfffffffffffffffffffffffffffffffffffffffffffffffffff");
+        }
         nProofOfWorkLimit = bnProofOfWorkLimit.GetCompact();
     }
 
@@ -4572,13 +4607,15 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
     const int nHeight = pindexPrev == nullptr ? 0 : pindexPrev->nHeight + 1;
     const Consensus::Params& consensusParams = params.GetConsensus();
 
-    if (fParticlMode && pindexPrev) {
+    if (fParticlMode && pindexPrev
+        && (nHeight < consensusParams.testnetp2_fork_height
+            || nHeight >= consensusParams.testnetp2_fork_height + 400)) {
         // Check proof-of-stake
         if (block.nBits != GetNextTargetRequired(pindexPrev))
             return state.Invalid(ValidationInvalidReason::BLOCK_INVALID_HEADER, false, REJECT_INVALID, "bad-diffbits-pos", "incorrect proof of stake");
     } else {
         // Check proof of work
-        if (block.nBits != GetNextWorkRequired(pindexPrev, &block, consensusParams))
+        if (block.nBits != GetNextWorkRequired(pindexPrev, &block, consensusParams) && !consensusParams.m_pass_all_pow)
             return state.Invalid(ValidationInvalidReason::BLOCK_INVALID_HEADER, false, REJECT_INVALID, "bad-diffbits", "incorrect proof of work");
     }
 
@@ -4696,9 +4733,11 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
                 return error("ContextualCheckBlock(): check proof-of-stake failed for block %s\n", block.GetHash().ToString());
             }
         } else {
+            /*
             bool fCheckPOW = true; // TODO: pass properly
             if (fCheckPOW && !CheckProofOfWork(block.GetHash(), block.nBits, consensusParams, nHeight, Params().GetLastImportHeight()))
                 return state.Invalid(ValidationInvalidReason::BLOCK_INVALID_HEADER, false, REJECT_INVALID, "high-hash", "proof of work failed");
+            */
 
             // Enforce rule that the coinbase ends with serialized block height
             // genesis block scriptSig size will be different
@@ -4711,8 +4750,13 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
             }
         }
 
-        if (nHeight > 0 && !block.vtx[0]->IsCoinStake()) { // only genesis block can start with coinbase
-            return state.Invalid(ValidationInvalidReason::CONSENSUS, false, REJECT_INVALID, "bad-cs-missing", "first tx is not coinstake");
+        if (nHeight > 0 && !block.vtx[0]->IsCoinStake()) { // Only genesis block can start with coinbase
+            if (nHeight >= consensusParams.testnetp2_fork_height
+                && nHeight < consensusParams.testnetp2_fork_height + 400) {
+                // testnetp2
+            } else {
+                return state.Invalid(ValidationInvalidReason::CONSENSUS, false, REJECT_INVALID, "bad-cs-missing", "first tx is not coinstake");
+            }
         }
 
         if (nHeight > 0 // skip genesis
@@ -5273,7 +5317,7 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
         pindex->prevoutStake = pblock->vtx[0]->vin[0].prevout;
         if (!pindex->pprev
             || (pindex->pprev->bnStakeModifier.IsNull()
-                && pindex->pprev->GetBlockHash() != chainparams.GetConsensus().hashGenesisBlock)) {
+                && pindex->pprev->IsProofOfStake())) {
             // Block received out of order
             if (fParticlMode && !IsInitialBlockDownload()) {
                 if (pindex->nFlags & BLOCK_DELAYED) {

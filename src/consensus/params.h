@@ -67,6 +67,8 @@ struct Params {
      * This prevents us from warning about the CSV and segwit activations. */
     int MinBIP9WarningHeight;
 
+    int testnetp2_fork_height = std::numeric_limits<int>::max();
+
     /** Time at which OP_ISCOINSTAKE becomes active */
     int64_t OpIsCoinstakeTime;
     bool fAllowOpIsCoinstakeWithP2PKH;
@@ -124,6 +126,7 @@ struct Params {
     uint256 defaultAssumeValid;
 
     int nMinRCTOutputDepth;
+    bool m_pass_all_pow = false;
 };
 } // namespace Consensus
 
