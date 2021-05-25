@@ -784,12 +784,11 @@ public:
         consensus.exploit_fix_1_time = 1614268800;      // 2021-02-25 16:00:00
         //consensus.exploit_fix_2_time = 1626109200;      // 2021-07-12 17:00:00 UTC
 
-        consensus.testnetp2_fork_height = 944036;
-        consensus.exploit_fix_2_time = 1621969200;      // 2021-05-25 19:00:00
-
         consensus.m_frozen_anon_index = 27340;
         consensus.m_frozen_blinded_height = 884433;
 
+        consensus.testnetp2_fork_height = 958695;
+        consensus.exploit_fix_2_time = 1623924000;      // 2021-06-17 10:00:00 UTC
 
         consensus.smsg_fee_period = 5040;
         consensus.smsg_fee_funding_tx_per_k = 200000;
@@ -799,6 +798,7 @@ public:
         consensus.smsg_difficulty_max_delta = 0xffff;
 
         consensus.powLimit = uint256S("000000000000bfffffffffffffffffffffffffffffffffffffffffffffffffff");
+        consensus.m_pass_all_pow = true;
 
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
         consensus.nPowTargetSpacing = 10 * 60;
@@ -824,7 +824,7 @@ public:
         pchMessageStart[1] = 0xf2;
         pchMessageStart[2] = 0xef;
         pchMessageStart[3] = 0xb4;
-        nDefaultPort = 51738;
+        nDefaultPort = 51738;  // Use the same port as mainnet to avoid vm blocked ports
         nBIP44ID = 0x8000002C;
 
         nModifierInterval = 10 * 60;    // 10 minutes
@@ -892,7 +892,7 @@ public:
 
         bech32_hrp = "pw";
 
-        vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_main, pnSeed6_main + ARRAYLEN(pnSeed6_main));
+        vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_test2, pnSeed6_test2 + ARRAYLEN(pnSeed6_test2));
 
         fDefaultConsistencyChecks = false;
         fRequireStandard = true;

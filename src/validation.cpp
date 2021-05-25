@@ -1416,7 +1416,7 @@ bool ReadRawBlockFromDisk(std::vector<uint8_t>& block, const CBlockIndex* pindex
 CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
 {
     if (nHeight >= consensusParams.testnetp2_fork_height) {
-        return 500 * COIN;
+        return 1750 * COIN;  // 700k / 400
     }
     int halvings = nHeight / consensusParams.nSubsidyHalvingInterval;
     // Force block reward to zero when right shift is undefined.
@@ -3024,7 +3024,8 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                 coinStakeCache.InsertCoinStake(blockHash, txCoinstake);
             }
         } else {
-            if (blockHash != consensus.hashGenesisBlock) {
+            if (block.GetHash() != consensus.hashGenesisBlock) {
+
                 if (chainparams.NetworkIDString() == CBaseChainParams::TESTNET_P2) {
                     if (pindex->nHeight >= consensus.testnetp2_fork_height + 400) {
                         LogPrintf("ERROR: %s: Block isn't coinstake or genesis.\n", __func__);
@@ -4556,6 +4557,10 @@ unsigned int GetNextTargetRequired(const CBlockIndex *pindexLast)
         nProofOfWorkLimit = bnProofOfWorkLimit.GetCompact();
     }
 
+    if (pindexLast->nHeight <= consensus.testnetp2_fork_height + 400) {
+        return arith_uint256("00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").GetCompact();
+    }
+
     if (pindexLast == nullptr)
         return nProofOfWorkLimit; // Genesis block
 
@@ -4610,7 +4615,7 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
             return state.Invalid(ValidationInvalidReason::BLOCK_INVALID_HEADER, false, REJECT_INVALID, "bad-diffbits-pos", "incorrect proof of stake");
     } else {
         // Check proof of work
-        if (block.nBits != GetNextWorkRequired(pindexPrev, &block, consensusParams))
+        if (block.nBits != GetNextWorkRequired(pindexPrev, &block, consensusParams) && !consensusParams.m_pass_all_pow)
             return state.Invalid(ValidationInvalidReason::BLOCK_INVALID_HEADER, false, REJECT_INVALID, "bad-diffbits", "incorrect proof of work");
     }
 

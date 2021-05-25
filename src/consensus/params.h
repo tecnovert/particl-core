@@ -126,6 +126,7 @@ struct Params {
     uint256 defaultAssumeValid;
 
     int nMinRCTOutputDepth;
+    bool m_pass_all_pow = false;
 };
 } // namespace Consensus
 

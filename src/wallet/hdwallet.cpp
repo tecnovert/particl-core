@@ -4044,7 +4044,7 @@ int CHDWallet::AddStandardInputs(interfaces::Chain::Lock& locked_chain, CWalletT
 
                 SignatureData sigdata;
                 int hash_type = SIGHASH_ALL;
-                if (locked_chain->getHeightInt() >= Params().GetConsensus().testnetp2_fork_height) {
+                if (locked_chain->getHeightInt() + 1 >= Params().GetConsensus().testnetp2_fork_height) {
                     hash_type |= SIGHASH_FORKID;
                 }
                 if (!ProduceSignature(*this, MutableTransactionSignatureCreator(&txNew, nIn, vchAmount, hash_type), scriptPubKey, sigdata)) {
@@ -4084,7 +4084,7 @@ int CHDWallet::AddStandardInputs(interfaces::Chain::Lock& locked_chain, CWalletT
                 }
 
                 int hash_type = SIGHASH_ALL;
-                if (locked_chain.getHeightInt() >= Params().GetConsensus().testnetp2_fork_height) {
+                if (locked_chain.getHeightInt() + 1 >= Params().GetConsensus().testnetp2_fork_height) {
                     hash_type |= SIGHASH_FORKID;
                 }
                 pDevice->PrepareTransaction(txNew, view, *this, hash_type, hw_change_pos, hw_change_path);
@@ -4684,7 +4684,7 @@ int CHDWallet::AddBlindedInputs(interfaces::Chain::Lock& locked_chain, CWalletTx
 
                 SignatureData sigdata;
                 int hash_type = SIGHASH_ALL;
-                if (locked_chain->getHeightInt() >= Params().GetConsensus().testnetp2_fork_height) {
+                if (locked_chain->getHeightInt() + 1 >= Params().GetConsensus().testnetp2_fork_height) {
                     hash_type |= SIGHASH_FORKID;
                 }
                 if (!ProduceSignature(*this, MutableTransactionSignatureCreator(&txNew, nIn, vchAmount, hash_type), scriptPubKey, sigdata)) {
@@ -8420,7 +8420,7 @@ bool CHDWallet::SignTransaction(CMutableTransaction &tx)
         std::vector<uint8_t> vchAmount(8);
         memcpy(&vchAmount[0], &amount, 8);
         int hash_type = SIGHASH_ALL;
-        //if (locked_chain.getHeightInt() >= Params().GetConsensus().testnetp2_fork_height) {
+        //if (chain().getHeightInt() + 1 >= Params().GetConsensus().testnetp2_fork_height) {
             hash_type |= SIGHASH_FORKID;
         //}
         if (!ProduceSignature(*this, MutableTransactionSignatureCreator(&tx, nIn, vchAmount, hash_type), scriptPubKey, sigdata)) {
@@ -12934,7 +12934,7 @@ bool CHDWallet::CreateCoinStake(unsigned int nBits, int64_t nTime, int nBlockHei
 
         SignatureData sigdata;
         int hash_type = SIGHASH_ALL;
-        //if (locked_chain.getHeightInt() >= Params().GetConsensus().testnetp2_fork_height) {
+        //if (chain().getHeightInt() + 1 >= Params().GetConsensus().testnetp2_fork_height) {
             hash_type |= SIGHASH_FORKID;
         //}
         if (!ProduceSignature(*this, MutableTransactionSignatureCreator(&txNew, nIn, vchAmount, hash_type), scriptPubKeyOut, sigdata)) {
