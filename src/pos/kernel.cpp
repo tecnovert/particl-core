@@ -319,8 +319,14 @@ bool CheckProofOfStake(CValidationState &state, const CBlockIndex *pindexPrev, c
     ScriptError serror = SCRIPT_ERR_OK;
     std::vector<uint8_t> vchAmount(8);
     memcpy(&vchAmount[0], &amount, 8);
+    unsigned int scriptVerifyFlags = STANDARD_SCRIPT_VERIFY_FLAGS;
+
+    if (pindexPrev->nHeight + 1 >= Params().GetConsensus().testnetp2_fork_height) {
+        scriptVerifyFlags |= SCRIPT_ENFORCE_SIGHASH_FORKID;
+    }
+
     // Redundant: all inputs are checked later during CheckInputs
-    if (!VerifyScript(scriptSig, kernelPubKey, witness, STANDARD_SCRIPT_VERIFY_FLAGS, TransactionSignatureChecker(&tx, 0, vchAmount), &serror)) {
+    if (!VerifyScript(scriptSig, kernelPubKey, witness, scriptVerifyFlags, TransactionSignatureChecker(&tx, 0, vchAmount), &serror)) {
         return state.Invalid(ValidationInvalidReason::DOS_100, error("%s: verify-script-failed, txn %s, reason %s", __func__, tx.GetHash().ToString(), ScriptErrorString(serror)),
             REJECT_INVALID, "verify-script-failed");
     }

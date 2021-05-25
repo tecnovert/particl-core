@@ -24,6 +24,7 @@ enum
     SIGHASH_ALL = 1,
     SIGHASH_NONE = 2,
     SIGHASH_SINGLE = 3,
+    SIGHASH_FORKID = 0x40,
     SIGHASH_ANYONECANPAY = 0x80,
 };
 
@@ -117,6 +118,9 @@ enum
     SCRIPT_VERIFY_CONST_SCRIPTCODE = (1U << 16),
 
     SCRIPT_VERIFY_NO_CSP2SH = (1U << 20), // TODO: Try remove after fork
+
+    // Force signatures to use SIGHASH_FORKID
+    SCRIPT_ENFORCE_SIGHASH_FORKID = (1U << 21),
 };
 
 bool CheckSignatureEncoding(const std::vector<unsigned char> &vchSig, unsigned int flags, ScriptError* serror);

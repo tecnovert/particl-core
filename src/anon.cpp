@@ -61,6 +61,13 @@ bool VerifyMLSAG(const CTransaction &tx, CValidationState &state)
     }
     uint256 txhash = tx.GetHash();
 
+    if (state.m_enforce_forkid) {
+        int fork_id = 2;
+        CHashWriter ss(SER_GETHASH, 0);
+        ss << txhash << fork_id;
+        txhash = ss.GetHash();
+    }
+
     for (const auto &txin : tx.vin) {
         if (!txin.IsAnonInput()) {
             return state.Invalid(ValidationInvalidReason::CONSENSUS, false, REJECT_MALFORMED, "bad-anon-input");
