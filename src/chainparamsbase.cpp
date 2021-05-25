@@ -15,6 +15,7 @@ const std::string CBaseChainParams::MAIN = "main";
 const std::string CBaseChainParams::TESTNET = "test";
 const std::string CBaseChainParams::SIGNET = "signet";
 const std::string CBaseChainParams::REGTEST = "regtest";
+const std::string CBaseChainParams::TESTNET_P2 = "testnetp2";
 
 void SetupChainParamsBaseOptions(ArgsManager& argsman)
 {
@@ -23,6 +24,7 @@ void SetupChainParamsBaseOptions(ArgsManager& argsman)
                  "This is intended for regression testing tools and app development. Equivalent to -chain=regtest.", ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::CHAINPARAMS);
     argsman.AddArg("-segwitheight=<n>", "Set the activation height of segwit. -1 to disable. (regtest-only)", ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::DEBUG_TEST);
     argsman.AddArg("-testnet", "Use the test chain. Equivalent to -chain=test.", ArgsManager::ALLOW_ANY, OptionsCategory::CHAINPARAMS);
+    argsman.AddArg("-testnetp2", "Use the Particl test v2 chain. Equivalent to -chain=testnetp2.", ArgsManager::ALLOW_ANY, OptionsCategory::CHAINPARAMS);
     argsman.AddArg("-vbparams=deployment:start:end", "Use given start/end times for specified version bits deployment (regtest-only)", ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::CHAINPARAMS);
     argsman.AddArg("-signet", "Use the signet chain. Equivalent to -chain=signet. Note that the network is defined by the -signetchallenge parameter", ArgsManager::ALLOW_ANY, OptionsCategory::CHAINPARAMS);
     argsman.AddArg("-signetchallenge", "Blocks must satisfy the given script to be considered valid (only for signet networks; defaults to the global default signet test network challenge)", ArgsManager::ALLOW_STRING, OptionsCategory::CHAINPARAMS);
@@ -51,6 +53,8 @@ std::unique_ptr<CBaseChainParams> CreateBaseChainParams(const std::string& chain
         return MakeUnique<CBaseChainParams>("signet", 31932, 31934);
     } else if (chain == CBaseChainParams::REGTEST) {
         return MakeUnique<CBaseChainParams>("regtest", 51936, 51931);
+    } else if (chain == CBaseChainParams::TESTNET_P2) {
+        return MakeUnique<CBaseChainParams>("testnetp2", 41935, 41934);
     } else {
         throw std::runtime_error(strprintf("%s: Unknown chain %s.", __func__, chain));
     }

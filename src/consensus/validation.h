@@ -167,6 +167,7 @@ public:
     bool m_clamp_tx_version = false;
     bool m_exploit_fix_1 = false;
     bool m_exploit_fix_2 = false;
+    bool m_enforce_forkid = false;
     CAmount tx_balances[6] = {0};
     std::set<CCmpPubKey> m_setHaveKI;
 
@@ -185,6 +186,7 @@ public:
         m_clamp_tx_version = time >= consensusParams.clamp_tx_version_time;
         m_exploit_fix_1 = time >= consensusParams.exploit_fix_1_time;
         m_exploit_fix_2 = time >= consensusParams.exploit_fix_2_time;
+        m_enforce_forkid = spend_height >= consensusParams.testnetp2_fork_height;
     }
 };
 

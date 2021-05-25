@@ -26,6 +26,7 @@ enum
     SIGHASH_ALL = 1,
     SIGHASH_NONE = 2,
     SIGHASH_SINGLE = 3,
+    SIGHASH_FORKID = 0x40,
     SIGHASH_ANYONECANPAY = 0x80,
 
     SIGHASH_DEFAULT = 0, //!< Taproot only; implied when sighash byte is missing, and equivalent to SIGHASH_ALL
@@ -139,6 +140,9 @@ enum
 
     // Making unknown public key versions (in BIP 342 scripts) non-standard
     SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_PUBKEYTYPE = (1U << 20),
+
+    // Force signatures to use SIGHASH_FORKID
+    SCRIPT_ENFORCE_SIGHASH_FORKID = (1U << 21),
 };
 
 bool CheckSignatureEncoding(const std::vector<unsigned char> &vchSig, unsigned int flags, ScriptError* serror);

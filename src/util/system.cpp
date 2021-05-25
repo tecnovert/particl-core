@@ -1008,9 +1008,10 @@ std::string ArgsManager::GetChainName() const
     const bool fRegTest = get_net("-regtest");
     const bool fSigNet  = get_net("-signet");
     const bool fTestNet = get_net("-testnet");
+    const bool fTestNetP2 = get_net("-testnetp2");
     const bool is_chain_arg_set = IsArgSet("-chain");
 
-    if ((int)is_chain_arg_set + (int)fRegTest + (int)fSigNet + (int)fTestNet > 1) {
+    if ((int)is_chain_arg_set + (int)fRegTest + (int)fSigNet + (int)fTestNet + (int)fTestNetP2 > 1) {
         throw std::runtime_error("Invalid combination of -regtest, -signet, -testnet and -chain. Can use at most one.");
     }
     if (fRegTest)
@@ -1020,6 +1021,8 @@ std::string ArgsManager::GetChainName() const
     }
     if (fTestNet)
         return CBaseChainParams::TESTNET;
+    if (fTestNetP2)
+        return CBaseChainParams::TESTNET_P2;
 
     return GetArg("-chain", CBaseChainParams::MAIN);
 }

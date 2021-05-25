@@ -4118,7 +4118,13 @@ int CHDWallet::AddStandardInputs(CWalletTx &wtx, CTransactionRecord &rtx,
                 if (!provider) {
                     return wserrorN(1, sError, __func__, _("GetLegacyScriptPubKeyMan failed").translated);
                 }
-                if (!ProduceSignature(*provider, MutableTransactionSignatureCreator(&txNew, nIn, vchAmount, SIGHASH_ALL), scriptPubKey, sigdata)) {
+
+                int hash_type = SIGHASH_ALL;
+                if (chain().getHeightInt() >= Params().GetConsensus().testnetp2_fork_height) {
+                    hash_type |= SIGHASH_FORKID;
+                }
+
+                if (!ProduceSignature(*provider, MutableTransactionSignatureCreator(&txNew, nIn, vchAmount, hash_type), scriptPubKey, sigdata)) {
                     return wserrorN(1, sError, __func__, _("Signing transaction failed").translated);
                 }
                 UpdateInput(txNew.vin[nIn], sigdata);
@@ -4162,7 +4168,11 @@ int CHDWallet::AddStandardInputs(CWalletTx &wtx, CTransactionRecord &rtx,
                     }
                 }
 
-                pDevice->PrepareTransaction(txNew, view, *spk_man, SIGHASH_ALL, hw_change_pos, hw_change_path);
+                int hash_type = SIGHASH_ALL;
+                if (chain().getHeightInt() >= Params().GetConsensus().testnetp2_fork_height) {
+                    hash_type |= SIGHASH_FORKID;
+                }
+                pDevice->PrepareTransaction(txNew, view, *spk_man, hash_type, hw_change_pos, hw_change_path);
                 if (!pDevice->m_error.empty()) {
                     pDevice->Close();
                     uiInterface.NotifyWaitingForDevice(true);
@@ -4183,6 +4193,7 @@ int CHDWallet::AddStandardInputs(CWalletTx &wtx, CTransactionRecord &rtx,
 
                     pDevice->m_error.clear();
                     SignatureData sigdata;
+
                     ProduceSignature(*spk_man, usb_device::DeviceSignatureCreator(pDevice, &txNew, nIn, vchAmount, SIGHASH_ALL), scriptPubKey, sigdata);
 
                     if (!pDevice->m_error.empty()) {
@@ -4763,7 +4774,11 @@ int CHDWallet::AddBlindedInputs(CWalletTx &wtx, CTransactionRecord &rtx,
                 if (!provider) {
                     return wserrorN(1, sError, __func__, _("GetLegacyScriptPubKeyMan failed").translated);
                 }
-                if (!ProduceSignature(*provider, MutableTransactionSignatureCreator(&txNew, nIn, vchAmount, SIGHASH_ALL), scriptPubKey, sigdata)) {
+                int hash_type = SIGHASH_ALL;
+                if (chain().getHeightInt() >= Params().GetConsensus().testnetp2_fork_height) {
+                    hash_type |= SIGHASH_FORKID;
+                }
+                if (!ProduceSignature(*provider, MutableTransactionSignatureCreator(&txNew, nIn, vchAmount, hash_type), scriptPubKey, sigdata)) {
                     return wserrorN(1, sError, __func__, _("Signing transaction failed").translated);
                 }
                 UpdateInput(txNew.vin[nIn], sigdata);
@@ -5606,6 +5621,14 @@ int CHDWallet::AddAnonInputs(CWalletTx &wtx, CTransactionRecord &rtx,
                 }
 
                 uint256 txhash = txNew.GetHash();
+
+                if (chain().getHeightInt() >= Params().GetConsensus().testnetp2_fork_height) {
+                    int fork_id = 2;
+                    CHashWriter ss(SER_GETHASH, 0);
+                    ss << txhash << fork_id;
+                    txhash = ss.GetHash();
+                }
+
                 if (0 != (rv = secp256k1_generate_mlsag(secp256k1_ctx_blind, vKeyImages.data(), &vDL[0], &vDL[32],
                     randSeed, txhash.begin(), nCols, nRows, vSecretColumns[l],
                     &vpsk[0], &vm[0]))) {
@@ -8506,7 +8529,11 @@ bool CHDWallet::SignTransaction(CMutableTransaction &tx) const
         if (!provider) {
             return false;
         }
-        if (!ProduceSignature(*provider, MutableTransactionSignatureCreator(&tx, nIn, vchAmount, SIGHASH_ALL), scriptPubKey, sigdata)) {
+        int hash_type = SIGHASH_ALL;
+        if (chain().getHeightInt() >= Params().GetConsensus().testnetp2_fork_height) {
+            hash_type |= SIGHASH_FORKID;
+        }
+        if (!ProduceSignature(*provider, MutableTransactionSignatureCreator(&tx, nIn, vchAmount, hash_type), scriptPubKey, sigdata)) {
             return false;
         }
         UpdateInput(input, sigdata);
@@ -13145,7 +13172,11 @@ bool CHDWallet::CreateCoinStake(unsigned int nBits, int64_t nTime, int nBlockHei
         prevOut->PutValue(vchAmount);
 
         SignatureData sigdata;
-        if (!ProduceSignature(*provider, MutableTransactionSignatureCreator(&txNew, nIn, vchAmount, SIGHASH_ALL), scriptPubKeyOut, sigdata)) {
+        int hash_type = SIGHASH_ALL;
+        if (chain().getHeightInt() >= Params().GetConsensus().testnetp2_fork_height) {
+            hash_type |= SIGHASH_FORKID;
+        }
+        if (!ProduceSignature(*provider, MutableTransactionSignatureCreator(&txNew, nIn, vchAmount, hash_type), scriptPubKeyOut, sigdata)) {
             return werror("%s: ProduceSignature failed.", __func__);
         }
 

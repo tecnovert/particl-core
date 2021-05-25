@@ -48,6 +48,7 @@ static const int TOOLTIP_WRAP_THRESHOLD = 80;
 #define QAPP_APP_NAME_TESTNET "Particl-Qt-testnet"
 #define QAPP_APP_NAME_SIGNET "Particl-Qt-signet"
 #define QAPP_APP_NAME_REGTEST "Particl-Qt-regtest"
+#define QAPP_APP_NAME_TESTNET_P2 "Particl-Qt-testnet-2"
 
 /* One gigabyte (GB) in bytes */
 static constexpr uint64_t GB_BYTES{1000000000};

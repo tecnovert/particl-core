@@ -477,6 +477,8 @@ void SetupServerArgs(NodeContext& node)
     const auto testnetChainParams = CreateChainParams(argsman, CBaseChainParams::TESTNET);
     const auto signetChainParams = CreateChainParams(argsman, CBaseChainParams::SIGNET);
     const auto regtestChainParams = CreateChainParams(argsman, CBaseChainParams::REGTEST);
+    const auto testnetp2BaseParams = CreateBaseChainParams(CBaseChainParams::TESTNET_P2);
+    const auto testnetp2ChainParams = CreateChainParams(argsman, CBaseChainParams::TESTNET_P2);
 
     // Hidden Options
     std::vector<std::string> hidden_args = {

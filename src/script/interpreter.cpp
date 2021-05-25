@@ -186,11 +186,15 @@ bool static IsLowDERSignature(const valtype &vchSig, ScriptError* serror) {
     return true;
 }
 
-bool static IsDefinedHashtypeSignature(const valtype &vchSig) {
+bool static IsDefinedHashtypeSignature(const valtype &vchSig, uint32_t flags) {
+
     if (vchSig.size() == 0) {
         return false;
     }
-    unsigned char nHashType = vchSig[vchSig.size() - 1] & (~(SIGHASH_ANYONECANPAY));
+    if (flags & SCRIPT_ENFORCE_SIGHASH_FORKID && !(vchSig[vchSig.size() - 1] & SIGHASH_FORKID)) {
+        return false;
+    }
+    unsigned char nHashType = vchSig[vchSig.size() - 1] & (~(SIGHASH_FORKID | SIGHASH_ANYONECANPAY));
     if (nHashType < SIGHASH_ALL || nHashType > SIGHASH_SINGLE)
         return false;
 
@@ -208,7 +212,7 @@ bool CheckSignatureEncoding(const std::vector<unsigned char> &vchSig, unsigned i
     } else if ((flags & SCRIPT_VERIFY_LOW_S) != 0 && !IsLowDERSignature(vchSig, serror)) {
         // serror is set
         return false;
-    } else if ((flags & SCRIPT_VERIFY_STRICTENC) != 0 && !IsDefinedHashtypeSignature(vchSig)) {
+    } else if ((flags & SCRIPT_VERIFY_STRICTENC) != 0 && !IsDefinedHashtypeSignature(vchSig, flags)) {
         return set_error(serror, SCRIPT_ERR_SIG_HASHTYPE);
     }
     return true;
@@ -1563,6 +1567,11 @@ bool SignatureHashSchnorr(uint256& hash_out, const ScriptExecutionData& execdata
     if (!(hash_type <= 0x03 || (hash_type >= 0x81 && hash_type <= 0x83))) return false;
     ss << hash_type;
 
+    if (hash_type & SIGHASH_FORKID) {
+        int fork_id = 2;
+        ss << fork_id;
+    }
+
     // Transaction level data
     ss << tx_to.nVersion;
     ss << tx_to.nLockTime;
@@ -1669,6 +1678,11 @@ uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn
         ss << txTo.nLockTime;
         // Sighash type
         ss << nHashType;
+
+        if (nHashType & SIGHASH_FORKID) {
+            int fork_id = 2;
+            ss << fork_id;
+        }
 
         return ss.GetHash();
     }
