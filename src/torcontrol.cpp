@@ -207,7 +207,8 @@ bool TorControlConnection::Connect(const std::string& tor_control_center, const 
     struct sockaddr_storage connect_to_addr;
     int connect_to_addrlen = sizeof(connect_to_addr);
 
-    if (gArgs.GetBoolArg("-lookuptorcontrolhost", false)) {
+    if (gArgs.IsArgSet("-lookuptorcontrolhost")) {
+        std::string lookup_protocol = gArgs.GetArg("-lookuptorcontrolhost", "");
         int port = -1;
         char str_port[6];
         std::string host;
@@ -222,7 +223,18 @@ bool TorControlConnection::Connect(const std::string& tor_control_center, const 
         memset(&aiHint, 0, sizeof(struct addrinfo));
         aiHint.ai_socktype = SOCK_STREAM;
         aiHint.ai_protocol = IPPROTO_TCP;
-        aiHint.ai_family = AF_UNSPEC;
+        if (lookup_protocol == "ipv4") {
+            aiHint.ai_family = AF_INET;
+        } else
+        if (lookup_protocol == "ipv6") {
+            aiHint.ai_family = AF_INET6;
+        } else
+        if (lookup_protocol == "any") {
+            aiHint.ai_family = AF_UNSPEC;
+        } else {
+            LogPrintf("tor: Error, unknown -lookuptorcontrolhost option: \"%s\"\n", lookup_protocol);
+            return false;
+        }
         struct addrinfo *aiRes = nullptr;
 
         int err = evutil_getaddrinfo(host.c_str(), str_port, &aiHint, &aiRes);
@@ -231,7 +243,7 @@ bool TorControlConnection::Connect(const std::string& tor_control_center, const 
             return false;
         }
 
-        memcpy((char*)&connect_to_addr, (char*)&aiRes->ai_addr, aiRes->ai_addrlen);
+        memcpy((char*)&connect_to_addr, (char*)aiRes->ai_addr, aiRes->ai_addrlen);
         connect_to_addrlen = aiRes->ai_addrlen;
 
         evutil_freeaddrinfo(aiRes);
