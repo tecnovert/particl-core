@@ -3424,7 +3424,7 @@ void InspectOutputs(std::vector<CTempRecipient> &vecSend,
         }
 
         if (r.fSubtractFeeFromAmount) {
-            if (r.fSplitBlindOutput && r.nAmount < 0.1) {
+            if (r.fSplitBlindOutput && r.nAmount < 0.01) {
                 r.fExemptFeeSub = true;
             } else {
                 nSubtractFeeFromAmount++;
@@ -3824,6 +3824,7 @@ int CHDWallet::AddStandardInputs(interfaces::Chain::Lock& locked_chain, CWalletT
                 }
             }
 
+            CAmount extra_fee_from_change = 0;
             nChangePosInOut = -1;
             if (nChange > 0) {
                 // Fill an output to ourself
@@ -3843,7 +3844,12 @@ int CHDWallet::AddStandardInputs(interfaces::Chain::Lock& locked_chain, CWalletT
                 // add the dust to the fee.
                 if (IsDust(&tempOut, discard_rate)) {
                     nChangePosInOut = -1;
-                    nFeeRet += nChange;
+                    // Raise the fee after it may be subtracted from outputs
+                    extra_fee_from_change += nChange;
+                    if (nSubtractFeeFromAmount > 0) { // Reduce the amount of the fee that must be funded from outputs
+                        nFeeRet -= nFeeRet > extra_fee_from_change ? extra_fee_from_change : nFeeRet;
+                    }
+
                 } else {
                     nChangePosInOut = coinControl->nChangePos;
                     InsertChangeAddress(r, vecSend, nChangePosInOut);
@@ -3902,6 +3908,8 @@ int CHDWallet::AddStandardInputs(interfaces::Chain::Lock& locked_chain, CWalletT
                 r.n = txNew.vpout.size();
                 txNew.vpout.push_back(txbout);
             }
+
+            nFeeRet += extra_fee_from_change;
 
             std::vector<uint8_t*> vpBlinds;
             uint8_t blind_plain[32] = {0};

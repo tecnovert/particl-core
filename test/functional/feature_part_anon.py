@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-# Copyright (c) 2017-2019 The Particl Core developers
+# Copyright (c) 2017-2021 The Particl Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 from test_framework.test_particl import ParticlTestFramework, connect_nodes_bi
 from test_framework.util import assert_raises_rpc_error
+from test_framework.messages import COIN
+
 
 
 class AnonTest(ParticlTestFramework):
@@ -184,6 +186,17 @@ class AnonTest(ParticlTestFramework):
 
         wi_1_3 = w1_3.getwalletinfo()
         assert(wi_1_3['anon_balance'] == wi_1['anon_balance'])
+
+        self.log.info('Test subfee edge case')
+        unspents = nodes[0].listunspent()
+        total_input = int(unspents[0]['amount'] * COIN) + int(unspents[1]['amount'] * COIN)
+        total_output = total_input - 1
+
+        coincontrol = {'test_mempool_accept': True, 'show_hex': True, 'show_fee': True, 'inputs': [{'tx': unspents[0]['txid'],'n': unspents[0]['vout']}, {'tx': unspents[1]['txid'],'n': unspents[1]['vout']}]}
+        outputs = [{'address': sxAddrTo0_1, 'amount': '%i.%08i' % (total_output // COIN, total_output % COIN), 'narr': '', 'subfee' : True},]
+        tx = nodes[0].sendtypeto('part', 'anon', outputs, 'comment', 'comment-to', 5, 1, False, coincontrol)
+        assert(total_input == int(tx['fee'] * COIN) + int(tx['outputs_fee'][sxAddrTo0_1]))
+        assert(tx['mempool-allowed'] == True)
 
 
 if __name__ == '__main__':
