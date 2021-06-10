@@ -3444,6 +3444,12 @@ bool FlushView(CCoinsViewCache *view, BlockValidationState& state, bool fDisconn
         if (!pblocktree->WriteBatch(batch)) {
             return error("%s: Write index data failed.", __func__);
         }
+        for (const auto &it : view->keyImages) {
+            LogPrintf("TEST - KI %s\n", HexStr(it.first));
+            uint256 txhash_read;
+            assert(pblocktree->ReadRCTKeyImage(it.first, txhash_read));
+            LogPrintf("TEST - Recovered txid matches %d, %s\n", txhash_read == it.second, txhash_read.ToString());
+        }
     }
 
     view->nLastRCTOutput = 0;
