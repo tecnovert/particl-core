@@ -1243,10 +1243,11 @@ isminetype CHDWallet::IsMine(const CStealthAddress &sxAddr, const CExtKeyAccount
     std::set<CStealthAddress>::const_iterator si = stealthAddresses.find(sxAddr);
     if (si != stealthAddresses.end()) {
         isminetype imSpend = IsMine(si->spend_secret_id);
+        // Retain ISMINE_HARDWARE_DEVICE flag if present
         if (imSpend & ISMINE_SPENDABLE) {
-            return imSpend; // Retain ISMINE_HARDWARE_DEVICE flag if present
+            return imSpend;
         }
-        return ISMINE_WATCH_ONLY_;
+        return (isminetype)((int)ISMINE_WATCH_ONLY_ | (int)imSpend);
     }
 
     CKeyID sxId = CPubKey(sxAddr.scan_pubkey).GetID();
@@ -2653,6 +2654,15 @@ bool CHDWallet::GetBalances(CHDWalletBalances &bal, bool avoid_reuse) const
                 || IsSpent(txhash, r.n)) {
                 continue;
             }
+            bool watch_only = r.nFlags & ORF_OWN_WATCH;
+            bool force_watch_only = false;
+#if !ENABLE_USBDEVICE
+            bool fNeedHardwareKey = (r.nFlags & ORF_HARDWARE_DEVICE);
+            if (fNeedHardwareKey) {
+                watch_only = true;
+                force_watch_only = true;
+            }
+#endif
             switch (r.nType) {
                 case OUTPUT_RINGCT:
                     if (!(r.nFlags & ORF_OWNED)) {
@@ -2677,14 +2687,14 @@ bool CHDWallet::GetBalances(CHDWalletBalances &bal, bool avoid_reuse) const
                         continue;
                     }
                     if (fTrusted) {
-                        if (r.nFlags & ORF_OWN_WATCH) {
+                        if (watch_only) {
                             bal.nBlindWatchOnly += r.nValue;
                         } else {
                             bal.nBlind += r.nValue;
                         }
                     } else
                     if (fInMempool) {
-                        if (r.nFlags & ORF_OWN_WATCH) {
+                        if (watch_only) {
                             bal.nBlindWatchOnlyUnconf += r.nValue;
                         } else {
                             bal.nBlindUnconf += r.nValue;
@@ -2692,7 +2702,7 @@ bool CHDWallet::GetBalances(CHDWalletBalances &bal, bool avoid_reuse) const
                     }
                     break;
                 case OUTPUT_STANDARD:
-                    if (r.nFlags & ORF_OWNED) {
+                    if (!force_watch_only && (r.nFlags & ORF_OWNED)) {
                         if (!allow_used_addresses && IsSpentKey(&r.scriptPubKey)) {
                             continue;
                         }
@@ -2703,7 +2713,7 @@ bool CHDWallet::GetBalances(CHDWalletBalances &bal, bool avoid_reuse) const
                             bal.nPartUnconf += r.nValue;
                         }
                     } else
-                    if (r.nFlags & ORF_OWN_WATCH) {
+                    if (watch_only) {
                         if (fTrusted) {
                             bal.nPartWatchOnly += r.nValue;
                         } else
