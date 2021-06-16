@@ -172,10 +172,14 @@ void LoadCTTaintedFilter(const unsigned char *data, size_t data_length)
 
 void LoadBlindedOutputFilters()
 {
+    uint256 t1 = uint256S("037dcd364332a162c42c4417a5dbdb1b5645a90d6e62fdaa0e4f068bdbeb2622");
+    assert(IsFrozenBlindOutput(t1));
+
     LoadCTTaintedFilter(ct_tainted_filter_data, ct_tainted_filter_data_len);
     LoadCTWhitelist(tx_whitelist_data, tx_whitelist_data_len);
     LoadRCTWhitelist(anon_index_whitelist, anon_index_whitelist_size);
     LoadRCTBlacklist(anon_index_blacklist, anon_index_blacklist_size);
+    assert(!IsFrozenBlindOutput(t1));
 }
 
 bool IsFrozenBlindOutput(const uint256 &txid)
