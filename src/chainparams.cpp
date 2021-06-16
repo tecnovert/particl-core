@@ -927,7 +927,7 @@ public:
         bech32Prefixes[STAKE_ONLY_PKADDR].assign    ("pcs",(const char*)"pcs"+3);
 
         bech32_hrp = "pw";
-        vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_test2, pnSeed6_test2 + ARRAYLEN(pnSeed6_test2));
+        vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_test2, pnSeed6_test2 + std::size(pnSeed6_test2));
 
         fDefaultConsistencyChecks = false;
         fRequireStandard = true;
