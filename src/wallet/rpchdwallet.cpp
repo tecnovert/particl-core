@@ -3901,8 +3901,8 @@ static UniValue getstakinginfo(const JSONRPCRequest &request)
             "  \"percentyearreward\": xxxxxxx,  (numeric) current stake reward percentage\n"
             "  \"moneysupply\": xxxxxxx,        (numeric) the total amount of particl in the network\n"
             "  \"reserve\": xxxxxxx,            (numeric) the reserve balance of the wallet in " + CURRENCY_UNIT + "\n"
-            "  \"walletfoundationdonationpercent\": xxxxxxx,\n    (numeric) user set percentage of the block reward ceded to the foundation\n"
-            "  \"foundationdonationpercent\": xxxxxxx,\n    (numeric) network enforced percentage of the block reward ceded to the foundation\n"
+            "  \"wallettreasurydonationpercent\": xxxxxxx,\n    (numeric) user set percentage of the block reward ceded to the treasury\n"
+            "  \"treasurydonationpercent\": xxxxxxx,\n    (numeric) network enforced percentage of the block reward ceded to the treasury\n"
             "  \"currentblocksize\": nnn,       (numeric) the last approximate block size in bytes\n"
             "  \"currentblockweight\": nnn,     (numeric) the last block weight\n"
             "  \"currentblocktx\": nnn,         (numeric) the number of transactions in the last block\n"
@@ -3977,12 +3977,12 @@ static UniValue getstakinginfo(const JSONRPCRequest &request)
     }
 
     if (pwallet->nWalletDevFundCedePercent > 0) {
-        obj.pushKV("walletfoundationdonationpercent", pwallet->nWalletDevFundCedePercent);
+        obj.pushKV("wallettreasurydonationpercent", pwallet->nWalletDevFundCedePercent);
     }
 
     const DevFundSettings *pDevFundSettings = Params().GetDevFundSettings(nTipTime);
     if (pDevFundSettings && pDevFundSettings->nMinDevStakePercent > 0) {
-        obj.pushKV("foundationdonationpercent", pDevFundSettings->nMinDevStakePercent);
+        obj.pushKV("treasurydonationpercent", pDevFundSettings->nMinDevStakePercent);
     }
 
     obj.pushKV("currentblocksize", (uint64_t)nLastBlockSize);
@@ -6171,7 +6171,7 @@ static UniValue walletsettings(const JSONRPCRequest &request)
                 "  \"enabled\"                   (bool, optional, default=true) Toggle staking enabled on this wallet.\n"
                 "  \"stakecombinethreshold\"     (amount, optional, default=1000) Join outputs below this value.\n"
                 "  \"stakesplitthreshold\"       (amount, optional, default=2000) Split outputs above this value.\n"
-                "  \"foundationdonationpercent\" (int, optional, default=0) Set the percentage of each block reward to donate to the foundation.\n"
+                "  \"treasurydonationpercent\" (int, optional, default=0) Set the percentage of each block reward to donate to the treasury.\n"
                 "  \"rewardaddress\"             (string, optional, default=none) An address which the user portion of the block reward gets sent to.\n"
                 "  \"smsgfeeratetarget\"         (amount, optional, default=0) If non-zero an amount to move the smsgfeerate towards.\n"
                 "  \"smsgdifficultytarget\"      (string, optional, default=0) A 32 byte hex value to move the smsgdifficulty towards.\n"
@@ -6349,9 +6349,9 @@ static UniValue walletsettings(const JSONRPCRequest &request)
                     throw JSONRPCError(RPC_INVALID_PARAMETER, _("stakesplitthreshold can't be negative."));
                 }
             } else
-            if (sKey == "foundationdonationpercent") {
-                if (!json["foundationdonationpercent"].isNum()) {
-                    throw JSONRPCError(RPC_INVALID_PARAMETER, _("foundationdonationpercent must be a number."));
+            if (sKey == "treasurydonationpercent") {
+                if (!json["treasurydonationpercent"].isNum()) {
+                    throw JSONRPCError(RPC_INVALID_PARAMETER, _("treasurydonationpercent must be a number."));
                 }
             } else
             if (sKey == "rewardaddress") {

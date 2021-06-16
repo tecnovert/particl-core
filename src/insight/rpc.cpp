@@ -1009,7 +1009,7 @@ UniValue getblockreward(const JSONRPCRequest& request)
             "  \"blocktime\" : n,          (id) The time of the block.\n"
             "  \"stakereward\" : n,      (numeric) The stake reward portion, newly minted coin.\n"
             "  \"blockreward\" : n,      (numeric) The block reward, value paid to staker, including fees.\n"
-            "  \"foundationreward\" : n, (numeric) The accumulated foundation reward payout, if any.\n"
+            "  \"treasuryreward\" : n,   (numeric) The accumulated treasury reward payout, if any.\n"
             "  \"kernelscript\" :\n"
             "  {\n"
             "    \"hex\" : \"str\",          (str) The script from the kernel output.\n"
@@ -1069,7 +1069,7 @@ UniValue getblockreward(const JSONRPCRequest& request)
     const auto &tx = block.vtx[0];
 
     UniValue outputs(UniValue::VARR);
-    CAmount value_out = 0, value_in = 0, value_foundation = 0;
+    CAmount value_out = 0, value_in = 0, value_treasury = 0;
     for (const auto &txout : tx->vpout) {
         if (!txout->IsStandardOutput()) {
             continue;
@@ -1081,7 +1081,7 @@ UniValue getblockreward(const JSONRPCRequest& request)
         outputs.push_back(output);
 
         if (devfundconf && *txout->GetPScriptPubKey() == devFundScriptPubKey) {
-            value_foundation += txout->GetValue();
+            value_treasury += txout->GetValue();
             continue;
         }
 
@@ -1123,8 +1123,8 @@ UniValue getblockreward(const JSONRPCRequest& request)
     rv.pushKV("stakereward", ValueFromAmount(stake_reward));
     rv.pushKV("blockreward", ValueFromAmount(block_reward));
 
-    if (value_foundation > 0) {
-        rv.pushKV("foundationreward", ValueFromAmount(value_foundation));
+    if (value_treasury > 0) {
+        rv.pushKV("treasuryreward", ValueFromAmount(value_treasury));
     }
 
     if (tx->IsCoinStake()) {

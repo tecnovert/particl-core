@@ -2830,7 +2830,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                 CAmount nMinDevPart = (nCalculatedStakeReward * pDevFundSettings->nMinDevStakePercent) / 100;
                 CAmount nMaxHolderPart = nCalculatedStakeReward - nMinDevPart;
                 if (nMinDevPart < 0 || nMaxHolderPart < 0) {
-                    return state.DoS(100, error("%s: Bad coinstake split amount (foundation=%d vs reward=%d)", __func__, nMinDevPart, nMaxHolderPart), REJECT_INVALID, "bad-cs-amount");
+                    return state.DoS(100, error("%s: Bad coinstake split amount (treasury=%d vs reward=%d)", __func__, nMinDevPart, nMaxHolderPart), REJECT_INVALID, "bad-cs-amount");
                 }
 
                 if (pindex->pprev->nHeight > 0) { // Genesis block is pow
@@ -2855,23 +2855,23 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
 
                     CTxDestination dfDest = CBitcoinAddress(pDevFundSettings->sDevFundAddresses).Get();
                     if (dfDest.type() == typeid(CNoDestination)) {
-                        return error("%s: Failed to get foundation fund destination: %s.", __func__, pDevFundSettings->sDevFundAddresses);
+                        return error("%s: Failed to get treasury fund destination: %s.", __func__, pDevFundSettings->sDevFundAddresses);
                     }
                     CScript devFundScriptPubKey = GetScriptForDestination(dfDest);
 
                     // Output 1 must be to the dev fund
                     const CTxOutStandard *outputDF = txCoinstake->vpout[1]->GetStandardOutput();
                     if (!outputDF) {
-                        return state.DoS(100, error("%s: Bad foundation fund output.", __func__), REJECT_INVALID, "bad-cs");
+                        return state.DoS(100, error("%s: Bad treasury fund output.", __func__), REJECT_INVALID, "bad-cs");
                     }
                     if (outputDF->scriptPubKey != devFundScriptPubKey) {
-                        return state.DoS(100, error("%s: Bad foundation fund output script.", __func__), REJECT_INVALID, "bad-cs");
+                        return state.DoS(100, error("%s: Bad treasury fund output script.", __func__), REJECT_INVALID, "bad-cs");
                     }
                     if (outputDF->nValue < nDevBfwd + nMinDevPart) { // Max value is clamped already
-                        return state.DoS(100, error("%s: Bad foundation-reward (actual=%d vs minfundpart=%d)", __func__, nStakeReward, nDevBfwd + nMinDevPart), REJECT_INVALID, "bad-cs-fund-amount");
+                        return state.DoS(100, error("%s: Bad treasury-reward (actual=%d vs minfundpart=%d)", __func__, nStakeReward, nDevBfwd + nMinDevPart), REJECT_INVALID, "bad-cs-fund-amount");
                     }
                     if (txCoinstake->GetDevFundCfwd(nDevCfwdCheck)) {
-                        return state.DoS(100, error("%s: Coinstake foundation cfwd must be unset.", __func__), REJECT_INVALID, "bad-cs-cfwd");
+                        return state.DoS(100, error("%s: Coinstake treasury cfwd must be unset.", __func__), REJECT_INVALID, "bad-cs-cfwd");
                     }
                 } else {
                     // Ensure cfwd data output is correct and nStakeReward is <= nHolderPart
@@ -2883,7 +2883,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                     CAmount nDevCfwd = nDevBfwd + nCalculatedStakeReward - nStakeReward;
                     if (!txCoinstake->GetDevFundCfwd(nDevCfwdCheck)
                         || nDevCfwdCheck != nDevCfwd) {
-                        return state.DoS(100, error("%s: Coinstake foundation fund carried forward mismatch (actual=%d vs expected=%d)", __func__, nDevCfwdCheck, nDevCfwd), REJECT_INVALID, "bad-cs-cfwd");
+                        return state.DoS(100, error("%s: Coinstake treasury fund carried forward mismatch (actual=%d vs expected=%d)", __func__, nDevCfwdCheck, nDevCfwd), REJECT_INVALID, "bad-cs-cfwd");
                     }
                 }
 
@@ -4510,7 +4510,7 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
         // genesis block scriptSig size will be different
 
         if (block.IsProofOfStake()) {
-            // Limit the number of outputs in a coinstake txn to 6: 1 data + 1 foundation + 4 user
+            // Limit the number of outputs in a coinstake txn to 6: 1 data + 1 treasury + 4 user
             if (nPrevTime >= consensusParams.OpIsCoinstakeTime) {
                 if (block.vtx[0]->vpout.size() > 6) {
                     return state.DoS(100, false, REJECT_INVALID, "bad-cs-outputs", false, "Too many outputs in coinstake");
