@@ -4084,7 +4084,7 @@ int CHDWallet::AddStandardInputs(interfaces::Chain::Lock& locked_chain, CWalletT
                 }
 
                 int hash_type = SIGHASH_ALL;
-                if (locked_chain.getHeightInt() + 1 >= Params().GetConsensus().testnetp2_fork_height) {
+                if (locked_chain->getHeightInt() + 1 >= Params().GetConsensus().testnetp2_fork_height) {
                     hash_type |= SIGHASH_FORKID;
                 }
                 pDevice->PrepareTransaction(txNew, view, *this, hash_type, hw_change_pos, hw_change_path);
