@@ -1667,7 +1667,7 @@ void CWalletTx::GetAmounts(std::list<COutputEntry>& listReceived,
                 listStaked.push_back(output);
             }
         }
-        // Recalc fee as GetValueOut might include foundation fund output
+        // Recalc fee as GetValueOut might include treasury fund output
         nFee = nDebit - nCredit;
 
         if (fForFilterTx || !(isMineAll & filter)) {
