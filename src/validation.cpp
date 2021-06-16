@@ -4539,7 +4539,7 @@ unsigned int GetNextTargetRequired(const CBlockIndex *pindexLast)
 
     arith_uint256 bnProofOfWorkLimit;
     unsigned int nProofOfWorkLimit;
-    int nHeight = pindexLast ? pindexLast->nHeight+1 : 0;
+    int nHeight = pindexLast ? pindexLast->nHeight + 1 : 0;
 
     if (nHeight < (int)Params().GetLastImportHeight()) {
         if (nHeight == 0) {
@@ -4555,10 +4555,6 @@ unsigned int GetNextTargetRequired(const CBlockIndex *pindexLast)
     } else {
         bnProofOfWorkLimit = UintToArith256(consensus.powLimit);
         nProofOfWorkLimit = bnProofOfWorkLimit.GetCompact();
-    }
-
-    if (pindexLast->nHeight <= consensus.testnetp2_fork_height + 400) {
-        return arith_uint256("00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").GetCompact();
     }
 
     if (pindexLast == nullptr)
