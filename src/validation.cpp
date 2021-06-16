@@ -5313,7 +5313,7 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
         pindex->prevoutStake = pblock->vtx[0]->vin[0].prevout;
         if (!pindex->pprev
             || (pindex->pprev->bnStakeModifier.IsNull()
-                && pindex->pprev->GetBlockHash() != chainparams.GetConsensus().hashGenesisBlock)) {
+                && pindex->pprev->IsProofOfStake())) {
             // Block received out of order
             if (fParticlMode && !IsInitialBlockDownload()) {
                 if (pindex->nFlags & BLOCK_DELAYED) {

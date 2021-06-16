@@ -192,8 +192,8 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     pblock->hashPrevBlock  = pindexPrev->GetBlockHash();
     UpdateTime(pblock, chainparams.GetConsensus(), pindexPrev);
     if (pindexPrev && chainparams.GetConsensus().m_pass_all_pow) {
-        // keep nBits the same
-        pblock->nBits          = pindexPrev->nBits;
+        // Reduce difficulty
+        pblock->nBits          = arith_uint256("000000000000ffffffffffffffffffffffffffffffffffffffffffffffffffff").GetCompact(); // pindexPrev->nBits;
     } else {
         pblock->nBits          = GetNextWorkRequired(pindexPrev, pblock, chainparams.GetConsensus());
     }
