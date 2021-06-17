@@ -4612,18 +4612,18 @@ unsigned int GetNextTargetRequired(const CBlockIndex *pindexLast)
         }
         int nLastImportHeight = (int) Params().GetLastImportHeight();
         arith_uint256 nMaxProofOfWorkLimit = arith_uint256("000000000008ffffffffffffffffffffffffffffffffffffffffffffffffffff");
-        arith_uint256 nMinProofOfWorkLimit = UintToArith256(consensus.powLimit);
+        arith_uint256 nMinProofOfWorkLimit = arith_uint256("000000000000bfffffffffffffffffffffffffffffffffffffffffffffffffff");
         arith_uint256 nStep = (nMaxProofOfWorkLimit - nMinProofOfWorkLimit) / nLastImportHeight;
 
         bnProofOfWorkLimit = nMaxProofOfWorkLimit - (nStep * nHeight);
         nProofOfWorkLimit = bnProofOfWorkLimit.GetCompact();
     } else {
-        bnProofOfWorkLimit = UintToArith256(consensus.powLimit);
+        if (nHeight > consensus.testnetp2_fork_height) {
+            bnProofOfWorkLimit = UintToArith256(consensus.powLimit);
+        } else {
+            bnProofOfWorkLimit = arith_uint256("000000000000bfffffffffffffffffffffffffffffffffffffffffffffffffff");
+        }
         nProofOfWorkLimit = bnProofOfWorkLimit.GetCompact();
-    }
-
-    if (pindexLast->nHeight <= consensus.testnetp2_fork_height + 400) {
-        return arith_uint256("00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").GetCompact();
     }
 
     if (pindexLast == nullptr)
