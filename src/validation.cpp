@@ -4374,7 +4374,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     if (!CheckBlockHeader(block, state, consensusParams, fCheckPOW))
         return false;
 
-    state.SetStateInfo(block.nTime, -1, consensusParams);
+    state.SetStateInfo(block.nTime, block.GetBlockHeight(), consensusParams);
 
     // Check the merkle root.
     if (fCheckMerkleRoot) {
