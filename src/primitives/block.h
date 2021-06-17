@@ -149,6 +149,15 @@ public:
         return block;
     }
 
+    int GetBlockHeight() const
+    {
+        int i;
+        if (vtx.size() < 1 || !vtx[0]->GetCoinStakeHeight(i)) {
+            return -1;
+        }
+        return i;
+    }
+
     std::string ToString() const;
 };
 
