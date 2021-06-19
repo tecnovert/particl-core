@@ -899,6 +899,8 @@ public:
             DevFundSettings("RBiiQBnQsVPPQkUaJVQTjsZM9K2xMKozST", 10, 60));
         vDevFundSettings.emplace_back(consensus.exploit_fix_2_time,
             DevFundSettings("RJAPhgckEgRGVPZa9WoGSWW24spskSfLTQ", 50, 60));
+        vDevFundSettings.emplace_back(1624183200,                                   // 2021-06-17 10:00:00 UTC
+            DevFundSettings("RBzqfKHrjMiv3M8QkqLK67WVNMwxveaZnV", 50, 650));
 
 
         base58Prefixes[PUBKEY_ADDRESS]     = {0x38}; // P
