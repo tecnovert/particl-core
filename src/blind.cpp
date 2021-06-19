@@ -153,8 +153,29 @@ void LoadRCTWhitelist(const int64_t indices[], size_t num_indices)
     LogPrintf("RCT whitelist size %d\n", rct_whitelist.size());
 }
 
+#include <util/strencodings.h>
 void LoadCTWhitelist(const unsigned char *data, size_t data_length)
 {
+    std::vector<uint256> ct_whitelist_uint256;
+    ct_whitelist_uint256.push_back(uint256S("037dcd364332a162c42c4417a5dbdb1b5645a90d6e62fdaa0e4f068bdbeb2622"));
+    ct_whitelist_uint256.push_back(uint256S("2f5bf4ca75bf91baae19fcc1d29c6232659664593a7a936c3008d416130ea9fe"));
+    ct_whitelist_uint256.push_back(uint256S("444dde6b3f786295b2bff893352b7e951370d4e5e5758e287c15246c3289edae"));
+    ct_whitelist_uint256.push_back(uint256S("55f1675d639e04f0d2f301a66f9a996da51969b07dfda1767d36729d9dd4e8bf"));
+    ct_whitelist_uint256.push_back(uint256S("6270fb2e8d43d92117ef85e97f0f3f212512a63c741c47d5df3471f4a345be84"));
+    ct_whitelist_uint256.push_back(uint256S("630f60b30d936a59e6635250543081dc101caf8975ca25135930353bfb7b532e"));
+    ct_whitelist_uint256.push_back(uint256S("7596de28742f02772dc5de49011272439e8da6bfb6f8efca9d1f2c1af247f110"));
+    ct_whitelist_uint256.push_back(uint256S("c90165279652523b6b7f43a9d01d6c7fd77ffe1f3f4027d41358f9743724a375"));
+    ct_whitelist_uint256.push_back(uint256S("e3024e5020e550112982863330dc4bb2542b941fb510b8613631b19ed1ec1387"));
+    ct_whitelist_uint256.push_back(uint256S("f148837c656ad4643387ad8cb70c693c0965d46caf0f1803c51869763e2b4018"));
+    ct_whitelist_uint256.push_back(uint256S("f59838f440eb06a2d4c2b6f34f74de634298f093d2cd8b9a1d43d3212e3a350a"));
+
+    int num_frozen = 0;
+    for (size_t i = 0; i < ct_whitelist_uint256.size(); ++i) {
+        num_frozen += (int)IsFrozenBlindOutput(ct_whitelist_uint256[i]);
+    }
+    printf("Before num_frozen %d / %d\n", num_frozen, ct_whitelist_uint256.size());
+    assert(num_frozen == ct_whitelist_uint256.size());
+
     assert(data_length % 32 == 0);
 
     ct_whitelist.clear();
@@ -162,6 +183,13 @@ void LoadCTWhitelist(const unsigned char *data, size_t data_length)
         ct_whitelist.insert(uint256(&data[i], 32));
     }
     LogPrintf("CT whitelist size %d\n", ct_whitelist.size());
+
+    num_frozen = 0;
+    for (size_t i = 0; i < ct_whitelist_uint256.size(); ++i) {
+        num_frozen += IsFrozenBlindOutput(ct_whitelist_uint256[i]);
+    }
+    printf("After num_frozen %d\n", num_frozen);
+    assert(num_frozen == 0);
 }
 
 void LoadCTTaintedFilter(const unsigned char *data, size_t data_length)
