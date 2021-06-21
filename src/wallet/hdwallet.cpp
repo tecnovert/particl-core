@@ -263,7 +263,7 @@ bool CHDWallet::ProcessWalletSettings(std::string &sError)
     // Set defaults
     m_collapse_spent_mode = 0;
     m_min_collapse_depth = 3;
-    m_mixin_selection_mode_default = 1;
+    m_mixin_selection_mode_default = MIXIN_SEL_RECENT;
     m_min_owned_value = 0;
 
     UniValue json;
@@ -4922,6 +4922,19 @@ int CHDWallet::PickHidingOutputs(interfaces::Chain::Lock& locked_chain, std::vec
     assert(coinControl);
     LOCK(cs_main);
 
+    switch (coinControl->m_mixin_selection_mode) {
+        case MIXIN_SEL_RECENT: // mostly recent
+            break;
+        case MIXIN_SEL_NEARBY: // nearby real outputs
+            break;
+        case MIXIN_SEL_FULL_RANGE:
+            break;
+        case MIXIN_SEL_DEBUG:
+            break;
+        default:
+            return wserrorN(1, sError, __func__, _("Unknown mixin selection mode: %d").translated, coinControl->m_mixin_selection_mode);
+    }
+
     const Consensus::Params &consensusParams = Params().GetConsensus();
     bool exploit_fix_2_active = GetTime() >= consensusParams.exploit_fix_2_time;
     size_t min_ringsize = Params().IsMockableChain() ? MIN_RINGSIZE : Params().GetConsensus().m_min_ringsize_post_hf2; // Allow incorrect size for testing
@@ -4949,8 +4962,18 @@ int CHDWallet::PickHidingOutputs(interfaces::Chain::Lock& locked_chain, std::vec
     if (LogAcceptCategory(BCLog::HDWALLET)) {
         WalletLogPrintf("%s: Last index %d, inputs %d, ring size %d, selection mode %d.\n", __func__, nLastRCTOutIndex, nInputs, nRingSize, coinControl->m_mixin_selection_mode);
     }
-    if (nLastRCTOutIndex < (int64_t)(nInputs * nRingSize)) {
-        return wserrorN(1, sError, __func__, _("Not enough anon outputs exist, last: %d, required: %d").translated, nLastRCTOutIndex, nInputs * nRingSize);
+    int64_t min_anon_input = 1;
+    int64_t available_outputs = nLastRCTOutIndex;
+    if (exploit_fix_2_active) {
+        available_outputs -= consensusParams.m_frozen_anon_index;
+        min_anon_input = consensusParams.m_frozen_anon_index + 1;
+        if (LogAcceptCategory(BCLog::HDWALLET)) {
+            WalletLogPrintf("%s: Set min anon input to %d.\n", __func__, min_anon_input);
+        }
+    }
+    if (coinControl->m_mixin_selection_mode != MIXIN_SEL_DEBUG &&
+        available_outputs < (int64_t)(nInputs * nRingSize)) {
+        return wserrorN(1, sError, __func__, _("Not enough anon outputs exist, last: %d, required: %d").translated, available_outputs, nInputs * nRingSize);
     }
 
     // Must add real outputs to setHave before adding the decoys.
@@ -4968,12 +4991,7 @@ int CHDWallet::PickHidingOutputs(interfaces::Chain::Lock& locked_chain, std::vec
     static const double range_blur = 0.3;
     int64_t ranges[max_groups];
 
-    int64_t min_anon_input = 1;
-    if (exploit_fix_2_active) {
-        min_anon_input = consensusParams.m_frozen_anon_index + 1;
-    }
-
-    if (coinControl->m_mixin_selection_mode == 1) {
+    if (coinControl->m_mixin_selection_mode == MIXIN_SEL_RECENT) {
         for (int j = 0; j < max_groups; j++) {
             ranges[j] = expect_aos_per_period * range_periods[j];
 
@@ -5023,7 +5041,7 @@ int CHDWallet::PickHidingOutputs(interfaces::Chain::Lock& locked_chain, std::vec
             int64_t select_min = min_anon_input;
             int64_t select_max = nLastRCTOutIndex;
 
-            if (coinControl->m_mixin_selection_mode == 1) {
+            if (coinControl->m_mixin_selection_mode == MIXIN_SEL_RECENT) {
                 static const int max_r = 1000;
                 int g_r = GetRandInt(max_r);
                 for (int j = 0; j < max_groups; j++) {
@@ -5039,7 +5057,7 @@ int CHDWallet::PickHidingOutputs(interfaces::Chain::Lock& locked_chain, std::vec
                 select_min = std::min(nLastRCTOutIndex, std::max(min_anon_input, select_min));
                 select_max = std::min(nLastRCTOutIndex, std::max(min_anon_input, select_max));
             } else
-            if (coinControl->m_mixin_selection_mode == 2) {
+            if (coinControl->m_mixin_selection_mode == MIXIN_SEL_NEARBY) {
                 int64_t select_range = 0;
                 int64_t select_near = 0;
                 if (GetRandInt(100) < 50) { // 50% chance of selecting within 5000 places of a random input
@@ -5082,7 +5100,11 @@ int CHDWallet::PickHidingOutputs(interfaces::Chain::Lock& locked_chain, std::vec
                 }
             }
 
-            int64_t nDecoy = select_min + GetRand(select_max-select_min);
+            int64_t nDecoy = select_min;
+            if (select_max - select_min > 0) {
+                // GetRand(0) silently returns a value out of range
+                nDecoy += GetRand(select_max - select_min);
+            }
             if (setHave.count(nDecoy) > 0) {
                 if (nDecoy == nLastRCTOutIndex) {
                     nLastRCTOutIndex--;
