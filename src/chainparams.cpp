@@ -791,8 +791,8 @@ public:
         consensus.m_frozen_anon_index = 27340;
         consensus.m_frozen_blinded_height = 884433;
 
-        consensus.testnetp2_fork_height = 958695;
-        consensus.exploit_fix_2_time = 1623924000;      // 2021-06-17 10:00:00 UTC
+        consensus.testnetp2_fork_height = 962839;
+        consensus.exploit_fix_2_time = 1624615200;      // 2021-06-25 10:00:00 UTC
 
         consensus.smsg_fee_period = 5040;
         consensus.smsg_fee_funding_tx_per_k = 200000;
@@ -855,18 +855,15 @@ public:
         // This is fine at runtime as we'll fall back to using them as a oneshot if they don't support the
         // service bits we want, but we should get them updated to support all service bits wanted by any
         // release ASAP to avoid it where possible.
-        vSeeds.emplace_back("mainnet-seed.particl.io");
-        vSeeds.emplace_back("dnsseed-mainnet.particl.io");
-        vSeeds.emplace_back("mainnet.particl.io");
-        vSeeds.emplace_back("dnsseed.tecnovert.net");
+        //vSeeds.emplace_back("mainnet-seed.particl.io");
 
 
-        vDevFundSettings.emplace_back(0,
-            DevFundSettings("RJAPhgckEgRGVPZa9WoGSWW24spskSfLTQ", 10, 60));
-        vDevFundSettings.emplace_back(consensus.OpIsCoinstakeTime,
-            DevFundSettings("RBiiQBnQsVPPQkUaJVQTjsZM9K2xMKozST", 10, 60));
-        vDevFundSettings.emplace_back(consensus.exploit_fix_2_time,
-            DevFundSettings("RJAPhgckEgRGVPZa9WoGSWW24spskSfLTQ", 50, 60));
+        vTreasuryFundSettings.emplace_back(0,
+            TreasuryFundSettings("RJAPhgckEgRGVPZa9WoGSWW24spskSfLTQ", 10, 60));
+        vTreasuryFundSettings.emplace_back(consensus.OpIsCoinstakeTime,
+            TreasuryFundSettings("RBiiQBnQsVPPQkUaJVQTjsZM9K2xMKozST", 10, 60));
+        vTreasuryFundSettings.emplace_back(consensus.exploit_fix_2_time,
+            TreasuryFundSettings("RBzqfKHrjMiv3M8QkqLK67WVNMwxveaZnV", 50, 650));
 
 
         base58Prefixes[PUBKEY_ADDRESS]     = {0x38}; // P
