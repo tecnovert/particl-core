@@ -337,7 +337,7 @@ void SendCoinsDialog::on_sendButton_clicked()
             sCommand += ",\"subfee\":true";
 
         if (!rcp.narration.isEmpty())
-            sCommand += ",\"narr\":\""+rcp.narration+"\"";
+            sCommand += ",\"narr\":\"" + GUIUtil::particl::escapeQString(GUIUtil::particl::escapeQString(rcp.narration)) + "\"";
         sCommand += "}";
 
         nRecipient++;

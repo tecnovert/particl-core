@@ -270,6 +270,11 @@ namespace GUIUtil
      * Writes to debug.log short info about the used Qt and the host system.
      */
     void LogQtInfo();
+
+namespace particl
+{
+    QString escapeQString(const QString& si);
+}
 } // namespace GUIUtil
 
 #endif // BITCOIN_QT_GUIUTIL_H
