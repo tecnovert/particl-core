@@ -346,28 +346,6 @@ bool ExtractDestinations(const CScript& scriptPubKey, txnouttype& typeRet, std::
     return true;
 }
 
-bool ExtractStakingKeyID(const CScript &scriptPubKey, CKeyID &keyID)
-{
-    if (scriptPubKey.IsPayToPublicKeyHash()) {
-        keyID = CKeyID(uint160(&scriptPubKey[3], 20));
-        return true;
-    }
-
-    if (scriptPubKey.IsPayToPublicKeyHash256()) {
-        keyID = CKeyID(uint256(&scriptPubKey[3], 32));
-        return true;
-    }
-
-    if (scriptPubKey.IsPayToPublicKeyHash256_CS()
-        || scriptPubKey.IsPayToScriptHash256_CS()
-        || scriptPubKey.IsPayToScriptHash_CS()) {
-        keyID = CKeyID(uint160(&scriptPubKey[5], 20));
-        return true;
-    }
-
-    return false;
-};
-
 namespace
 {
 class CScriptVisitor : public boost::static_visitor<bool>
@@ -478,3 +456,25 @@ CScript GetScriptForWitness(const CScript& redeemscript)
 bool IsValidDestination(const CTxDestination& dest) {
     return dest.which() != 0;
 }
+
+namespace particl {
+bool ExtractStakingKeyID(const CScript &scriptPubKey, CKeyID &keyID)
+{
+    if (scriptPubKey.IsPayToPublicKeyHash()) {
+        keyID = CKeyID(uint160(&scriptPubKey[3], 20));
+        return true;
+    }
+    if (scriptPubKey.IsPayToPublicKeyHash256()) {
+        keyID = CKeyID(uint256(&scriptPubKey[3], 32));
+        return true;
+    }
+    if (scriptPubKey.IsPayToPublicKeyHash256_CS()
+        || scriptPubKey.IsPayToScriptHash256_CS()
+        || scriptPubKey.IsPayToScriptHash_CS()) {
+        keyID = CKeyID(uint160(&scriptPubKey[5], 20));
+        return true;
+    }
+    return false;
+}
+
+} // namespace particl

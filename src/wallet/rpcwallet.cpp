@@ -3910,7 +3910,7 @@ static UniValue listunspent(const JSONRPCRequest& request)
         if (IsParticlWallet(pwallet)) {
             const CHDWallet *phdw = GetParticlWallet(pwallet);
             CKeyID stakingKeyID;
-            bool fStakeable = ExtractStakingKeyID(*scriptPubKey, stakingKeyID);
+            bool fStakeable = particl::ExtractStakingKeyID(*scriptPubKey, stakingKeyID);
             if (fStakeable) {
                 isminetype mine = phdw->IsMine(stakingKeyID);
                 if (!(mine & ISMINE_SPENDABLE)

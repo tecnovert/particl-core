@@ -384,7 +384,6 @@ bool TxIndex::IndexCSOutputs(const CBlock& block, const CBlockIndex* pindex)
                 continue;
             }
 
-
             lk.m_spend_type = Solver(scriptSpend, vSolutions);
 
             if (lk.m_spend_type == TX_PUBKEYHASH || lk.m_spend_type == TX_SCRIPTHASH) {

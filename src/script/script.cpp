@@ -208,10 +208,11 @@ bool CScript::IsPayToPublicKeyHash() const
 
 bool CScript::IsPayToScriptHashAny(bool fIsTxCoinstake) const
 {
-    if (!fIsTxCoinstake && (IsPayToScriptHash256_CS() || IsPayToScriptHash_CS()))
+    if (!fIsTxCoinstake && (IsPayToScriptHash256_CS() || IsPayToScriptHash_CS())) {
         return true;
+    }
     return IsPayToScriptHash() || IsPayToScriptHash256() || IsPayToTimeLockedScriptHash();
-};
+}
 
 bool CScript::IsPayToScriptHash() const
 {
@@ -319,7 +320,7 @@ bool CScript::IsPayToPublicKeyHash256_CS() const
         && (*this)[27] == OP_ELSE
         && MatchPayToPublicKeyHash256(28)
         && (*this)[65] == OP_ENDIF;
-};
+}
 
 bool CScript::IsPayToScriptHash256_CS() const
 {
@@ -330,7 +331,7 @@ bool CScript::IsPayToScriptHash256_CS() const
         && (*this)[27] == OP_ELSE
         && MatchPayToScriptHash256(28)
         && (*this)[63] == OP_ENDIF;
-};
+}
 
 bool CScript::IsPayToScriptHash_CS() const
 {
@@ -341,13 +342,13 @@ bool CScript::IsPayToScriptHash_CS() const
         && (*this)[27] == OP_ELSE
         && MatchPayToScriptHash(28)
         && (*this)[51] == OP_ENDIF;
-};
+}
 
 bool CScript::StartsWithICS() const
 {
     return this->size() > 0
         && (*this)[0] == OP_ISCOINSTAKE;
-};
+}
 
 
 bool CScript::IsPushOnly(const_iterator pc) const
