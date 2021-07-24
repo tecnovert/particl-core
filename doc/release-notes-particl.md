@@ -1,8 +1,53 @@
-Next Major Version
+
+
+0.20.1.1
 ==============
 
+- Added Czech bip39 wordlist.
+- No default account wallet warning is silenced if wallet was intentionally created empty.
+- Enable blockchain pruning.
+  - Requires a rolling index for chain reorgs and paid smsg validation.
+  - On the first run the rolling indices will be initialised.
+  - If you later run an older release use the -rebuildrollingindices flag to manually rebuild the indices again.
+- Added support for watchonly blinded outputs
+  - New 'blind_watchonly_visible' option for coincontrol on sendtypeto command.
+  - When 'blind_watchonly_visible' is set blinded outputs sent to stealth addresses can be uncovered with the scan secret only.
+    - Nonce is calculated as ECDH(ephem_secret + tweak, scan_public_key) and recovered with ECDH(scan_secret_key, ephem_public_key + G * tweak)
 
-0.19.x.x
+
+0.19.2.13
+==============
+
+- Fixed RPC escaping in qt.
+  - Solves issue with quotes in mnemonic passwords.
+- rpc: Include null votes in votehistory current/future results.
+- qt: Disable balance type combo boxes on the send dialog when wallet is linked to a hardware wallet.
+
+
+0.19.2.12
+==============
+
+- Hardfork scheduled at 2021-07-12 17:00:00 UTC
+- Raised protocol version to 90013
+- Raised min protocol version to 90012
+- Add -lookuptorcontrolhost option, disabled by default.
+- extkeyimportmaster rpc command has new options parameter:
+  - Can adjust default lookahead sizes and create extkeys before the initial scan.
+- Fixed bug where dust output converted to change was added to the fee before subfee was processed.
+- Added new PID for Ledger Nano X (4015).
+- listunspentanon: New show_pubkeys option.
+- New wallet command getkeyimage returns keyimage for pubkey if owned.
+- New command checkkeyimage checks if keyimage is spent in the chain.
+- See hardware device outputs as watch-only if not compiled with usbdevice.
+
+
+0.19.2.11
+==============
+
+- Fix bug preventing syncing chain from genesis.
+
+
+0.19.2.10
 ==============
 
 - Add show_anon_spends option to filtertransactions.
