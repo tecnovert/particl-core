@@ -722,6 +722,7 @@ void SetupServerArgs()
 #endif
 
     hidden_args.emplace_back("-btcmode");
+    hidden_args.emplace_back("-debugdevice");  // Disable to allow usbdevices in regtest mode
 
     // Add the hidden options
     gArgs.AddHiddenArgs(hidden_args);
