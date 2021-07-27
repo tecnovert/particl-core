@@ -3480,7 +3480,8 @@ int CSMSG::CheckFundingTx(const Consensus::Params &consensusParams, const Secure
             return SMSG_GENERAL_ERROR;
         }
         if (!db.ReadFundingData(txid, db_data)) {
-            return errorN(SMSG_GENERAL_ERROR, "%s - ReadFundingData failed.", __func__);
+            LogPrintf("%s: ReadFundingData failed for txn: %s.\n", __func__, txid.ToString());
+            return SMSG_GENERAL_ERROR;
         }
     }
     const uint256 &hashBlock = *((const uint256*) db_data.data());
@@ -4286,7 +4287,6 @@ int CSMSG::FundMsg(SecureMessage &smsg, std::string &sError, bool fTestFee, CAmo
         if (!wtx.SubmitMemoryPoolAndRelay(err_string, true, m_absurd_smsg_fee)) {
             return errorN(SMSG_GENERAL_ERROR, sError, __func__, "Transaction cannot be broadcast immediately: %s.", err_string);
         }
-        pactive_wallet->AddToWallet(wtx);
     }
     memcpy(smsg.pPayload+(smsg.nPayload-32), txfundId.begin(), 32);
 #else
