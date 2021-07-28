@@ -373,7 +373,7 @@ class SmsgPaidTest(ParticlTestFramework):
         fund_tx = nodes[0].getrawtransaction(sent_msg['txid'], True)
         assert(fund_tx['vin'][0]['type'] == 'anon')
 
-        rpc_default_wallet = nodes[0].get_wallet_rpc('default_wallet')
+        rpc_default_wallet = nodes[0].get_wallet_rpc('')
         fund_tx_wallet = rpc_default_wallet.gettransaction(sent_msg['txid'])
         assert(len(fund_tx_wallet['walletconflicts']) == 0)
         flt_txns = rpc_default_wallet.filtertransactions()
