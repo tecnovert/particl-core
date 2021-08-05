@@ -313,10 +313,14 @@ public:
     bool FundTransaction(CMutableTransaction& tx, CAmount& nFeeRet, int& nChangePosInOut, std::string& strFailReason, bool lockUnspents, const std::set<int>& setSubtractFeeFromOutputs, CCoinControl) override;
     bool SignTransaction(CMutableTransaction& tx) const override EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
+    /** Reset transaction creation state */
+    void ClearTxCreationState();
+
     bool CreateTransaction(interfaces::Chain::Lock& locked_chain, const std::vector<CRecipient>& vecSend, CTransactionRef& tx, CAmount& nFeeRet, int& nChangePosInOut,
                            std::string& strFailReason, const CCoinControl& coin_control, bool sign = true) override;
     bool CreateTransaction(interfaces::Chain::Lock& locked_chain, std::vector<CTempRecipient>& vecSend, CTransactionRef& tx, CAmount& nFeeRet, int& nChangePosInOut,
                            std::string& strFailReason, const CCoinControl& coin_control, bool sign = true);
+
     /** Test if mempool would accept tx */
     bool TestMempoolAccept(const CTransactionRef &tx, std::string &sError, CAmount override_max_fee=-1) const;
     void CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::vector<std::pair<std::string, std::string>> orderForm) override;
@@ -430,13 +434,13 @@ public:
 
     size_t CountColdstakeOutputs();
 
-    /* Return a script for a simple address type (normal/extended) */
-    bool GetScriptForAddress(CScript &script, const CBitcoinAddress &addr, bool fUpdate = false, std::vector<uint8_t> *vData = NULL, bool allow_stakeonly = false);
+    /** Return a script for any destination type (normal/stealth/extended) */
+    bool GetScriptForDest(CScript &script, const CTxDestination &dest, bool fUpdate = false, std::vector<uint8_t> *vData = nullptr, uint32_t *last_key = nullptr);
 
     bool SetReserveBalance(CAmount nNewReserveBalance);
     uint64_t GetStakeWeight() const;
     void AvailableCoinsForStaking(std::vector<COutput> &vCoins, int64_t nTime, int nHeight) const;
-    bool SelectCoinsForStaking(int64_t nTargetValue, int64_t nTime, int nHeight, std::set<std::pair<const CWalletTx*,unsigned int> >& setCoinsRet, int64_t& nValueRet) const;
+    bool SelectCoinsForStaking(int64_t nTargetValue, int64_t nTime, int nHeight, std::set<std::pair<const CWalletTx*,unsigned int> > &setCoinsRet, int64_t &nValueRet) const;
     bool CreateCoinStake(unsigned int nBits, int64_t nTime, int nBlockHeight, int64_t nFees, CMutableTransaction &txNew, CKey &key);
     bool SignBlock(CBlockTemplate *pblocktemplate, int nHeight, int64_t nSearchTime);
 
@@ -486,7 +490,7 @@ public:
     CAmount nStakeSplitThreshold;
     size_t nMaxStakeCombine = 3;
     int nWalletTreasuryFundCedePercent;
-    CBitcoinAddress rewardAddress;
+    CTxDestination m_reward_address = CNoDestination();
     int nStakeLimitHeight = 0; // for regtest, don't stake above nStakeLimitHeight
 
     mutable std::atomic_bool m_have_cached_stakeable_coins {false};
@@ -517,6 +521,8 @@ public:
     bool m_smsg_enabled = true;
     CAmount m_min_stakeable_value = 1;  // Wallet will not try to stake outputs below this value
     CAmount m_min_owned_value = 0;      // Wallet will ignore outputs below this value
+
+    std::map<CKeyID, uint32_t> m_derived_keys; // Allows multiple provisional derivations from the same extkey
 
 private:
     void ParseAddressForMetaData(const CTxDestination &addr, COutputRecord &rec);

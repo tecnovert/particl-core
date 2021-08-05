@@ -160,7 +160,7 @@ bool CHDWallet::ProcessStakingSettings(std::string &sError)
     m_min_stakeable_value = 1;
     nMaxStakeCombine = 3;
     nWalletTreasuryFundCedePercent = gArgs.GetArg("-treasurydonationpercent", 0);
-    rewardAddress = CBitcoinAddress();
+    m_reward_address = CNoDestination();
     m_smsg_fee_rate_target = 0;
     m_smsg_difficulty_target = 0;
 
@@ -206,7 +206,7 @@ bool CHDWallet::ProcessStakingSettings(std::string &sError)
         }
 
         if (!json["rewardaddress"].isNull()) {
-            try { rewardAddress = CBitcoinAddress(json["rewardaddress"].get_str());
+            try { m_reward_address = DecodeDestination(json["rewardaddress"].get_str());
             } catch (std::exception &e) {
                 AppendError(sError, "Setting \"rewardaddress\" failed.");
             }
@@ -2996,11 +2996,11 @@ void CHDWallet::AddOutputRecordMetaData(CTransactionRecord &rtx, std::vector<CTe
 int CHDWallet::ExpandTempRecipients(std::vector<CTempRecipient> &vecSend, CStoredExtKey *pc, std::string &sError)
 {
     LOCK(cs_wallet);
-    //uint32_t nChild;
     for (size_t i = 0; i < vecSend.size(); ++i) {
         CTempRecipient &r = vecSend[i];
 
         if (r.nType == OUTPUT_STANDARD) {
+            std::vector<CTempRecipient> insert_vec;
             if (r.address.type() == typeid(CStealthAddress)) {
                 CStealthAddress sx = boost::get<CStealthAddress>(r.address);
 
@@ -3020,21 +3020,23 @@ int CHDWallet::ExpandTempRecipients(std::vector<CTempRecipient> &vecSend, CStore
 
                 CPubKey pkEphem = r.sEphem.GetPubKey();
                 r.pkTo = CPubKey(pkSendTo);
-                PKHash pkhash = PKHash(r.pkTo);
-                r.scriptPubKey = GetScriptForDestination(pkhash);
-
+                CTxDestination dTo;
+                if (IsValidDestination(r.addressColdStaking)) {
+                    dTo = r.pkTo.GetID256();
+                } else {
+                    dTo = PKHash(r.pkTo);
+                }
+                r.scriptPubKey = GetScriptForDestination(dTo);
                 if (LogAcceptCategory(BCLog::HDWALLET)) {
-                    WalletLogPrintf("Stealth send to generated address: %s\n", EncodeDestination(pkhash));
+                    WalletLogPrintf("Stealth send to generated address: %s\n", EncodeDestination(dTo));
                 }
 
                 CTempRecipient rd;
                 rd.nType = OUTPUT_DATA;
-
                 if (0 != MakeStealthData(r.sNarration, sx.prefix, sShared, pkEphem, rd.vData, r.nStealthPrefix, sError)) {
-                    return 1;
+                    return 1; // sError is set
                 }
-                vecSend.insert(vecSend.begin() + (i+1), rd);
-                i++; // skip over inserted output
+                insert_vec.push_back(rd);
             } else {
                 if (r.address.type() == typeid(CExtPubKey)) {
                     CExtKeyPair ek = CExtKeyPair(boost::get<CExtPubKey>(r.address));
@@ -3046,9 +3048,16 @@ int CHDWallet::ExpandTempRecipients(std::vector<CTempRecipient> &vecSend, CStore
 
                     r.nChildKey = nChildKey;
                     r.pkTo = pkDest;
-                    r.scriptPubKey = GetScriptForDestination(PKHash(pkDest));
+                    if (IsValidDestination(r.addressColdStaking)) {
+                        r.scriptPubKey = GetScriptForDestination(r.pkTo.GetID256());
+                    } else {
+                        r.scriptPubKey = GetScriptForDestination(PKHash(r.pkTo));
+                    }
                 } else
                 if (r.address.type() == typeid(PKHash)) {
+                    if (IsValidDestination(r.addressColdStaking)) {
+                        return wserrorN(1, sError, __func__, "p2pkh is invalid in coldstakingscript.");
+                    }
                     r.scriptPubKey = GetScriptForDestination(r.address);
                 } else {
                     if (!r.fScriptSet) {
@@ -3058,18 +3067,40 @@ int CHDWallet::ExpandTempRecipients(std::vector<CTempRecipient> &vecSend, CStore
                         }
                     }
                 }
-
                 if (r.sNarration.length() > 0) {
                     CTempRecipient rd;
                     rd.nType = OUTPUT_DATA;
-
-                    std::vector<uint8_t> vNarr;
                     rd.vData.push_back(DO_NARR_PLAIN);
                     std::copy(r.sNarration.begin(), r.sNarration.end(), std::back_inserter(rd.vData));
-
-                    vecSend.insert(vecSend.begin() + (i+1), rd);
-                    i++; // skip over inserted output
+                    insert_vec.push_back(rd);
                 }
+            }
+
+            if (IsValidDestination(r.addressColdStaking)) {
+                CScript scriptTrue, scriptFalse = r.scriptPubKey;
+
+                uint32_t nkey = 0;
+                GetScriptForDest(scriptTrue, r.addressColdStaking, false, &r.vData, &nkey);
+                r.nChildKeyColdStaking = nkey;
+
+                if (scriptTrue.size() == 0) {
+                    return wserrorN(1, sError, __func__, "Invalid stake destination.");
+                }
+                if (scriptFalse.size() == 0) {
+                    return wserrorN(1, sError, __func__, "Invalid spend destination.");
+                }
+
+                r.scriptPubKey = CScript() << OP_ISCOINSTAKE << OP_IF;
+                r.scriptPubKey += scriptTrue;
+                r.scriptPubKey << OP_ELSE;
+                r.scriptPubKey += scriptFalse;
+                r.scriptPubKey << OP_ENDIF;
+                r.fScriptSet = true;
+            }
+            // NOTE: r is unusable after vecSend is modified!
+            if (insert_vec.size() > 0) {
+                vecSend.insert(vecSend.begin() + (i + 1), insert_vec.begin(), insert_vec.end());
+                i += insert_vec.size(); // skip over inserted outputs
             }
         } else
         if (r.nType == OUTPUT_CT) {
@@ -3390,7 +3421,6 @@ int CHDWallet::AddCTData(const CCoinControl *coinControl, CTxOutBase *txout, CTe
     return 0;
 };
 
-/** Update wallet after successful transaction */
 int CHDWallet::PostProcessTempRecipients(std::vector<CTempRecipient> &vecSend)
 {
     LOCK(cs_wallet);
@@ -3399,17 +3429,18 @@ int CHDWallet::PostProcessTempRecipients(std::vector<CTempRecipient> &vecSend)
 
         if (r.address.type() == typeid(CExtPubKey)) {
             CExtKeyPair ek = CExtKeyPair(boost::get<CExtPubKey>(r.address));
-            r.nChildKey+=1;
+            r.nChildKey += 1;
             ExtKeyUpdateLooseKey(ek, r.nChildKey, true);
         }
 
         if (r.addressColdStaking.type() == typeid(CExtPubKey)) {
             CExtKeyPair ek = CExtKeyPair(boost::get<CExtPubKey>(r.addressColdStaking));
-            r.nChildKeyColdStaking+=1;
+            r.nChildKeyColdStaking += 1;
             ExtKeyUpdateLooseKey(ek, r.nChildKeyColdStaking, false);
         }
     }
 
+    ClearTxCreationState();
     return 0;
 };
 
@@ -3704,7 +3735,7 @@ static bool InsertChangeAddress(CTempRecipient &r, std::vector<CTempRecipient> &
 {
     r.fChange = true;
     if (nChangePosInOut < 0) {
-        nChangePosInOut = GetRandInt(vecSend.size()+1);
+        nChangePosInOut = GetRandInt(vecSend.size() + 1);
     } else {
         nChangePosInOut = std::min(nChangePosInOut, (int)vecSend.size());
     }
@@ -3714,7 +3745,7 @@ static bool InsertChangeAddress(CTempRecipient &r, std::vector<CTempRecipient> &
         nChangePosInOut++;
     }
 
-    vecSend.insert(vecSend.begin()+nChangePosInOut, r);
+    vecSend.insert(vecSend.begin() + nChangePosInOut, r);
 
     // Insert data output for stealth address if required
     if (r.vData.size() > 0) {
@@ -3723,7 +3754,7 @@ static bool InsertChangeAddress(CTempRecipient &r, std::vector<CTempRecipient> &
         rd.fChange = true;
         rd.vData = r.vData;
         r.vData.clear();
-        vecSend.insert(vecSend.begin()+nChangePosInOut+1, rd);
+        vecSend.insert(vecSend.begin() + nChangePosInOut + 1, rd);
     }
 
     return true;
@@ -4273,6 +4304,8 @@ int CHDWallet::AddStandardInputs(interfaces::Chain::Lock& locked_chain, CWalletT
 int CHDWallet::AddStandardInputs(interfaces::Chain::Lock& locked_chain, CWalletTx &wtx, CTransactionRecord &rtx,
     std::vector<CTempRecipient> &vecSend, bool sign, CAmount &nFeeRet, const CCoinControl *coinControl, std::string &sError)
 {
+    ClearTxCreationState();
+
     if (vecSend.size() < 1) {
         return wserrorN(1, sError, __func__, _("Transaction must have at least one recipient.").translated);
     }
@@ -4833,6 +4866,8 @@ int CHDWallet::AddBlindedInputs(interfaces::Chain::Lock& locked_chain, CWalletTx
 int CHDWallet::AddBlindedInputs(interfaces::Chain::Lock& locked_chain, CWalletTx &wtx, CTransactionRecord &rtx,
     std::vector<CTempRecipient> &vecSend, bool sign, CAmount &nFeeRet, const CCoinControl *coinControl, std::string &sError)
 {
+    ClearTxCreationState();
+
     if (vecSend.size() < 1) {
         return wserrorN(1, sError, __func__, _("Transaction must have at least one recipient.").translated);
     }
@@ -5697,6 +5732,8 @@ int CHDWallet::AddAnonInputs(interfaces::Chain::Lock& locked_chain, CWalletTx &w
 int CHDWallet::AddAnonInputs(interfaces::Chain::Lock& locked_chain, CWalletTx &wtx, CTransactionRecord &rtx,
     std::vector<CTempRecipient> &vecSend, bool sign, size_t nRingSize, size_t nSigs, CAmount &nFeeRet, const CCoinControl *coinControl, std::string &sError)
 {
+    ClearTxCreationState();
+
     if (vecSend.size() < 1 && (!coinControl || coinControl->m_extra_data0.size() < 1)) {
         return wserrorN(1, sError, __func__, _("Transaction must have at least one recipient.").translated);
     }
@@ -8337,9 +8374,16 @@ int CHDWallet::ExtKeyGetDestination(const CExtKeyPair &ek, CPubKey &pkDest, uint
 
     CStoredExtKey sek;
     if (wdb.ReadExtKey(keyId, sek)) {
+        if (m_derived_keys.count(keyId)) {
+            uint32_t nKeyIn = m_derived_keys[keyId] + 1;
+            if (0 != sek.DeriveKey(pkDest, nKeyIn, nKey)) {
+                return werrorN(1, "%s: DeriveKey failed.", __func__);
+            }
+        } else
         if (0 != sek.DeriveNextKey(pkDest, nKey)) {
             return werrorN(1, "%s: DeriveNextKey failed.", __func__);
         }
+        m_derived_keys[keyId] = nKey;
         return 0;
     } else {
         nKey = 0; // AddLookAhead starts from 0
@@ -8364,6 +8408,12 @@ int CHDWallet::ExtKeyUpdateLooseKey(const CExtKeyPair &ek, uint32_t nKey, bool f
     }
 
     CKeyID keyId = ek.GetID();
+    auto mi = m_derived_keys.find(keyId);
+    if (mi != m_derived_keys.end()) {
+        if (nKey < mi->second + 1) {
+            nKey = mi->second + 1;
+        }
+    }
 
     CHDWalletDB wdb(*database, "r+");
 
@@ -8508,6 +8558,11 @@ bool CHDWallet::FundTransaction(CMutableTransaction& tx, CAmount& nFeeRet, int& 
 
     return true;
 };
+
+void CHDWallet::ClearTxCreationState()
+{
+    m_derived_keys.clear();
+}
 
 bool CHDWallet::SignTransaction(CMutableTransaction &tx) const
 {
@@ -12480,21 +12535,17 @@ size_t CHDWallet::CountColdstakeOutputs()
     return nColdstakeOutputs;
 };
 
-bool CHDWallet::GetScriptForAddress(CScript &script, const CBitcoinAddress &addr, bool fUpdate, std::vector<uint8_t> *vData, bool allow_stakeonly)
+bool CHDWallet::GetScriptForDest(CScript &script, const CTxDestination &dest, bool fUpdate, std::vector<uint8_t> *vData, uint32_t *last_key)
 {
     LOCK(cs_wallet);
-
-    CTxDestination dest = addr.Get();
-    if (allow_stakeonly && dest.type() == typeid(CNoDestination())) {
-        dest = addr.GetStakeOnly();
-    }
+    CTxDestination dest_nc = dest;
 
     if (dest.type() == typeid(CStealthAddress)) {
         if (!vData) {
             return werror("%s: StealthAddress, vData is null .", __func__);
         }
 
-        CStealthAddress sx = boost::get<CStealthAddress>(dest);
+        CStealthAddress sx = boost::get<CStealthAddress>(dest_nc);
         std::vector<CTempRecipient> vecSend;
         std::string strError;
         CTempRecipient r;
@@ -12510,12 +12561,15 @@ bool CHDWallet::GetScriptForAddress(CScript &script, const CBitcoinAddress &addr
         *vData = vecSend[1].vData;
     } else
     if (dest.type() == typeid(CExtPubKey)) {
-        CExtKeyPair ek = CExtKeyPair(boost::get<CExtPubKey>(dest));
-        uint32_t nChildKey;
+        CExtKeyPair ek = CExtKeyPair(boost::get<CExtPubKey>(dest_nc));
+        uint32_t nChildKey = 0;
 
         CPubKey pkTemp;
         if (0 != ExtKeyGetDestination(ek, pkTemp, nChildKey)) {
             return werror("%s: ExtKeyGetDestination failed.", __func__);
+        }
+        if (last_key) {
+            *last_key = nChildKey;
         }
 
         nChildKey++;
@@ -12524,12 +12578,11 @@ bool CHDWallet::GetScriptForAddress(CScript &script, const CBitcoinAddress &addr
         }
 
         script = GetScriptForDestination(PKHash(pkTemp));
-    } else
-    if (dest.type() == typeid(PKHash)) {
-        PKHash idk = boost::get<PKHash>(dest);
-        script = GetScriptForDestination(idk);
     } else {
-        return werror("%s: Unknown destination type.", __func__);
+        script = GetScriptForDestination(dest);
+        if (script.size() < 1) {
+            return werror("%s: Unknown destination type.", __func__);
+        }
     }
 
     return true;
@@ -12758,7 +12811,9 @@ bool CHDWallet::SelectCoinsForStaking(int64_t nTargetValue, int64_t nTime, int n
 
 bool CHDWallet::CreateCoinStake(unsigned int nBits, int64_t nTime, int nBlockHeight, int64_t nFees, CMutableTransaction &txNew, CKey &key)
 {
+    ClearTxCreationState();
     CBlockIndex *pindexPrev = ::ChainActive().Tip();
+
     arith_uint256 bnTargetPerCoinDay;
     bnTargetPerCoinDay.SetCompact(nBits);
 
@@ -12865,10 +12920,10 @@ bool CHDWallet::CreateCoinStake(unsigned int nBits, int64_t nTime, int nBlockHei
                         WalletLogPrintf("%s: Sending output to coldstakingscript %s.\n", __func__, sAddress);
                     }
 
-                    CBitcoinAddress addrColdStaking(sAddress);
+                    CTxDestination destColdStake = DecodeDestination(sAddress, true);
                     CScript scriptStaking;
-                    if (!GetScriptForAddress(scriptStaking, addrColdStaking, true, nullptr, true)) {
-                        return werror("%s: GetScriptForAddress failed.", __func__);
+                    if (!GetScriptForDest(scriptStaking, destColdStake, true, nullptr)) {
+                        return werror("%s: GetScriptForDest failed.", __func__);
                     }
 
                     // Get new key from the active internal chain
@@ -13140,7 +13195,7 @@ bool CHDWallet::CreateCoinStake(unsigned int nBits, int64_t nTime, int nBlockHei
     }
 
 
-    if (!rewardAddress.IsValid()) {
+    if (!IsValidDestination(m_reward_address)) {
         nCredit += nRewardOut;
     }
 
@@ -13158,10 +13213,10 @@ bool CHDWallet::CreateCoinStake(unsigned int nBits, int64_t nTime, int nBlockHei
     }
 
     // Create output for reward
-    if (rewardAddress.IsValid()) {
+    if (IsValidDestination(m_reward_address)) {
         CScript scriptReward;
         std::vector<uint8_t> vData;
-        if (!GetScriptForAddress(scriptReward, rewardAddress, true, &vData)) {
+        if (!GetScriptForDest(scriptReward, m_reward_address, true, &vData)) {
             return werror("%s: Could not get script for reward address.", __func__);
         }
         OUTPUT_PTR<CTxOutStandard> outReward = MAKE_OUTPUT<CTxOutStandard>();
