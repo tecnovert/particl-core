@@ -411,10 +411,10 @@ static int KeyInfo(CHDWallet *pwallet, CKeyID &idMaster, CKeyID &idKey, CStoredE
 
     bool fBip44Root = false;
     obj.pushKV("type", "Loose");
-    obj.pushKV("active", (sek.nFlags & EAF_ACTIVE) ? "true" : "false");
-    obj.pushKV("receive_on", (sek.nFlags & EAF_RECEIVE_ON) ? "true" : "false");
-    obj.pushKV("encrypted", (sek.nFlags & EAF_IS_CRYPTED) ? "true" : "false");
-    obj.pushKV("hardware_device", (sek.nFlags & EAF_HARDWARE_DEVICE) ? "true" : "false");
+    obj.pushKV("active", sek.IsActive() ? "true" : "false");
+    obj.pushKV("receive_on", sek.IsReceiveEnabled() ? "true" : "false");
+    obj.pushKV("encrypted", sek.IsEncrypted() ? "true" : "false");
+    obj.pushKV("hardware_device", sek.IsHardwareLinked() ? "true" : "false");
     obj.pushKV("label", sek.sLabel);
 
     if (reversePlace(&sek.kp.vchFingerprint[0]) == 0) {
@@ -618,7 +618,7 @@ static int ManageExtKey(CStoredExtKey &sek, std::string &sOptName, std::string &
             }
         }
 
-        result.pushKV("set_active", (sek.nFlags & EAF_ACTIVE) ? "true" : "false");
+        result.pushKV("set_active", sek.IsActive() ? "true" : "false");
     } else
     if (sOptName == "receive_on") {
         if (sOptValue.length() > 0) {
@@ -628,7 +628,17 @@ static int ManageExtKey(CStoredExtKey &sek, std::string &sOptName, std::string &
                 sek.nFlags &= ~EAF_RECEIVE_ON;
             }
         }
-        result.pushKV("receive_on", (sek.nFlags & EAF_RECEIVE_ON) ? "true" : "false");
+        result.pushKV("receive_on", sek.IsReceiveEnabled() ? "true" : "false");
+    } else
+    if (sOptName == "track_only") {
+        if (sOptValue.length() > 0) {
+            if (part::IsStringBoolPositive(sOptValue)) {
+                sek.nFlags |= EAF_TRACK_ONLY;
+            } else {
+                sek.nFlags &= ~EAF_TRACK_ONLY;
+            }
+        }
+        result.pushKV("track_only", sek.IsTrackOnly() ? "true" : "false");
     } else
     if (sOptName == "look_ahead") {
         uint64_t nLookAhead = gArgs.GetArg("-defaultlookaheadsize", DEFAULT_LOOKAHEAD_SIZE);
@@ -673,8 +683,9 @@ static int ManageExtKey(CStoredExtKey &sek, std::string &sOptName, std::string &
     } else {
         // List all possible
         result.pushKV("label", sek.sLabel);
-        result.pushKV("active", (sek.nFlags & EAF_ACTIVE) ? "true" : "false");
-        result.pushKV("receive_on", (sek.nFlags & EAF_RECEIVE_ON) ? "true" : "false");
+        result.pushKV("active", sek.IsActive() ? "true" : "false");
+        result.pushKV("receive_on", sek.IsReceiveEnabled() ? "true" : "false");
+        result.pushKV("track_only", sek.IsTrackOnly() ? "true" : "false");
         result.pushKV("num_derives", (int)sek.nGenerated);
         result.pushKV("num_derives_hardened", (int)sek.nHGenerated);
 
@@ -776,8 +787,8 @@ static UniValue extkey(const JSONRPCRequest &request)
         "    Make a new account from the current master key, save to wallet.\n"
         "extkey options \"key\" ( \"optionName\" \"newValue\" )\n"
         "    Manage keys and accounts.\n"
+        "    Provide key argument only to list available options.\n"
         "\n";
-
     // default mode is list unless 1st parameter is a key - then mode is set to info
 
     // path:
@@ -1354,6 +1365,7 @@ static UniValue extkey(const JSONRPCRequest &request)
                     wdb.TxnAbort();
                     throw JSONRPCError(RPC_MISC_ERROR, "WriteExtKey failed.");
                 }
+                pwallet->ExtKeyReload(pSek);
             }
 
             if (fAccount) {
@@ -2074,8 +2086,7 @@ static UniValue importstealthaddress(const JSONRPCRequest &request)
     UniValue result(UniValue::VOBJ);
     bool fFound = false;
     // Find if address already exists, can update
-    std::set<CStealthAddress>::iterator it;
-    for (it = pwallet->stealthAddresses.begin(); it != pwallet->stealthAddresses.end(); ++it) {
+    for (auto it = pwallet->stealthAddresses.begin(); it != pwallet->stealthAddresses.end(); ++it) {
         CStealthAddress &sxAddrIt = const_cast<CStealthAddress&>(*it);
         if (sxAddrIt.scan_pubkey == sxAddr.scan_pubkey
             && sxAddrIt.spend_pubkey == sxAddr.spend_pubkey) {
@@ -2129,8 +2140,7 @@ static UniValue importstealthaddress(const JSONRPCRequest &request)
 
 int ListLooseStealthAddresses(UniValue &arr, const CHDWallet *pwallet, bool fShowSecrets, bool fAddressBookInfo, bool show_pubkeys=false, bool bech32=false) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
-    std::set<CStealthAddress>::iterator it;
-    for (it = pwallet->stealthAddresses.begin(); it != pwallet->stealthAddresses.end(); ++it) {
+    for (auto it = pwallet->stealthAddresses.begin(); it != pwallet->stealthAddresses.end(); ++it) {
         UniValue obj(UniValue::VOBJ);
         obj.pushKV("Label", it->label);
         obj.pushKV("Address", it->ToString(bech32));
@@ -2247,8 +2257,7 @@ static UniValue liststealthaddresses(const JSONRPCRequest &request)
 
     UniValue result(UniValue::VARR);
 
-    ExtKeyAccountMap::const_iterator mi;
-    for (mi = pwallet->mapExtAccounts.begin(); mi != pwallet->mapExtAccounts.end(); ++mi) {
+    for (auto mi = pwallet->mapExtAccounts.cbegin(); mi != pwallet->mapExtAccounts.cend(); ++mi) {
         CExtKeyAccount *ea = mi->second;
 
         if (ea->mapStealthKeys.size() < 1) {
@@ -2260,8 +2269,7 @@ static UniValue liststealthaddresses(const JSONRPCRequest &request)
 
         rAcc.pushKV("Account", ea->sLabel);
 
-        AccStealthKeyMap::iterator it;
-        for (it = ea->mapStealthKeys.begin(); it != ea->mapStealthKeys.end(); ++it) {
+        for (auto it = ea->mapStealthKeys.cbegin(); it != ea->mapStealthKeys.cend(); ++it) {
             const CEKAStealthKey &aks = it->second;
 
             UniValue objA(UniValue::VOBJ);
@@ -3160,8 +3168,7 @@ static void ParseRecords(
         // get account name
         if (extracted && !record.scriptPubKey.IsUnspendable()) {
             addr.Set(dest);
-            std::map<CTxDestination, CAddressBookData>::iterator mai;
-            mai = pwallet->m_address_book.find(dest);
+            auto mai = pwallet->m_address_book.find(dest);
             if (mai != pwallet->m_address_book.end() && !mai->second.GetLabel().empty()) {
                 output.__pushKV("account", mai->second.GetLabel());
             }
@@ -6632,9 +6639,12 @@ static UniValue debugwallet(const JSONRPCRequest &request)
         result.pushKV("m_collapsed_txns_size", (int)pwallet->m_collapsed_txns.size());
         result.pushKV("m_collapsed_txn_inputs_size", (int)pwallet->m_collapsed_txn_inputs.size());
         result.pushKV("m_is_only_instance", pwallet->m_is_only_instance);
+        result.pushKV("map_ext_accounts_size", (int)pwallet->mapExtAccounts.size());
+        result.pushKV("map_ext_keys_size", (int)pwallet->mapExtKeys.size());                    // Includes account keys
+        result.pushKV("map_loose_keys_size", (int)pwallet->mapLooseKeys.size());                // Child keys derived from ext keys not in accounts
+        result.pushKV("map_loose_lookahead_size", (int)pwallet->mapLooseLookAhead.size());      // Includes account keys
 
-        std::map<uint256, CWalletTx>::const_iterator it;
-        for (it = pwallet->mapWallet.begin(); it != pwallet->mapWallet.end(); ++it) {
+        for (auto it = pwallet->mapWallet.cbegin(); it != pwallet->mapWallet.cend(); ++it) {
             const uint256 &wtxid = it->first;
             const CWalletTx &wtx = it->second;
 
