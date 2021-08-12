@@ -1,9 +1,61 @@
-<TS version="2.1" language="yo">
+<TS version="2.1" language="sc">
 <context>
     <name>AddressBookPage</name>
     <message>
+        <source>Right-click to edit address or label</source>
+        <translation type="unfinished">Tastu deretu po cambiai s'incarreramentu o su nòmini</translation>
+    </message>
+    <message>
+        <source>Create a new address</source>
+        <translation>Crea un'incarreramentu nou</translation>
+    </message>
+    <message>
         <source>&amp;New</source>
-        <translation type="unfinished">&amp;ati tuntun</translation>
+        <translation type="unfinished">&amp;nou</translation>
+    </message>
+    <message>
+        <source>&amp;Copy</source>
+        <translation type="unfinished">&amp;còpia</translation>
+    </message>
+    <message>
+        <source>C&amp;lose</source>
+        <translation type="unfinished">S&amp;erra</translation>
+    </message>
+    <message>
+        <source>Enter address or label to search</source>
+        <translation type="unfinished">Poni s'incarreramentu o s'etiketa po circai</translation>
+    </message>
+    <message>
+        <source>&amp;Export</source>
+        <translation>&amp;Esporta</translation>
+    </message>
+    <message>
+        <source>&amp;Delete</source>
+        <translation>&amp;Cantzella</translation>
+    </message>
+    <message>
+        <source>Choose the address to send coins to</source>
+        <translation type="unfinished">Scebera a cali incarreramentu bolis mandai is monedas</translation>
+    </message>
+    <message>
+        <source>Choose the address to receive coins with</source>
+        <translation type="unfinished">Sciobera s'incarreramentu po arrici is monedas cun</translation>
+    </message>
+    <message>
+        <source>C&amp;hoose</source>
+        <translation type="unfinished">S&amp;ciobera</translation>
+    </message>
+    <message>
+        <source>Sending addresses</source>
+        <translation type="unfinished">Incarreramentu de inviu</translation>
+    </message>
+    <message>
+        <source>Receiving addresses</source>
+        <translation type="unfinished">Incarreramentu destinatàriu</translation>
+    </message>
+    <message>
+        <source>These are your Particl addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
+        <translation type="unfinished">Custus funt is incarreramentu Particl tuus po mandai pagamentus. Càstia sempri sa cantidadi e s'incarreramentu destinatàriu antis de inviais is monedas</translation>
     </message>
     </context>
 <context>
@@ -53,45 +105,12 @@
             <numerusform />
         </translation>
     </message>
-    <message>
-        <source>Open Wallet</source>
-        <translation type="unfinished">sii apamowo</translation>
-    </message>
-    <message>
-        <source>Open a wallet</source>
-        <translation type="unfinished">sii apamowo</translation>
-    </message>
-    <message>
-        <source>Close wallet</source>
-        <translation type="unfinished">Ti Apamowo</translation>
-    </message>
     <message numerus="yes">
         <source>%n active connection(s) to Particl network.</source>
         <extracomment>A substring of the tooltip.</extracomment>
         <translation type="unfinished">
             <numerusform />
         </translation>
-    </message>
-    </context>
-<context>
-    <name>CoinControlDialog</name>
-    <message>
-        <source>Date</source>
-        <translation type="unfinished">Ojo</translation>
-    </message>
-    </context>
-<context>
-    <name>WalletController</name>
-    <message>
-        <source>Close wallet</source>
-        <translation type="unfinished">Ti Apamowo</translation>
-    </message>
-    </context>
-<context>
-    <name>FreespaceChecker</name>
-    <message>
-        <source>name</source>
-        <translation>oruko</translation>
     </message>
     </context>
 <context>
@@ -102,35 +121,6 @@
         <translation type="unfinished">
             <numerusform />
         </translation>
-    </message>
-    <message>
-        <source>Welcome</source>
-        <translation>Ka bo</translation>
-    </message>
-    </context>
-<context>
-    <name>OptionsDialog</name>
-    <message>
-        <source>&amp;OK</source>
-        <translation>&amp;o da</translation>
-    </message>
-    </context>
-<context>
-    <name>RPCConsole</name>
-    <message>
-        <source>Name</source>
-        <translation type="unfinished">Oruko</translation>
-    </message>
-    <message>
-        <source>1 &amp;year</source>
-        <translation type="unfinished">okan ati &amp;odun</translation>
-    </message>
-    </context>
-<context>
-    <name>RecentRequestsTableModel</name>
-    <message>
-        <source>Date</source>
-        <translation type="unfinished">Ojo</translation>
     </message>
     </context>
 <context>
@@ -150,14 +140,6 @@
             <numerusform />
         </translation>
     </message>
-    <message>
-        <source>Date</source>
-        <translation type="unfinished">Ojo</translation>
-    </message>
-    <message>
-        <source>watch-only</source>
-        <translation type="unfinished">wo nikan</translation>
-    </message>
     <message numerus="yes">
         <source>matures in %n more block(s)</source>
         <translation>
@@ -167,30 +149,18 @@
     </context>
 <context>
     <name>TransactionTableModel</name>
-    <message>
-        <source>Date</source>
-        <translation type="unfinished">Ojo</translation>
-    </message>
     <message numerus="yes">
         <source>Open for %n more block(s)</source>
         <translation>
             <numerusform />
         </translation>
     </message>
-    <message>
-        <source>watch-only</source>
-        <translation type="unfinished">wo nikan</translation>
-    </message>
     </context>
 <context>
-    <name>TransactionView</name>
+    <name>WalletView</name>
     <message>
-        <source>This year</source>
-        <translation type="unfinished">Odun yi</translation>
-    </message>
-    <message>
-        <source>Date</source>
-        <translation type="unfinished">Ojo</translation>
+        <source>&amp;Export</source>
+        <translation type="unfinished">&amp;Esporta</translation>
     </message>
     </context>
 </TS>
