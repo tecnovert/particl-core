@@ -1,4 +1,4 @@
-Next Major Version
+22.0.1.0
 ==============
 
 - script: Remove timelocked script signing.

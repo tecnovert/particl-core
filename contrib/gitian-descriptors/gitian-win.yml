@@ -1,5 +1,5 @@
 ---
-name: "particl-core-win-22.0.0"
+name: "particl-core-win-22.0.1"
 enable_cache: true
 sudo: true
 distro: "ubuntu"
