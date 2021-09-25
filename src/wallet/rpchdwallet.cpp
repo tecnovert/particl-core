@@ -6790,8 +6790,8 @@ static RPCHelpMan debugwallet()
                             add_error("Could not get keyimage.", txhash, r.n);
                             continue;
                         }
-                        uint256 txhashKI;
-                        bool spent_in_chain = pblocktree->ReadRCTKeyImage(ki, txhashKI);
+                        CAnonKeyImageInfo ki_data;
+                        bool spent_in_chain = pblocktree->ReadRCTKeyImage(ki, ki_data);
                         bool spent_in_wallet = pwallet->IsSpent(txhash, r.n);
 
                         if (spent_in_chain && !spent_in_wallet) {
