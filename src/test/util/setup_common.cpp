@@ -84,7 +84,7 @@ BasicTestingSetup::BasicTestingSetup(const std::string& chainName, const std::ve
 {
     fParticlMode = fParticlModeIn;
     m_node.args = &gArgs;
-    const std::vector<const char*> arguments = Cat(
+    std::vector<const char*> arguments = Cat(
         {
             "dummy",
             "-printtoconsole=0",
@@ -94,10 +94,13 @@ BasicTestingSetup::BasicTestingSetup(const std::string& chainName, const std::ve
             "-debug",
             "-debugexclude=libevent",
             "-debugexclude=leveldb",
-            fParticlMode ? "" : "-btcmode",
-            fParticlMode ? "-debugexclude=hdwallet" : "",
         },
         extra_args);
+    if (fParticlMode) {
+        arguments.push_back("-debugexclude=hdwallet");
+    } else {
+        arguments.push_back("-btcmode");
+    }
     util::ThreadRename("test");
     fs::create_directories(m_path_root);
     m_args.ForceSetArg("-datadir", m_path_root.string());
