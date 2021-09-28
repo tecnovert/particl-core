@@ -4,7 +4,7 @@ enable_cache: true
 sudo: true
 distro: "ubuntu"
 suites:
-- "focal"
+- "bionic"
 architectures:
 - "amd64"
 packages:
@@ -54,11 +54,6 @@ script: |
   sudo apt-get update -y
   sudo ln -sf /usr/include/asm-generic /usr/include/asm
   sudo ln -sf /usr/include/x86_64-linux-gnu/asm/byteorder.h /usr/include/asm/byteorder.h
-
-  # ln -s /usr/bin/aarch64-linux-gnu-cpp-8 /usr/bin/aarch64-linux-gnu-cpp
-  for f in /usr/bin/*-8; do
-    sudo ln -s ${f} ${f:0:${#f}-2}
-  done
 
   WRAP_DIR=$HOME/wrapped
   HOSTS="x86_64-linux-gnu arm-linux-gnueabihf aarch64-linux-gnu powerpc64-linux-gnu powerpc64le-linux-gnu riscv64-linux-gnu"
@@ -172,7 +167,8 @@ script: |
       ;;
     esac
     export PATH=${BASEPREFIX}/${i}/native/bin:${ORIGPATH}
-    if [ "${i}" = "powerpc64-linux-gnu" ]; then
+    #if [ "${i}" = "powerpc64-linux-gnu" ]; then
+    if [ "${i}" = "riscv64-linux-gnu" ] || [ "${i}" = "powerpc64-linux-gnu" ] || [ "${i}" = "powerpc64le-linux-gnu" ]; then
       # Workaround for https://bugs.launchpad.net/ubuntu/+source/gcc-8-cross-ports/+bug/1853740
       # TODO: remove this when no longer needed
       HOST_LDFLAGS="${HOST_LDFLAGS_BASE} -Wl,-z,noexecstack"
@@ -213,7 +209,7 @@ script: |
     tar --strip-components=1 -xf "${GIT_ARCHIVE}"
 
     ./autogen.sh
-    CONFIG_SITE=${BASEPREFIX}/${i}/share/config.site ./configure --prefix=/ --disable-ccache --disable-maintainer-mode --disable-dependency-tracking ${CONFIGFLAGS_NOUSB} CFLAGS="${HOST_CFLAGS}" CXXFLAGS="${HOST_CXXFLAGS}" LDFLAGS="${HOST_LDFLAGS}"
+    CONFIG_SITE=${BASEPREFIX}/${i}/share/config.site ./configure --prefix=/ --disable-ccache --disable-maintainer-mode --disable-dependency-tracking ${CONFIGFLAGS_NOUSB} CFLAGS="${HOST_CFLAGS}" CXXFLAGS="${HOST_CXXFLAGS}" LDFLAGS="${HOST_LDFLAGS}" CC=${i}-gcc-8 CXX=${i}-g++-8
     make ${MAKEOPTS}
     make ${MAKEOPTS} -C src check-security
     make ${MAKEOPTS} -C src check-symbols
