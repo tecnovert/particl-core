@@ -217,7 +217,6 @@ make -C depends --jobs="$JOBS" HOST="$HOST" \
                                    qt_config_opts_x86_64_linux='-platform linux-g++ -xplatform bitcoin-linux-g++' \
                                    FORCE_USE_SYSTEM_CLANG=1
 
-
 ###########################
 # Source Tarball Building #
 ###########################
@@ -237,7 +236,7 @@ mkdir -p "$OUTDIR"
 ###########################
 
 # CONFIGFLAGS
-CONFIGFLAGS="--enable-reduce-exports --disable-bench --disable-gui-tests --disable-fuzz-binary"
+CONFIGFLAGS="--enable-reduce-exports --disable-bench --disable-gui-tests --disable-fuzz-binary --enable-usbdevice"
 case "$HOST" in
     *linux*) CONFIGFLAGS+=" --disable-threadlocal" ;;
 esac

@@ -30,6 +30,7 @@
              (gnu packages shells)
              (gnu packages tls)
              (gnu packages version-control)
+             (gnu packages gperf)
              (guix build-system font)
              (guix build-system gnu)
              (guix build-system python)
@@ -619,6 +620,7 @@ inspecting signatures in Mach-O binaries.")
         bzip2
         gzip
         xz
+        gperf
         zlib
         (list zlib "static")
         ;; Build tools

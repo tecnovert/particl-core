@@ -1,17 +1,16 @@
-package=libusb
-$(package)_version=1.0.23
-$(package)_download_path=https://github.com/libusb/libusb/archive/
+package=eudev
+$(package)_version=3.2.10
+$(package)_download_path=https://github.com/eudev-project/eudev/archive/
 $(package)_file_name=v$($(package)_version).tar.gz
-$(package)_sha256_hash=02620708c4eea7e736240a623b0b156650c39bfa93a14bcfa5f3e05270313eba
-$(package)_linux_dependencies=eudev
+$(package)_sha256_hash=6492629da4024d2d21bb1a79d724e013d4152956099a5c63b09c8ee4da7f9b2b
 
 define $(package)_set_vars
-  $(package)_config_opts=--disable-shared --enable-udev
+  $(package)_config_opts=--disable-static --disable-manpages --disable-programs
   $(package)_config_opts_linux=--with-pic
 endef
 
 define $(package)_preprocess_cmds
-  cd $($(package)_build_subdir); ./bootstrap.sh
+  cd $($(package)_build_subdir); autoreconf -f -i -s
 endef
 
 define $(package)_config_cmds

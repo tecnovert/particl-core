@@ -446,7 +446,7 @@ EOF
                                  --container \
                                  --pure \
                                  --no-cwd \
-                                 --share="$PWD"=/bitcoin \
+                                 --share="$PWD"=/particl-core \
                                  --share="$DISTSRC_BASE"=/distsrc-base \
                                  --share="$OUTDIR_BASE"=/outdir-base \
                                  --expose="$(git rev-parse --git-common-dir)" \
@@ -471,7 +471,7 @@ EOF
                                         DISTSRC="$(DISTSRC_BASE=/distsrc-base && distsrc_for_host "$HOST")" \
                                         OUTDIR="$(OUTDIR_BASE=/outdir-base && outdir_for_host "$HOST")" \
                                         DIST_ARCHIVE_BASE=/outdir-base/dist-archive \
-                                      bash -c "cd /bitcoin && bash contrib/guix/libexec/build.sh"
+                                      bash -c "cd /particl-core && bash contrib/guix/libexec/build.sh"
     )
 
 done
