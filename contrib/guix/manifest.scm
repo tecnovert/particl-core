@@ -174,7 +174,7 @@ desirable for building Bitcoin Core release binaries."
 (define (make-mingw-pthreads-cross-toolchain target)
   "Create a cross-compilation toolchain package for TARGET"
   (let* ((xbinutils (make-binutils-with-mingw-w64-disable-flags (cross-binutils target)))
-         (pthreads-xlibc mingw-w64-x86_64-winpthreads)
+         (pthreads-xlibc (cond ((string-contains target "x86_64") mingw-w64-x86_64-winpthreads) (else mingw-w64-i686-winpthreads)))
          (pthreads-xgcc (make-gcc-with-pthreads
                          (cross-gcc target
                                     #:xgcc (make-ssp-fixed-gcc base-gcc)
@@ -641,11 +641,17 @@ inspecting signatures in Mach-O binaries.")
         gcc-toolchain-7
         (list gcc-toolchain-7 "static"))
   (let ((target (getenv "HOST")))
-    (cond ((string-suffix? "-mingw32" target)
+    (cond ((string-suffix? "x86_64-w64-mingw32" target)
            ;; Windows
            (list zip
                  (make-mingw-pthreads-cross-toolchain "x86_64-w64-mingw32")
                  (make-nsis-with-sde-support nsis-x86_64)
+                 osslsigncode))
+          ((string-suffix? "i686-w64-mingw32" target)
+           ;; Windows
+           (list zip
+                 (make-mingw-pthreads-cross-toolchain "i686-w64-mingw32")
+                 (make-nsis-with-sde-support nsis-i686)
                  osslsigncode))
           ((string-contains target "-linux-")
            (list (cond ((string-contains target "riscv64-")

@@ -94,7 +94,15 @@ esac
 case "$HOST" in
     *mingw*)
         # Determine output paths to use in CROSS_* environment variables
-        CROSS_GLIBC="$(store_path "mingw-w64-x86_64-winpthreads")"
+        #CROSS_GLIBC="$(store_path "mingw-w64-x86_64-winpthreads")"
+        case "$HOST" in
+            *x86_64*)
+            CROSS_GLIBC="$(store_path "mingw-w64-x86_64-winpthreads")"
+            ;;
+            *i686*)
+            CROSS_GLIBC="$(store_path "mingw-w64-i686-winpthreads")"
+            ;;
+        esac
         CROSS_GCC="$(store_path "gcc-cross-${HOST}")"
         CROSS_GCC_LIB_STORE="$(store_path "gcc-cross-${HOST}" lib)"
         CROSS_GCC_LIBS=( "${CROSS_GCC_LIB_STORE}/lib/gcc/${HOST}"/* ) # This expands to an array of directories...
