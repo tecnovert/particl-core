@@ -5717,6 +5717,7 @@ static UniValue debugwallet(const JSONRPCRequest &request)
     bool attempt_repair = false;
     bool clear_stakes_seen = false;
     bool downgrade_wallet = false;
+    int64_t time_now = GetAdjustedTime();
 
     if (!request.params[0].isNull()) {
         const UniValue &options = request.params[0].get_obj();
@@ -5799,7 +5800,7 @@ static UniValue debugwallet(const JSONRPCRequest &request)
                         !stx.tx->vpout[r.n]->IsType(OUTPUT_RINGCT) ||
                         !pblocktree->ReadRCTOutputLink(((CTxOutRingCT*)stx.tx->vpout[r.n].get())->pk, anon_index) ||
                         IsBlacklistedAnonOutput(anon_index) ||
-                        (!IsWhitelistedAnonOutput(anon_index) && r.nValue > consensusParams.m_max_tainted_value_out)) {
+                        (!IsWhitelistedAnonOutput(anon_index, time_now, consensusParams) && r.nValue > consensusParams.m_max_tainted_value_out)) {
                         is_spendable = false;
                     }
                 } else

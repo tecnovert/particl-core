@@ -107,10 +107,12 @@ public:
     bool m_clamp_tx_version = false;
     bool m_exploit_fix_1 = false;
     bool m_exploit_fix_2 = false;
+    int64_t m_time;
     std::set<CCmpPubKey> m_setHaveKI;
 
     void SetStateInfo(int64_t time, int spend_height, const Consensus::Params& consensusParams)
     {
+        m_time = time;
         fEnforceSmsgFees = time >= consensusParams.nPaidSmsgTime;
         fBulletproofsActive = time >= consensusParams.bulletproof_time;
         rct_active = time >= consensusParams.rct_time;
