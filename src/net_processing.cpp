@@ -3544,7 +3544,8 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         return true;
     }
 
-    if (smsg::SMSG_UNKNOWN_MESSAGE != smsgModule.ReceiveData(pfrom, strCommand, vRecv)) {
+    if (!(pfrom->fOneShot || pfrom->fFeeler)
+        && smsg::SMSG_UNKNOWN_MESSAGE != smsgModule.ReceiveData(pfrom, strCommand, vRecv)) {
         return true;
     }
 
@@ -4416,7 +4417,8 @@ bool PeerLogicValidation::SendMessages(CNode* pto)
         }
     }
 
-    if (smsg::fSecMsgEnabled) {
+    if (smsg::fSecMsgEnabled &&
+        !(pto->fOneShot || pto->fFeeler)) {
         bool fSendTrickle = pto->HasPermission(PF_NOBAN);
         smsgModule.SendData(pto, fSendTrickle);
     }
