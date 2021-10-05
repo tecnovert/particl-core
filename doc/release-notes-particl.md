@@ -1,4 +1,9 @@
 
+0.19.2.17
+==============
+ - smsg: Prefer selecting confirmed inputs for funding txns.
+
+
 0.19.2.16
 ==============
  - Limited automatic rollbackrctindex to one attempt.
