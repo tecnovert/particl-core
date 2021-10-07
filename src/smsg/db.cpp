@@ -18,6 +18,7 @@ const std::string DBK_SECRETKEY     = "sk";
 const std::string DBK_INBOX         = "IM";
 const std::string DBK_OUTBOX        = "SM";
 const std::string DBK_QUEUED        = "QM";
+const std::string DBK_STASHED       = "TM";
 const std::string DBK_PURGED_TOKEN  = "pm";
 
 CCriticalSection cs_smsgDB;
