@@ -2874,7 +2874,8 @@ static void ParseOutputs(
     bool                 fBech32,
     bool                 hide_zero_coinstakes,
     std::vector<CScript> &vTreasuryFundScripts,
-    bool                 show_change
+    bool                 show_change,
+    bool                 show_smsg_fees
 ) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
     UniValue entry(UniValue::VOBJ);
@@ -3017,6 +3018,30 @@ static void ParseOutputs(
     entry.pushKV("outputs", outputs);
     entry.pushKV("amount", ValueFromAmount(amount));
 
+    if (category_filter != "all" && category_filter != entry["category"].get_str()) {
+        return;
+    }
+    if (search != "") {
+        bool drop = true;
+        // search in addresses
+        if (std::any_of(addresses.begin(), addresses.end(), [search](std::string addr) {
+            return addr.find(search) != std::string::npos;
+        })) {
+            drop = false;
+        }
+        // search in amounts
+        // character DOT '.' is not searched for: search "123" will find 1.23 and 12.3
+        if (drop &&
+            std::any_of(amounts.begin(), amounts.end(), [search](std::string amount) {
+            return amount.find(search) != std::string::npos;
+        })) {
+            drop = false;
+        }
+        if (drop) {
+            return;
+        }
+    }
+
     if (fWithReward && !listStaked.empty()) {
         CAmount nOutput = wtx.tx->GetValueOut();
         CAmount nInput = 0;
@@ -3040,28 +3065,33 @@ static void ParseOutputs(
         entry.pushKV("reward", ValueFromAmount(nOutput - nInput));
     }
 
-    if (category_filter != "all" && category_filter != entry["category"].get_str()) {
-        return;
-    }
-    if (search != "") {
-        // search in addresses
-        if (std::any_of(addresses.begin(), addresses.end(), [search](std::string addr) {
-            return addr.find(search) != std::string::npos;
-        })) {
-            entries.push_back(entry);
-            return ;
+    if (show_smsg_fees) {
+        CAmount smsg_fees = 0;
+        int num_funded = 0;
+        for (const auto &v : wtx.tx->vpout) {
+            if (!v->IsType(OUTPUT_DATA)) {
+                continue;
+            }
+            CTxOutData *txd = (CTxOutData*) v.get();
+            if (txd->vData.size() < 25 || txd->vData[0] != DO_FUND_MSG) {
+                continue;
+            }
+            size_t n = (txd->vData.size()-1) / 24;
+            for (size_t k = 0; k < n; ++k) {
+                uint32_t nAmount;
+                memcpy(&nAmount, &txd->vData[1+k*24+20], 4);
+                nAmount = le32toh(nAmount);
+                smsg_fees += nAmount;
+                num_funded += 1;
+            }
         }
-        // search in amounts
-        // character DOT '.' is not searched for: search "123" will find 1.23 and 12.3
-        if (std::any_of(amounts.begin(), amounts.end(), [search](std::string amount) {
-            return amount.find(search) != std::string::npos;
-        })) {
-            entries.push_back(entry);
-            return ;
+        if (num_funded > 0) {
+            entry.pushKV("smsg_fees", ValueFromAmount(smsg_fees));
+            entry.pushKV("smsges_funded", num_funded);
         }
-    } else {
-        entries.push_back(entry);
     }
+
+    entries.push_back(entry);
 }
 
 static void ParseRecords(
@@ -3076,7 +3106,8 @@ static void ParseRecords(
     int                         type,
     bool                        show_blinding_factors,
     bool                        show_anon_spends,
-    bool                        show_change
+    bool                        show_change,
+    bool                        show_smsg_fees
 ) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
     std::vector<std::string> addresses, amounts;
@@ -3300,31 +3331,49 @@ static void ParseRecords(
                 nOutput += record.nValue;
             }
         }
-        entry.__pushKV("amount", ValueFromAmount(nOutput-nInput));
+        entry.__pushKV("amount", ValueFromAmount(nOutput - nInput));
     } else {
         entry.__pushKV("amount", ValueFromAmount(totalAmount));
     }
     amounts.push_back(std::to_string(ValueFromAmount(totalAmount).get_real()));
 
     if (search != "") {
+        bool drop = true;
         // search in addresses
         if (std::any_of(addresses.begin(), addresses.end(), [search](std::string addr) {
             return addr.find(search) != std::string::npos;
         })) {
-            entries.push_back(entry);
-            return;
+            drop = false;
         }
         // search in amounts
         // character DOT '.' is not searched for: search "123" will find 1.23 and 12.3
-        if (std::any_of(amounts.begin(), amounts.end(), [search](std::string amount) {
+        if (drop &&
+            std::any_of(amounts.begin(), amounts.end(), [search](std::string amount) {
             return amount.find(search) != std::string::npos;
         })) {
-            entries.push_back(entry);
+            drop = false;
+        }
+        if (drop) {
             return;
         }
-    } else {
-        entries.push_back(entry);
     }
+
+    if (show_smsg_fees) {
+        mapRTxValue_t::const_iterator mvi = rtx.mapValue.find(RTXVT_SMSG_FEES);
+        if (mvi != rtx.mapValue.end() &&
+            mvi->second.size() >= 12) {
+            CAmount smsg_fees = 0;
+            int num_funded = 0;
+
+            memcpy(&num_funded, mvi->second.data(), 4);
+            memcpy(&smsg_fees, mvi->second.data() + 4, 8);
+
+            entry.pushKV("smsg_fees", ValueFromAmount(smsg_fees));
+            entry.pushKV("smsges_funded", num_funded);
+        }
+    }
+
+    entries.push_back(entry);
 }
 
 static std::string getAddress(UniValue const & transaction)
@@ -3383,6 +3432,7 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
                             {"show_blinding_factors", RPCArg::Type::BOOL, /* default */ "false", "Display blinding factors for blinded outputs"},
                             {"show_anon_spends", RPCArg::Type::BOOL, /* default */ "false", "Display inputs for anon transactions"},
                             {"show_change", RPCArg::Type::BOOL, /* default */ "false", "Display change outputs (for anon and blind txns)"},
+                            {"show_smsg_fees", RPCArg::Type::BOOL, /* default */ "false", "List the smsgids funded by the transactions"},
                         },
                         "options"},
                 },
@@ -3421,6 +3471,7 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
     bool show_blinding_factors = false;
     bool show_anon_spends = false;
     bool show_change = false;
+    bool show_smsg_fees = false;
 
     if (!request.params[0].isNull()) {
         const UniValue &options = request.params[0].get_obj();
@@ -3440,6 +3491,7 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
                 {"show_blinding_factors",   UniValueType(UniValue::VBOOL)},
                 {"show_anon_spends",        UniValueType(UniValue::VBOOL)},
                 {"show_change",             UniValueType(UniValue::VBOOL)},
+                {"show_smsg_fees",       UniValueType(UniValue::VBOOL)},
             },
             true, // allow null
             false // strict
@@ -3550,6 +3602,9 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
         if (options["show_change"].isBool()) {
             show_change = options["show_change"].get_bool();
         }
+        if (options["show_smsg_fees"].isBool()) {
+            show_smsg_fees = options["show_smsg_fees"].get_bool();
+        }
     }
 
     if (show_blinding_factors || show_anon_spends) {
@@ -3593,7 +3648,8 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
                 fBech32,
                 hide_zero_coinstakes,
                 vTreasuryFundScripts,
-                show_change);
+                show_change,
+                show_smsg_fees);
         tit++;
     }
 
@@ -3622,7 +3678,8 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
                 type_i,
                 show_blinding_factors,
                 show_anon_spends,
-                show_change);
+                show_change,
+                show_smsg_fees);
         rit++;
     }
 
