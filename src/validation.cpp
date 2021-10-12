@@ -119,7 +119,6 @@ std::map<COutPoint, uint256> mapStakeSeen;
 std::list<COutPoint> listStakeSeen;
 
 CoinStakeCache coinStakeCache GUARDED_BY(cs_main);
-std::set<CCmpPubKey> setConnectKi; // hacky workaround
 
 CBlockIndex *pindexBestHeader = nullptr;
 Mutex g_best_block_mutex;
@@ -2711,8 +2710,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                     std::vector<uint8_t> hashBytes;
                     int scriptType = 0;
 
-                    if (!ExtractIndexInfo(pScript, scriptType, hashBytes)
-                        || scriptType == 0) {
+                    if (!ExtractIndexInfo(pScript, scriptType, hashBytes)) {
                         continue;
                     }
 
@@ -3522,7 +3520,6 @@ bool CChainState::ConnectTip(CValidationState& state, const CChainParams& chainp
     int64_t nTime3;
 
     LogPrint(BCLog::BENCH, "  - Load block from disk: %.2fms [%.2fs]\n", (nTime2 - nTime1) * MILLI, nTimeReadFromDisk * MICRO);
-    setConnectKi.clear();
     {
         CCoinsViewCache view(&CoinsTip());
         bool rv = ConnectBlock(blockConnecting, state, pindexNew, view, chainparams);
