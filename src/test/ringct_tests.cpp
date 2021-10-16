@@ -92,7 +92,7 @@ static int testCommitmentSum(secp256k1_context *ctx, CAmount nValueIn,
             //GetStrongRandBytes(&blind[nBlinded].d[0], 32);
         pBlinds.push_back(&blind[nBlinded++].d[0]);
 
-        BOOST_CHECK(secp256k1_pedersen_commit(ctx, &txout.commitment, (uint8_t*)pBlinds.back(), amountsOut[k], &secp256k1_generator_const_h, &secp256k1_generator_const_g));
+        BOOST_CHECK(secp256k1_pedersen_commit(ctx, &txout.commitment, (uint8_t*)pBlinds.back(), (uint64_t)amountsOut[k], &secp256k1_generator_const_h, &secp256k1_generator_const_g));
 
         // Generate ephemeral key for ECDH nonce generation
         CKey ephemeral_key;
@@ -120,7 +120,7 @@ static int testCommitmentSum(secp256k1_context *ctx, CAmount nValueIn,
             min_value, &txout.commitment,
             pBlinds.back(), nonce.begin(),
             ct_exponent, ct_bits,
-            amountsOut[k],
+            (uint64_t)amountsOut[k],
             nullptr, 0,
             nullptr, 0,
             secp256k1_generator_h));

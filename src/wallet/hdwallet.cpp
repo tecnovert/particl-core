@@ -6111,11 +6111,11 @@ int CHDWallet::ExtKeyImportLoose(CHDWalletDB *pwdb, CStoredExtKey &sekIn, CKeyID
 
         CExtKey evDerivedKey, evPurposeKey;
         sek.kp.Derive(evPurposeKey, BIP44_PURPOSE);
-        evPurposeKey.Derive(evDerivedKey, Params().BIP44ID());
+        evPurposeKey.Derive(evDerivedKey, (uint32_t)Params().BIP44ID());
 
         v.resize(0);
         PushUInt32(v, BIP44_PURPOSE);
-        PushUInt32(v, Params().BIP44ID());
+        PushUInt32(v, (uint32_t)Params().BIP44ID());
 
         CStoredExtKey sekDerived;
         sekDerived.nFlags |= EAF_ACTIVE;
@@ -6387,11 +6387,11 @@ int CHDWallet::ExtKeyNewMaster(CHDWalletDB *pwdb, CKeyID &idMaster, bool fAutoGe
 
     CExtKey evMasterKey;
     evRootKey.Derive(evMasterKey, BIP44_PURPOSE);
-    evMasterKey.Derive(evMasterKey, Params().BIP44ID());
+    evMasterKey.Derive(evMasterKey, (uint32_t)Params().BIP44ID());
 
     std::vector<uint8_t> vPath;
     PushUInt32(vPath, BIP44_PURPOSE);
-    PushUInt32(vPath, Params().BIP44ID());
+    PushUInt32(vPath, (uint32_t)Params().BIP44ID());
 
     CStoredExtKey sekMaster;
     sekMaster.nFlags |= EAF_ACTIVE;

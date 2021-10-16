@@ -72,11 +72,11 @@ enum HaveKeyResult {HK_NO = 0, HK_YES, HK_LOOKAHEAD, HK_LOOKAHEAD_DO_UPDATE};
 
 enum KeySourceTypes {KS_NONE = 0, KS_ACCOUNT_CHAIN, KS_STEALTH, KS_LEGACY, KS_LOOSE_CHAIN};
 
-inline bool IsHardened(uint32_t n)              { return (n & (1 << 31)); };
-inline uint32_t &SetHardenedBit(uint32_t &n)    { return (n |= (1 << 31)); };
-inline uint32_t &ClearHardenedBit(uint32_t &n)  { return (n &= ~(1 << 31)); };
-inline uint32_t WithHardenedBit(uint32_t n)     { return (n |= (1 << 31)); };
-inline uint32_t WithoutHardenedBit(uint32_t n)  { return (n &= ~(1 << 31)); };
+inline bool IsHardened(uint32_t n)              { return (n & ((uint32_t)1 << 31)); };
+inline uint32_t &SetHardenedBit(uint32_t &n)    { return (n |= ((uint32_t)1 << 31)); };
+inline uint32_t &ClearHardenedBit(uint32_t &n)  { return (n &= ~((uint32_t)1 << 31)); };
+inline uint32_t WithHardenedBit(uint32_t n)     { return (n |= ((uint32_t)1 << 31)); };
+inline uint32_t WithoutHardenedBit(uint32_t n)  { return (n &= ~((uint32_t)1 << 31)); };
 
 struct CExtPubKey {
     unsigned char nDepth;
@@ -326,7 +326,7 @@ public:
                 return errorN(1, "No more %skeys can be derived from master.", fHardened ? "hardened " : "");
             }
 
-            uint32_t nNum = fHardened ? nChildIn | 1 << 31 : nChildIn;
+            uint32_t nNum = fHardened ? nChildIn | (uint32_t)1 << 31 : nChildIn;
 
             if (kp.Derive(keyOut, nNum)) {
                 nChildOut = nNum; // nChildOut has bit 31 set for harnened keys

@@ -263,7 +263,7 @@ void RunSerialiseTests()
     BOOST_CHECK(4 == GetNumBytesReqForInt(nTest4));
     BOOST_CHECK(4 == GetNumBytesReqForInt(nTest4_1)); // expect 4, no sign bit
     BOOST_CHECK(5 == GetNumBytesReqForInt(nTest5));
-    BOOST_CHECK(8 == GetNumBytesReqForInt(nTest8));
+    BOOST_CHECK(8 == GetNumBytesReqForInt((uint64_t)nTest8));
 
     std::vector<uint8_t> v;
     SetCompressedInt64(v, nTest0);
@@ -274,7 +274,7 @@ void RunSerialiseTests()
     GetCompressedInt64(v, (uint64_t&)nTest);
     BOOST_CHECK(nTest5 == nTest);
 
-    SetCompressedInt64(v, nTest8);
+    SetCompressedInt64(v, (uint64_t)nTest8);
     GetCompressedInt64(v, (uint64_t&)nTest);
     BOOST_CHECK(nTest8 == nTest);
 
@@ -288,7 +288,7 @@ void RunSerialiseTests()
     sk.sLabel = "sk label";
     sk.nGenerated = 5;
     sk.nHGenerated = 6;
-    sk.mapValue[EKVT_CREATED_AT] = SetCompressedInt64(v, nTest8);
+    sk.mapValue[EKVT_CREATED_AT] = SetCompressedInt64(v, (uint64_t)nTest8);
 
     eKey58.SetKey(sk.kp, CChainParams::EXT_PUBLIC_KEY);
     BOOST_CHECK(eKey58.ToString() == "PPARTKMMf4AUDYzRSBcXSJZALbUXgWKHi6qdpy95yBmABuznU3keHFyNHfjaMT33ehuYwjx3RXort1j8d9AYnqyhAvdN168J4GBsM2ZHuTb91rsj");

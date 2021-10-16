@@ -1675,6 +1675,7 @@ static UniValue smsgbuckets(const JSONRPCRequest &request)
     return result;
 };
 
+#ifdef ENABLE_WALLET
 static bool sortMsgAsc(const std::pair<int64_t, UniValue> &a, const std::pair<int64_t, UniValue> &b)
 {
     return a.first < b.first;
@@ -1684,6 +1685,7 @@ static bool sortMsgDesc(const std::pair<int64_t, UniValue> &a, const std::pair<i
 {
     return a.first > b.first;
 };
+#endif
 
 static UniValue smsgview(const JSONRPCRequest &request)
 {

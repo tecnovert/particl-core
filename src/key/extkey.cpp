@@ -299,7 +299,7 @@ bool CExtPubKey::Derive(CExtPubKey &out, unsigned int nChild) const
 
 bool CExtKey::Derive(CExtKey &out, unsigned int nChild) const
 {
-    out.nDepth = nDepth + 1;
+    out.nDepth = (uint8_t) (nDepth + 1) & 0xFF;
     CKeyID id = key.GetPubKey().GetID();
     memcpy(&out.vchFingerprint[0], &id, 4);
     out.nChild = nChild;
