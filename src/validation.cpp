@@ -2904,7 +2904,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                     return state.Invalid(ValidationInvalidReason::CONSENSUS, error("%s: Smsg fee < 1.", __func__), REJECT_INVALID, "bad-cs-smsg-fee");
                 }
                 int64_t delta = std::abs(smsg_fee_new - smsg_fee_prev);
-                int64_t max_delta = chainparams.GetMaxSmsgFeeRateDelta(smsg_fee_prev);
+                int64_t max_delta = chainparams.GetMaxSmsgFeeRateDelta(smsg_fee_prev, pindex->nTime);
                 if (delta > max_delta) {
                     return state.Invalid(ValidationInvalidReason::CONSENSUS, error("%s: Bad smsg-fee (delta=%d, max_delta=%d)", __func__, delta, max_delta), REJECT_INVALID, "bad-cs-smsg-fee");
                 }
