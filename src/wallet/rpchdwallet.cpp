@@ -8411,6 +8411,7 @@ static UniValue fundrawtransactionfrom(const JSONRPCRequest& request)
                     {"options", RPCArg::Type::OBJ, /* default */ "", "",
                         {
                             {"changeAddress", RPCArg::Type::STR, /* default */ "", "The particl address to receive the change."},
+                            {"changepubkey", RPCArg::Type::STR, /* default */ "", "The public key to use for the change output if changeAddress isn't set."},
                             {"changePosition", RPCArg::Type::NUM, /* default */ "random", "The index of the change output."},
                             //{"change_type", RPCArg::Type::STR, /* default */ "", "The output type to use. Only valid if changeAddress is not specified. Options are \"legacy\", \"p2sh-segwit\", and \"bech32\". Default is set by -changetype."},
                             {"includeWatching", RPCArg::Type::BOOL, /* default */ "false", "Also select inputs which are watch only."},
@@ -8487,6 +8488,7 @@ static UniValue fundrawtransactionfrom(const JSONRPCRequest& request)
         RPCTypeCheckObj(options,
             {
                 {"changeAddress", UniValueType(UniValue::VSTR)},
+                {"changepubkey", UniValueType(UniValue::VSTR)},
                 {"changePosition", UniValueType(UniValue::VNUM)},
                 //{"change_type", UniValueType(UniValue::VSTR)},
                 {"includeWatching", UniValueType(UniValue::VBOOL)},
@@ -8503,6 +8505,9 @@ static UniValue fundrawtransactionfrom(const JSONRPCRequest& request)
             true, true);
 
         if (options.exists("changeAddress")) {
+            if (options.exists("changepubkey")) {
+                throw JSONRPCError(RPC_INVALID_PARAMETER, "Can't set both changeAddress and changepubkey");
+            }
             CTxDestination dest = DecodeDestination(options["changeAddress"].get_str());
 
             if (!IsValidDestination(dest)) {
@@ -8510,6 +8515,14 @@ static UniValue fundrawtransactionfrom(const JSONRPCRequest& request)
             }
 
             coinControl.destChange = dest;
+        } else
+        if (options.exists("changepubkey")) {
+            std::string s = options["changepubkey"].get_str();
+            if (!IsHex(s) || !(s.size() == 66)) {
+                throw JSONRPCError(RPC_INVALID_PARAMETER, "Public key must be 33 bytes and hex encoded.");
+            }
+            std::vector<uint8_t> v = ParseHex(s);
+            coinControl.m_changepubkey = CPubKey(v.begin(), v.end());
         }
 
         if (options.exists("changePosition")) {
