@@ -49,7 +49,6 @@ static constexpr bool DEFAULT_AVOIDPARTIALSPENDS = false;
 class CCoinControl
 {
 public:
-    CScript scriptChange;
     //! Custom change destination, if not set an address is generated
     CTxDestination destChange = CNoDestination();
     //! Override the default change type if set, ignored if destChange is set
@@ -81,6 +80,7 @@ public:
     //! Maximum chain depth value for coin availability
     int m_max_depth = DEFAULT_MAX_DEPTH;
 
+    //! Particl
     int nCoinType = OUTPUT_STANDARD;
     mutable bool fHaveAnonOutputs = false;
     mutable bool fNeedHardwareKey = false;
@@ -106,6 +106,10 @@ public:
     int m_mixin_selection_mode = 1;
     //! Blinding factor for input amount commitment when > 1 mlsag
     mutable std::vector<CKey> vSplitCommitBlindingKeys;
+    //! Script to use for the change output
+    CScript scriptChange;
+    //! Pubkey to use for the change output if changeaddress and scriptChange isn't set
+    CPubKey m_changepubkey;
 
     CCoinControl();
 
