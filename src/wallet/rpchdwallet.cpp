@@ -9174,6 +9174,7 @@ static UniValue verifyrawtransaction(const JSONRPCRequest &request)
                                     //{"redeemScript", RPCArg::Type::STR_HEX, /* default */ "", "(required for P2SH or P2WSH)"},
                                     {"amount", RPCArg::Type::AMOUNT, RPCArg::Optional::NO, "The amount spent"},
                                     {"amount_commitment", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "The amount commitment spent"},
+                                    {"chainheight", RPCArg::Type::NUM, /* default */ "0x7FFFFFFF", "Height of prevout in chain, mempool height by default"},
                                 },
                             },
                         },
@@ -9182,6 +9183,7 @@ static UniValue verifyrawtransaction(const JSONRPCRequest &request)
                         {
                             {"returndecoded", RPCArg::Type::BOOL, /* default */ "false", "Return the decoded txn as a json object."},
                             {"checkvalues", RPCArg::Type::BOOL, /* default */ "true", "Check amounts and amount commitments match up."},
+                            {"checkoutputs", RPCArg::Type::BOOL, /* default */ "true", "Check tx attributes and outputs."},
                             {"spendheight", RPCArg::Type::NUM, /* default */ "chainheight", "Height the tx is spent at, set to current chain height if not provided."},
                         },
                         "options"},
@@ -9215,6 +9217,7 @@ static UniValue verifyrawtransaction(const JSONRPCRequest &request)
 
     bool return_decoded = false;
     bool check_values = true;
+    bool check_outputs = true;
     int nSpendHeight = -1;
     int64_t nSpendTime = 0;
 
@@ -9225,6 +9228,7 @@ static UniValue verifyrawtransaction(const JSONRPCRequest &request)
             {
                 {"returndecoded",            UniValueType(UniValue::VBOOL)},
                 {"checkvalues",              UniValueType(UniValue::VBOOL)},
+                {"checkoutputs",             UniValueType(UniValue::VBOOL)},
                 {"spendheight",              UniValueType(UniValue::VNUM)},
             }, true, false);
 
@@ -9233,6 +9237,9 @@ static UniValue verifyrawtransaction(const JSONRPCRequest &request)
         }
         if (options.exists("checkvalues")) {
             check_values = options["checkvalues"].get_bool();
+        }
+        if (options.exists("checkoutputs")) {
+            check_outputs = options["checkoutputs"].get_bool();
         }
         if (options.exists("spendheight")) {
             nSpendHeight = options["spendheight"].get_int();
@@ -9324,7 +9331,19 @@ static UniValue verifyrawtransaction(const JSONRPCRequest &request)
                 throw JSONRPCError(RPC_INVALID_PARAMETER, "\"amount\" or \"amount_commitment\" is required");
             }
 
-            newcoin.nHeight = 1;
+            if (!coin.IsSpent()) { // IsSpent is true if coin not found
+                newcoin.nHeight = coin.nHeight;
+            } else {
+                if (prevOut.exists("chainheight")) {
+                    newcoin.nHeight = prevOut["chainheight"].get_int();
+                    if (newcoin.nHeight < 1) {
+                        throw JSONRPCError(RPC_INVALID_PARAMETER, "\"chainheight\" Must be >= 1");
+                    }
+                } else {
+                    // Set to the same height as a tx in the mempool would be
+                    newcoin.nHeight = 0x7FFFFFFF;
+                }
+            }
             view.AddCoin(out, std::move(newcoin), true);
             }
         }
@@ -9355,7 +9374,7 @@ static UniValue verifyrawtransaction(const JSONRPCRequest &request)
     const Consensus::Params& consensusParams = Params().GetConsensus();
     UniValue result(UniValue::VOBJ);
 
-     {
+     if (check_outputs) {
         CValidationState state;
         state.SetStateInfo(nSpendTime, nSpendHeight, consensusParams);
         if (!CheckTransaction(txConst, state)) {
