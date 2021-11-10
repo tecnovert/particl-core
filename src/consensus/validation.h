@@ -161,6 +161,9 @@ public:
     std::string GetRejectReason() const { return strRejectReason; }
     std::string GetDebugMessage() const { return strDebugMessage; }
 
+    int nodeId;
+    int nFlags;
+
     bool fEnforceSmsgFees = false; // per block
     bool fBulletproofsActive = false; // per block
     bool rct_active = false; // per block
@@ -198,8 +201,20 @@ public:
         }
     }
 
-    int nodeId;
-    int nFlags;
+    void CopyStateInfo(const CValidationState &state_from)
+    {
+        m_time = state_from.m_time;
+        m_in_block = state_from.m_in_block;
+        fEnforceSmsgFees = state_from.fEnforceSmsgFees;
+        fBulletproofsActive = state_from.fBulletproofsActive;
+        rct_active = state_from.rct_active;
+        m_spend_height = state_from.m_spend_height;
+
+        m_clamp_tx_version = state_from.m_clamp_tx_version;
+        m_exploit_fix_1 = state_from.m_exploit_fix_1;
+        m_exploit_fix_2 = state_from.m_exploit_fix_2;
+        m_check_equal_rct_txid = state_from.m_check_equal_rct_txid;
+    }
 };
 
 // These implement the weight = (stripped_size * 4) + witness_size formula,
