@@ -282,7 +282,6 @@ CAmount CTransaction::GetPlainValueOut(size_t &nStandard, size_t &nCT, size_t &n
         if (txout->IsType(OUTPUT_RINGCT)) {
             nRingCT++;
         }
-
         if (!txout->IsStandardOutput()) {
             continue;
         }
@@ -296,6 +295,19 @@ CAmount CTransaction::GetPlainValueOut(size_t &nStandard, size_t &nCT, size_t &n
     }
 
     return nValueOut;
+}
+
+CAmount CTransaction::GetPlainValueBurned() const
+{
+    CAmount nValueBurned{0};
+    for (const auto &txout : vpout) {
+        if (!txout->IsStandardOutput() ||
+            !txout->GetPScriptPubKey()->IsUnspendable()) {
+            continue;
+        }
+        nValueBurned += txout->GetValue();
+    }
+    return nValueBurned;
 }
 
 CAmount CTransaction::GetTotalSMSGFees() const

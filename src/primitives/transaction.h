@@ -850,6 +850,9 @@ public:
     // Return sum of standard txouts and counts of output types
     CAmount GetPlainValueOut(size_t &nStandard, size_t &nCT, size_t &nRingCT) const;
 
+    // Return sum of standard txouts with unspendable scripts
+    CAmount GetPlainValueBurned() const;
+
     // GetValueIn() is a method on CCoinsViewCache, because
     // inputs must be known to compute value in.
 
