@@ -2311,6 +2311,7 @@ bool CChainState::ConnectBlock(const CBlock& block, BlockValidationState& state,
 
     // NOTE: Block reward is based on nMoneySupply
     CAmount nMoneyCreated = 0;
+    CAmount nMoneyBurned = 0;
     CAmount block_balances[3] = {0};
     bool reset_balances = false;
 
@@ -2546,6 +2547,7 @@ bool CChainState::ConnectBlock(const CBlock& block, BlockValidationState& state,
         block_balances[BAL_IND_PLAIN] += tx_state.tx_balances[BAL_IND_PLAIN_ADDED] - tx_state.tx_balances[BAL_IND_PLAIN_REMOVED];
         block_balances[BAL_IND_BLIND] += tx_state.tx_balances[BAL_IND_BLIND_ADDED] - tx_state.tx_balances[BAL_IND_BLIND_REMOVED];
         block_balances[BAL_IND_ANON]  += tx_state.tx_balances[BAL_IND_ANON_ADDED]  - tx_state.tx_balances[BAL_IND_ANON_REMOVED];
+        nMoneyBurned += tx.GetPlainValueBurned();
     }
 
     int64_t nTime3 = GetTimeMicros(); nTimeConnect += nTime3 - nTime2;
@@ -2559,7 +2561,8 @@ bool CChainState::ConnectBlock(const CBlock& block, BlockValidationState& state,
 
     if (fParticlMode) {
         if (block.nTime >= consensus.clamp_tx_version_time) {
-            nMoneyCreated -= nFees;
+            nMoneyCreated -= nFees;  // nStakeReward includes fees
+            nMoneyCreated -= nMoneyBurned;
         }
         if (block.IsProofOfStake()) { // Only the genesis block isn't proof of stake
             CTransactionRef txCoinstake = block.vtx[0];
@@ -2721,7 +2724,7 @@ bool CChainState::ConnectBlock(const CBlock& block, BlockValidationState& state,
     if (fJustCheck)
         return true;
 
-    if (consensus.exploit_fix_2_height && pindex->nHeight == consensus.exploit_fix_2_height) {
+    if (consensus.exploit_fix_2_height && pindex->nHeight == (int)consensus.exploit_fix_2_height) {
         // Set moneysupply to utxoset sum
         pindex->nMoneySupply = particl::GetUTXOSum(*this) + nMoneyCreated;
         LogPrintf("RCT mint fix HF2, set nMoneySupply to: %d\n", pindex->nMoneySupply);
