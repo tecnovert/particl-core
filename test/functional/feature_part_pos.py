@@ -174,7 +174,7 @@ class PosTest(ParticlTestFramework):
         self.stakeBlocks(1)
         stakereward = nodes[0].getblockreward(header_before['height'] + 1)['stakereward']
         header_after = nodes[0].getblockheader(nodes[0].getbestblockhash())
-        assert(abs(header_before['moneysupply'] - (header_after['moneysupply'] + decimal.Decimal(100.0) - stakereward)) < 2)
+        assert(abs(header_before['moneysupply'] - (header_after['moneysupply'] + decimal.Decimal(100.0) - stakereward)) < 0.00000002)
 
         self.log.info('Test clearing rewardaddress')
         ro = nodes[0].walletsettings('stakingoptions', {})

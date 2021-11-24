@@ -191,6 +191,9 @@ BOOST_AUTO_TEST_CASE(stake_test)
     auto locked_chain = pwallet->chain().lock();
     LOCK(pwallet->cs_wallet);
     BOOST_REQUIRE(!pwallet->IsSpent(*locked_chain, txin.prevout.hash, txin.prevout.n));
+    // m_last_block_processed isn't updated when a block is disconnected
+    uint256 last_block = ::ChainActive().Tip()->GetBlockHash();
+    pwallet->SetLastBlockProcessed(last_block);
     }
 
     {
