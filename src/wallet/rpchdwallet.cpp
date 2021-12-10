@@ -23,6 +23,7 @@
 #include <txdb.h>
 #include <blind.h>
 #include <anon.h>
+#include <util/strencodings.h>
 #include <util/moneystr.h>
 #include <util/validation.h>
 #include <util/translation.h>
@@ -62,6 +63,24 @@ static inline uint32_t reversePlace(const uint8_t *p)
         rv |= (uint32_t) *(p+i) << (8 * (3-i));
     }
     return rv;
+};
+
+static OutputTypes WordToType(const std::string &s, bool allow_data=false)
+{
+    const std::string ls = ToLower(s);
+    if (ls == "part" || ls == "plain" || ls == "standard") {
+        return OUTPUT_STANDARD;
+    }
+    if (ls == "blind") {
+        return OUTPUT_CT;
+    }
+    if (ls == "anon") {
+        return OUTPUT_RINGCT;
+    }
+    if (allow_data && ls == "data") {
+        return OUTPUT_DATA;
+    }
+    return OUTPUT_NULL;
 };
 
 static int ExtractBip32InfoV(const std::vector<uint8_t> &vchKey, UniValue &keyInfo, std::string &sError)
@@ -3654,10 +3673,7 @@ static UniValue filtertransactions(const JSONRPCRequest &request)
         tit++;
     }
 
-    int type_i = type == "standard" ? OUTPUT_STANDARD :
-                 type == "blind" ? OUTPUT_CT :
-                 type == "anon" ? OUTPUT_RINGCT :
-                 0;
+    int type_i = WordToType(type);
     // records processing
     const RtxOrdered_t &rtxOrdered = pwallet->rtxOrdered;
     RtxOrdered_t::const_reverse_iterator rit = rtxOrdered.rbegin();
@@ -5531,17 +5547,6 @@ static const char *TypeToWord(OutputTypes type)
             break;
     };
     return "unknown";
-};
-
-static OutputTypes WordToType(std::string &s)
-{
-    if (s == "part")
-        return OUTPUT_STANDARD;
-    if (s == "blind")
-        return OUTPUT_CT;
-    if (s == "anon")
-        return OUTPUT_RINGCT;
-    return OUTPUT_NULL;
 };
 
 static std::string SendHelp(CHDWallet *pwallet, OutputTypes typeIn, OutputTypes typeOut)
@@ -8472,9 +8477,9 @@ static UniValue fundrawtransactionfrom(const JSONRPCRequest& request)
     // the user could have gotten from another RPC command prior to now
     pwallet->BlockUntilSyncedToCurrentChain();
 
-    std::string sInputType = request.params[0].get_str();
-
-    if (sInputType != "standard" && sInputType != "anon" && sInputType != "blind") {
+    const std::string sInputType = request.params[0].get_str();
+    OutputTypes input_type = WordToType(sInputType);
+    if (input_type == OUTPUT_NULL) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Unknown input type.");
     }
 
@@ -8837,17 +8842,17 @@ static UniValue fundrawtransactionfrom(const JSONRPCRequest& request)
     {
         auto locked_chain = pwallet->chain().lock();
         LOCK(pwallet->cs_wallet);
-        if (sInputType == "standard") {
+        if (input_type == OUTPUT_STANDARD) {
             if (0 != pwallet->AddStandardInputs(*locked_chain, wtx, rtx, vecSend, false, nFee, &coinControl, sError)) {
                 throw JSONRPCError(RPC_WALLET_ERROR, strprintf("AddStandardInputs failed: %s.", sError));
             }
         } else
-        if (sInputType == "anon") {
+        if (input_type == OUTPUT_RINGCT) {
             sError = "TODO";
             //if (0 != pwallet->AddAnonInputs(wtx, rtx, vecSend, false, nFee, &coinControl, sError))
                 throw JSONRPCError(RPC_WALLET_ERROR, strprintf("AddAnonInputs failed: %s.", sError));
         } else
-        if (sInputType == "blind") {
+        if (input_type == OUTPUT_CT) {
             if (0 != pwallet->AddBlindedInputs(*locked_chain, wtx, rtx, vecSend, false, nFee, &coinControl, sError)) {
                 throw JSONRPCError(RPC_WALLET_ERROR, strprintf("AddBlindedInputs failed: %s.", sError));
             }
