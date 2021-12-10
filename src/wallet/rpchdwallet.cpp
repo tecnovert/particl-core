@@ -4909,7 +4909,7 @@ static UniValue getlockedbalances(const JSONRPCRequest &request)
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp))
         return NullUniValue;
 
-        RPCHelpMan{"getlockedbalances",
+    RPCHelpMan{"getlockedbalances",
             "\nReturns an object with locked balances in " + CURRENCY_UNIT + ".\n",
             {},
             RPCResult{
