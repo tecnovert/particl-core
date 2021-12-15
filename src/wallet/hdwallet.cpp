@@ -3881,7 +3881,7 @@ int CHDWallet::AddStandardInputs(CWalletTx &wtx, CTransactionRecord &rtx,
     assert(coinControl);
     const CCoinControl &coin_control = *coinControl;
     nFeeRet = 0;
-    CAmount nValue;
+    CAmount nValue{0};
     size_t nSubtractFeeFromAmount;
     bool fOnlyStandardOutputs;
     InspectOutputs(vecSend, nValue, nSubtractFeeFromAmount, fOnlyStandardOutputs);
@@ -3917,7 +3917,7 @@ int CHDWallet::AddStandardInputs(CWalletTx &wtx, CTransactionRecord &rtx,
 
         std::set<CInputCoin> setCoins;
         std::vector<COutput> vAvailableCoins;
-        AvailableCoins(vAvailableCoins, coinControl);
+        AvailableCoins(vAvailableCoins, coinControl, coinControl->m_minimum_output_amount, coinControl->m_maximum_output_amount);
         CoinSelectionParams coin_selection_params; // Parameters for coin selection, init with dummy
 
         // Set discard feerate

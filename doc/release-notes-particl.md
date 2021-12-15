@@ -2,6 +2,27 @@
 ==============
 
 - script: Remove timelocked script signing.
+- wallet:
+  - Add minimum and maximumAmount to fundrawtransactionfrom and sendtypeto
+  - Add includeWatching option to sendtypeto
+
+
+0.21.2.6
+==============
+
+- wallet:
+  - Add minimum and maximumAmount to fundrawtransactionfrom and sendtypeto
+  - Add includeWatching option to sendtypeto
+
+
+0.21.2.5
+==============
+
+- Scheduled fork for 2022-02-01 17:00:00 UTC.
+  - Raised protocol version to 90035
+- Fixed chain syncing issue.
+- qt: Include immature anon balance in overview total.
+- New checkpoints.
 
 
 0.21.2.4
