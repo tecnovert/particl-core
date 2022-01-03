@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2019 The Particl Core developers
+// Copyright (c) 2017-2022 The Particl Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -12310,7 +12310,21 @@ std::set<uint256> CHDWallet::GetConflicts(const uint256 &txid) const
     return CWallet::GetConflicts(txid);
 }
 
-/* Mark a transaction (and it in-wallet descendants) as abandoned so its inputs may be respent. */
+bool CHDWallet::TransactionCanBeAbandoned(const uint256& hashTx) const
+{
+    auto locked_chain = chain().lock();
+    LOCK(cs_wallet);
+
+    MapRecords_t::const_iterator mri;
+    if ((mri = mapRecords.find(hashTx)) != mapRecords.end()) {
+        const CTransactionRecord &rtx = mri->second;
+        return !rtx.IsAbandoned() && GetDepthInMainChain(*locked_chain, rtx.blockHash, rtx.nIndex) == 0 && !InMempool(hashTx);
+    }
+
+    const CWalletTx* wtx = GetWalletTx(hashTx);
+    return wtx && !wtx->isAbandoned() && wtx->GetDepthInMainChain(*locked_chain) == 0 && !wtx->InMempool();
+}
+
 bool CHDWallet::AbandonTransaction(interfaces::Chain::Lock& locked_chain, const uint256 &hashTx)
 {
     auto locked_chain_recursive = chain().lock();  // Temporary. Removed in upcoming lock cleanup
@@ -12334,15 +12348,13 @@ bool CHDWallet::AbandonTransaction(interfaces::Chain::Lock& locked_chain, const 
     if ((mwi = mapWallet.find(hashTx)) != mapWallet.end())
     {
         CWalletTx &wtx = mwi->second;
-        if (wtx.GetDepthInMainChain(locked_chain) > 0 || InMempool(hashTx))
-        {
+        if (wtx.GetDepthInMainChain(locked_chain) > 0 || InMempool(hashTx)) {
             return false;
-        };
-    } else
-    {
+        }
+    } else {
         // hashTx not in wallet
         return false;
-    };
+    }
 
     todo.insert(hashTx);
 
