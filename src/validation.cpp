@@ -1843,6 +1843,36 @@ bool CheckInputs(const CTransaction& tx, CValidationState &state, const CCoinsVi
         return true;
     }
 
+    if (!txdata.m_spent_outputs_ready) {
+        std::vector<CTxOutSign> spent_outputs;
+        spent_outputs.reserve(tx.vin.size());
+
+        for (const auto& txin : tx.vin) {
+            if (txin.IsAnonInput()) {
+                // Add placeholder CTxOutSign to maintain index
+                spent_outputs.emplace_back();
+                continue;
+            }
+            const COutPoint& prevout = txin.prevout;
+            const Coin& coin = inputs.AccessCoin(prevout);
+            assert(!coin.IsSpent());
+            const CScript& scriptPubKey = coin.out.scriptPubKey;
+
+            std::vector<uint8_t> vchAmount;
+            if (coin.nType == OUTPUT_STANDARD) {
+                part::SetAmount(vchAmount, coin.out.nValue);
+            } else
+            if (coin.nType == OUTPUT_CT) {
+                vchAmount.resize(33);
+                memcpy(vchAmount.data(), coin.commitment.data, 33);
+            }
+
+            spent_outputs.emplace_back(vchAmount, scriptPubKey);
+        }
+        txdata.Init(tx, std::move(spent_outputs));
+    }
+    assert(txdata.m_spent_outputs.size() == tx.vin.size());
+
     for (unsigned int i = 0; i < tx.vin.size(); i++) {
         if (tx.vin[i].IsAnonInput()) {
             fHasAnonInput = true;

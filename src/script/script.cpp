@@ -139,6 +139,8 @@ const char* GetOpName(opcodetype opcode)
     case OP_ISCOINSTAKE            : return "OP_ISCOINSTAKE";
     case OP_NOP10                  : return "OP_NOP10";
 
+    // Opcode added by BIP 342 (Tapscript)
+    case OP_CHECKSIGADD            : return "OP_CHECKSIGADD";
 
     case OP_INVALIDOPCODE          : return "OP_INVALIDOPCODE";
 

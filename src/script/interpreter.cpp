@@ -278,6 +278,92 @@ int FindAndDelete(CScript& script, const CScript& b)
     return nFound;
 }
 
+static bool EvalChecksigPreTapscript(const valtype& vchSig, const valtype& vchPubKey, CScript::const_iterator pbegincodehash, CScript::const_iterator pend, unsigned int flags, const BaseSignatureChecker& checker, SigVersion sigversion, ScriptError* serror, bool& fSuccess)
+{
+    assert(sigversion == SigVersion::BASE || sigversion == SigVersion::WITNESS_V0);
+
+    // Subset of script starting at the most recent codeseparator
+    CScript scriptCode(pbegincodehash, pend);
+
+    // Drop the signature in pre-segwit scripts but not segwit scripts
+    if (sigversion == SigVersion::BASE) {
+        int found = FindAndDelete(scriptCode, CScript() << vchSig);
+        if (found > 0 && (flags & SCRIPT_VERIFY_CONST_SCRIPTCODE))
+            return set_error(serror, SCRIPT_ERR_SIG_FINDANDDELETE);
+    }
+
+    if (!CheckSignatureEncoding(vchSig, flags, serror) || !CheckPubKeyEncoding(vchPubKey, flags, sigversion, serror)) {
+        //serror is set
+        return false;
+    }
+    fSuccess = checker.CheckSig(vchSig, vchPubKey, scriptCode, sigversion);
+
+    if (!fSuccess && (flags & SCRIPT_VERIFY_NULLFAIL) && vchSig.size())
+        return set_error(serror, SCRIPT_ERR_SIG_NULLFAIL);
+
+    return true;
+}
+
+static bool EvalChecksigTapscript(const valtype& sig, const valtype& pubkey, ScriptExecutionData& execdata, unsigned int flags, const BaseSignatureChecker& checker, SigVersion sigversion, ScriptError* serror, bool& success)
+{
+    assert(sigversion == SigVersion::TAPSCRIPT);
+
+    /*
+     *  The following validation sequence is consensus critical. Please note how --
+     *    upgradable public key versions precede other rules;
+     *    the script execution fails when using empty signature with invalid public key;
+     *    the script execution fails when using non-empty invalid signature.
+     */
+    success = !sig.empty();
+    if (success) {
+        // Implement the sigops/witnesssize ratio test.
+        // Passing with an upgradable public key version is also counted.
+        assert(execdata.m_validation_weight_left_init);
+        execdata.m_validation_weight_left -= VALIDATION_WEIGHT_PER_SIGOP_PASSED;
+        if (execdata.m_validation_weight_left < 0) {
+            return set_error(serror, SCRIPT_ERR_TAPSCRIPT_VALIDATION_WEIGHT);
+        }
+    }
+    if (pubkey.size() == 0) {
+        return set_error(serror, SCRIPT_ERR_PUBKEYTYPE);
+    } else if (pubkey.size() == 32) {
+        if (success && !checker.CheckSchnorrSignature(sig, pubkey, sigversion, execdata, serror)) {
+            return false; // serror is set
+        }
+    } else {
+        /*
+         *  New public key version softforks should be defined before this `else` block.
+         *  Generally, the new code should not do anything but failing the script execution. To avoid
+         *  consensus bugs, it should not modify any existing values (including `success`).
+         */
+        if ((flags & SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_PUBKEYTYPE) != 0) {
+            return set_error(serror, SCRIPT_ERR_DISCOURAGE_UPGRADABLE_PUBKEYTYPE);
+        }
+    }
+
+    return true;
+}
+
+/** Helper for OP_CHECKSIG, OP_CHECKSIGVERIFY, and (in Tapscript) OP_CHECKSIGADD.
+ *
+ * A return value of false means the script fails entirely. When true is returned, the
+ * success variable indicates whether the signature check itself succeeded.
+ */
+static bool EvalChecksig(const valtype& sig, const valtype& pubkey, CScript::const_iterator pbegincodehash, CScript::const_iterator pend, ScriptExecutionData& execdata, unsigned int flags, const BaseSignatureChecker& checker, SigVersion sigversion, ScriptError* serror, bool& success)
+{
+    switch (sigversion) {
+    case SigVersion::BASE:
+    case SigVersion::WITNESS_V0:
+        return EvalChecksigPreTapscript(sig, pubkey, pbegincodehash, pend, flags, checker, sigversion, serror, success);
+    case SigVersion::TAPSCRIPT:
+        return EvalChecksigTapscript(sig, pubkey, execdata, flags, checker, sigversion, serror, success);
+    case SigVersion::TAPROOT:
+        // Key path spending in Taproot has no script, so this is unreachable.
+        break;
+    }
+    assert(false);
+}
+
 bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& script, unsigned int flags, const BaseSignatureChecker& checker, SigVersion sigversion, ScriptExecutionData& execdata, ScriptError* serror)
 {
     static const CScriptNum bnZero(0);
@@ -288,6 +374,9 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
     // static const valtype vchZero(0);
     static const valtype vchTrue(1, 1);
 
+    // sigversion cannot be TAPROOT here, as it admits no script execution.
+    assert(sigversion == SigVersion::BASE || sigversion == SigVersion::WITNESS_V0 || sigversion == SigVersion::TAPSCRIPT);
+
     CScript::const_iterator pc = script.begin();
     CScript::const_iterator pend = script.end();
     CScript::const_iterator pbegincodehash = script.begin();
@@ -296,10 +385,14 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
     std::vector<bool> vfExec;
     std::vector<valtype> altstack;
     set_error(serror, SCRIPT_ERR_UNKNOWN_ERROR);
-    if (script.size() > MAX_SCRIPT_SIZE)
+    if ((sigversion == SigVersion::BASE || sigversion == SigVersion::WITNESS_V0) && script.size() > MAX_SCRIPT_SIZE) {
         return set_error(serror, SCRIPT_ERR_SCRIPT_SIZE);
+    }
     int nOpCount = 0;
     bool fRequireMinimal = (flags & SCRIPT_VERIFY_MINIMALDATA) != 0;
+    uint32_t opcode_pos = 0;
+    execdata.m_codeseparator_pos = 0xFFFFFFFFUL;
+    execdata.m_codeseparator_pos_init = true;
 
     try
     {
@@ -931,26 +1024,8 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
                     valtype& vchSig    = stacktop(-2);
                     valtype& vchPubKey = stacktop(-1);
 
-                    // Subset of script starting at the most recent codeseparator
-                    CScript scriptCode(pbegincodehash, pend);
-
-                    // Drop the signature in pre-segwit scripts but not segwit scripts
-                    if (sigversion == SigVersion::BASE) {
-                        int found = FindAndDelete(scriptCode, CScript() << vchSig);
-                        if (found > 0 && (flags & SCRIPT_VERIFY_CONST_SCRIPTCODE))
-                            return set_error(serror, SCRIPT_ERR_SIG_FINDANDDELETE);
-                    }
-
-                    if (!CheckSignatureEncoding(vchSig, flags, serror) || !CheckPubKeyEncoding(vchPubKey, flags, sigversion, serror)) {
-                        //serror is set
-                        return false;
-                    }
-
-                    bool fSuccess = checker.CheckSig(vchSig, vchPubKey, scriptCode, sigversion);
-
-                    if (!fSuccess && (flags & SCRIPT_VERIFY_NULLFAIL) && vchSig.size())
-                        return set_error(serror, SCRIPT_ERR_SIG_NULLFAIL);
-
+                    bool fSuccess = true;
+                    if (!EvalChecksig(vchSig, vchPubKey, pbegincodehash, pend, execdata, flags, checker, sigversion, serror, fSuccess)) return false;
                     popstack(stack);
                     popstack(stack);
                     stack.push_back(fSuccess ? vchTrue : vchFalse);
@@ -964,10 +1039,33 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
                 }
                 break;
 
+                case OP_CHECKSIGADD:
+                {
+                    // OP_CHECKSIGADD is only available in Tapscript
+                    if (sigversion == SigVersion::BASE || sigversion == SigVersion::WITNESS_V0) return set_error(serror, SCRIPT_ERR_BAD_OPCODE);
+
+                    // (sig num pubkey -- num)
+                    if (stack.size() < 3) return set_error(serror, SCRIPT_ERR_INVALID_STACK_OPERATION);
+
+                    const valtype& sig = stacktop(-3);
+                    const CScriptNum num(stacktop(-2), fRequireMinimal);
+                    const valtype& pubkey = stacktop(-1);
+
+                    bool success = true;
+                    if (!EvalChecksig(sig, pubkey, pbegincodehash, pend, execdata, flags, checker, sigversion, serror, success)) return false;
+                    popstack(stack);
+                    popstack(stack);
+                    popstack(stack);
+                    stack.push_back((num + (success ? 1 : 0)).getvch());
+                }
+                break;
+
                 case OP_CHECKMULTISIG:
                 case OP_CHECKMULTISIGVERIFY:
                 {
-                    // ([sig ...] num_of_signatures [pubkey ...] num_of_pubkeys -- bool)
+                    if (sigversion == SigVersion::TAPSCRIPT) return set_error(serror, SCRIPT_ERR_TAPSCRIPT_CHECKMULTISIG);
+
+                    // ([sig...] num_of_signatures [pubkey ...] num_of_pubkeys -- bool)
 
                     int i = 1;
                     if ((int)stack.size() < i)

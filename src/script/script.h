@@ -199,6 +199,9 @@ enum opcodetype
     OP_ISCOINSTAKE = OP_NOP9,
     OP_NOP10 = 0xb9,
 
+    // Opcode added by BIP 342 (Tapscript)
+    OP_CHECKSIGADD = 0xba,
+
     OP_INVALIDOPCODE = 0xff,
 };
 

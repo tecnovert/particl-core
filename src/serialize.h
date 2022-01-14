@@ -1056,4 +1056,13 @@ size_t GetSerializeSizeMany(int nVersion, const T&... t)
     return sc.size();
 }
 
+namespace part {
+inline void SetAmount(std::vector<uint8_t> &v, int64_t amount)
+{
+    v.resize(8);
+    amount = (int64_t) htole64((uint64_t)amount);
+    memcpy(v.data(), &amount, 8);
+};
+} // namespace part
+
 #endif // BITCOIN_SERIALIZE_H
