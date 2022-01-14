@@ -454,7 +454,6 @@ public:
         consensus.OpIsCoinstakeTime = 0x5A04EC00;       // 2017-11-10 00:00:00 UTC
         consensus.fAllowOpIsCoinstakeWithP2PKH = false;
         consensus.nPaidSmsgTime = 0x5C791EC0;           // 2019-03-01 12:00:00
-        consensus.csp2shTime = 0x5C791EC0;              // 2019-03-01 12:00:00
         consensus.smsg_fee_time = 0x5D2DBC40;           // 2019-07-16 12:00:00
         consensus.bulletproof_time = 0x5D2DBC40;        // 2019-07-16 12:00:00
         consensus.rct_time = 0x5D2DBC40;                // 2019-07-16 12:00:00
@@ -466,6 +465,7 @@ public:
         consensus.clamp_tx_version_time = 1643734800;   // 2022-02-01 17:00:00 UTC
         consensus.exploit_fix_3_time = 1643734800;      // 2022-02-01 17:00:00 UTC
         consensus.smsg_fee_rate_fix_time = 1643734800;  // 2022-02-01 17:00:00 UTC
+        consensus.m_taproot_time = 1643734800;          // 2022-02-01 17:00:00 UTC
 
         consensus.m_frozen_anon_index = 27340;
         consensus.m_frozen_blinded_height = 884433;
@@ -651,7 +651,6 @@ public:
         consensus.OpIsCoinstakeTime = 0;
         consensus.fAllowOpIsCoinstakeWithP2PKH = true; // TODO: clear for next testnet
         consensus.nPaidSmsgTime = 0;
-        consensus.csp2shTime = 0x5C67FB40;              // 2019-02-16 12:00:00
         consensus.smsg_fee_time = 0x5C67FB40;           // 2019-02-16 12:00:00
         consensus.bulletproof_time = 0x5C67FB40;        // 2019-02-16 12:00:00
         consensus.rct_time = 0;
@@ -660,6 +659,7 @@ public:
 
         consensus.clamp_tx_version_time = 1641056400;   // 2022-01-01 17:00:00 UTC
         consensus.smsg_fee_rate_fix_time = 1641056400;  // 2022-01-01 17:00:00 UTC
+        consensus.m_taproot_time = 1641056400;          // 2022-01-01 17:00:00 UTC
 
         consensus.smsg_fee_period = 5040;
         consensus.smsg_fee_funding_tx_per_k = 200000;
@@ -797,7 +797,6 @@ public:
         consensus.OpIsCoinstakeTime = 0;
         consensus.fAllowOpIsCoinstakeWithP2PKH = false;
         consensus.nPaidSmsgTime = 0;
-        consensus.csp2shTime = 0;
         consensus.smsg_fee_time = 0;
         consensus.bulletproof_time = 0;
         consensus.rct_time = 0;
@@ -812,6 +811,7 @@ public:
         consensus.smsg_min_difficulty = 0x1f0fffff;
         consensus.smsg_difficulty_max_delta = 0xffff;
         consensus.smsg_fee_rate_fix_time = 0;
+        consensus.m_taproot_time = 0;
 
         consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks

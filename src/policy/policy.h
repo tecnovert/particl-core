@@ -43,6 +43,8 @@ static const bool DEFAULT_PERMIT_BAREMULTISIG = true;
 static const unsigned int MAX_STANDARD_P2WSH_STACK_ITEMS = 100;
 /** The maximum size of each witness stack item in a standard P2WSH script */
 static const unsigned int MAX_STANDARD_P2WSH_STACK_ITEM_SIZE = 80;
+/** The maximum size of each witness stack item in a standard BIP 342 script (Taproot, leaf version 0xc0) */
+static const unsigned int MAX_STANDARD_TAPSCRIPT_STACK_ITEM_SIZE = 80;
 /** The maximum size of a standard witnessScript */
 static const unsigned int MAX_STANDARD_P2WSH_SCRIPT_SIZE = 3600;
 /** Min feerate for defining dust. Historically this has been based on the
@@ -71,7 +73,11 @@ static constexpr unsigned int STANDARD_SCRIPT_VERIFY_FLAGS = MANDATORY_SCRIPT_VE
                                                              SCRIPT_VERIFY_WITNESS |
                                                              SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_WITNESS_PROGRAM |
                                                              SCRIPT_VERIFY_WITNESS_PUBKEYTYPE |
-                                                             SCRIPT_VERIFY_CONST_SCRIPTCODE;
+                                                             SCRIPT_VERIFY_CONST_SCRIPTCODE |
+                                                             SCRIPT_VERIFY_TAPROOT |
+                                                             SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_TAPROOT_VERSION |
+                                                             SCRIPT_VERIFY_DISCOURAGE_OP_SUCCESS |
+                                                             SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_PUBKEYTYPE;
 
 /** For convenience, standard but not mandatory verify flags. */
 static constexpr unsigned int STANDARD_NOT_MANDATORY_VERIFY_FLAGS = STANDARD_SCRIPT_VERIFY_FLAGS & ~MANDATORY_SCRIPT_VERIFY_FLAGS;
@@ -97,7 +103,7 @@ bool IsStandardTx(const CTransaction& tx, bool permit_bare_multisig, const CFeeR
      * @param[in] mapInputs    Map of previous transactions that have outputs we're spending
      * @return True if all inputs (scriptSigs) use only standard transaction forms
      */
-bool AreInputsStandard(const CTransaction& tx, const CCoinsViewCache& mapInputs, int64_t time=0);
+bool AreInputsStandard(const CTransaction& tx, const CCoinsViewCache& mapInputs, int64_t time=0, bool taproot_active=false);
     /**
      * Check if the transaction is over standard P2WSH resources limit:
      * 3600bytes witnessScript size, 80bytes per witness stack element, 100 witness stack elements

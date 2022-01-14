@@ -272,7 +272,7 @@ BOOST_AUTO_TEST_CASE(ct_test_bulletproofs)
     }
 
     secp256k1_bulletproof_generators_destroy(ctx, gens);
-    secp256k1_scratch_space_destroy(scratch);
+    secp256k1_scratch_space_destroy(ctx, scratch);
     secp256k1_context_destroy(ctx);
 }
 

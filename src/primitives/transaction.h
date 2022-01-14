@@ -543,6 +543,31 @@ public:
     };
 };
 
+class CTxOutSign
+{
+public:
+    CTxOutSign(const std::vector<uint8_t>& valueIn, const CScript &scriptPubKeyIn)
+        : m_is_anon_input(false), amount(valueIn), scriptPubKey(scriptPubKeyIn) {};
+    CTxOutSign()
+        : m_is_anon_input(true) {};
+
+    bool m_is_anon_input;
+    std::vector<uint8_t> amount;
+    CScript scriptPubKey;
+    template<typename Stream>
+    void Serialize(Stream &s) const
+    {
+        s.write((const char*)amount.data(), amount.size());
+        s << scriptPubKey;
+    };
+
+    template<typename Stream>
+    void Unserialize(Stream &s)
+    {
+        assert(false);
+    };
+};
+
 
 /** An output of a transaction.  It contains the public key that the next input
  * must be able to sign with to claim it.

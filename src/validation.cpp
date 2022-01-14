@@ -756,7 +756,7 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
     }
 
     // Check for non-standard pay-to-script-hash in inputs
-    if (fRequireStandard && !AreInputsStandard(tx, m_view, nAcceptTime))
+    if (fRequireStandard && !AreInputsStandard(tx, m_view, nAcceptTime, ::ChainActive().Tip()->nTime >= consensus.m_taproot_time))
         return state.Invalid(ValidationInvalidReason::TX_INPUTS_NOT_STANDARD, false, REJECT_NONSTANDARD, "bad-txns-nonstandard-inputs");
 
     // Check for non-standard witness in P2WSH
@@ -2383,9 +2383,10 @@ static unsigned int GetBlockScriptFlags(const CBlockIndex* pindex, const Consens
         flags |= SCRIPT_VERIFY_WITNESS;
         flags |= SCRIPT_VERIFY_NULLDUMMY;
 
-        if (pindex->nTime < consensusparams.csp2shTime) {
-            flags |= SCRIPT_VERIFY_NO_CSP2SH;
+        if (pindex->nTime >= consensusparams.m_taproot_time) {
+            flags |= SCRIPT_VERIFY_TAPROOT;
         }
+
         return flags;
     }
 
