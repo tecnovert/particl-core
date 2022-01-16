@@ -111,7 +111,7 @@ bool IsStandard(const CScript& scriptPubKey, txnouttype& whichType, int64_t time
     std::vector<std::vector<unsigned char> > vSolutions;
     whichType = Solver(scriptPubKey, vSolutions);
 
-    if (whichType == TX_NONSTANDARD) {
+    if (whichType == TX_NONSTANDARD || whichType == TX_WITNESS_UNKNOWN) {
         return false;
     } else if (whichType == TX_MULTISIG) {
         unsigned char m = vSolutions.front()[0];
@@ -266,7 +266,15 @@ bool AreInputsStandard(const CTransaction& tx, const CCoinsViewCache& mapInputs,
                 return false;
             }
 
-            if (whichType == TX_SCRIPTHASH) {
+            if (whichType == TX_NONSTANDARD || whichType == TX_WITNESS_UNKNOWN) {
+                // WITNESS_UNKNOWN failures are typically also caught with a policy
+                // flag in the script interpreter, but it can be helpful to catch
+                // this type of NONSTANDARD transaction earlier in transaction
+                // validation.
+                return false;
+            } else
+            if (whichType == TX_SCRIPTHASH
+                || whichType == TX_SCRIPTHASH256) {
                 if (tx.vin[i].scriptWitness.stack.size() < 1) {
                     return false;
                 }
@@ -282,6 +290,9 @@ bool AreInputsStandard(const CTransaction& tx, const CCoinsViewCache& mapInputs,
                         return false;
                     }
                 }
+            } else if (whichType == TX_WITNESS_V1_TAPROOT) {
+                // Don't allow Taproot spends unless Taproot is active.
+                if (!taproot_active) return false;
             }
         }
         return true;
@@ -299,8 +310,7 @@ bool AreInputsStandard(const CTransaction& tx, const CCoinsViewCache& mapInputs,
             // this type of NONSTANDARD transaction earlier in transaction
             // validation.
             return false;
-        } else if (whichType == TX_SCRIPTHASH
-            || whichType == TX_SCRIPTHASH256) {
+        } else if (whichType == TX_SCRIPTHASH) {
             std::vector<std::vector<unsigned char> > stack;
             // convert the scriptSig into a stack, so we can inspect the redeemScript
             if (!EvalScript(stack, tx.vin[i].scriptSig, SCRIPT_VERIFY_NONE, BaseSignatureChecker(), SigVersion::BASE))

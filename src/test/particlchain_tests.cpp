@@ -464,6 +464,13 @@ BOOST_AUTO_TEST_CASE(taproot)
 
     BOOST_CHECK(!IsOpSuccess(OP_ISCOINSTAKE));
 
+    CScript s;
+    std::vector<std::vector<unsigned char> > solutions;
+    s << OP_1 << ToByteVector(uint256::ZERO);
+    BOOST_CHECK_EQUAL(Solver(s, solutions), TX_WITNESS_V1_TAPROOT);
+    BOOST_CHECK_EQUAL(solutions.size(), 2U);
+    BOOST_CHECK(solutions[1] == ToByteVector(uint256::ZERO));
+
     unsigned int flags = SCRIPT_VERIFY_P2SH;
     flags |= SCRIPT_VERIFY_DERSIG;
     flags |= SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY;

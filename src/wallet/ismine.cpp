@@ -94,6 +94,7 @@ isminetype IsMineInner(const CWallet& keystore, const CScript& scriptPubKey, boo
     case TX_NONSTANDARD:
     case TX_NULL_DATA:
     case TX_WITNESS_UNKNOWN:
+    case TX_WITNESS_V1_TAPROOT:
         break;
     case TX_PUBKEY:
         keyID = CPubKey(vSolutions[0]).GetID();

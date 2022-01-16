@@ -53,6 +53,7 @@ const char* GetTxnOutputType(txnouttype t)
     case TX_NULL_DATA: return "nulldata";
     case TX_WITNESS_V0_KEYHASH: return "witness_v0_keyhash";
     case TX_WITNESS_V0_SCRIPTHASH: return "witness_v0_scripthash";
+    case TX_WITNESS_V1_TAPROOT: return "witness_v1_taproot";
     case TX_WITNESS_UNKNOWN: return "witness_unknown";
 
     case TX_SCRIPTHASH256: return "scripthash256";
@@ -185,6 +186,11 @@ txnouttype Solver(const CScript& scriptPubKeyIn, std::vector<std::vector<unsigne
             vSolutionsRet.push_back(witnessprogram);
             return TX_WITNESS_V0_SCRIPTHASH;
         }
+        if (witnessversion == 1 && witnessprogram.size() == WITNESS_V1_TAPROOT_SIZE) {
+            vSolutionsRet.push_back(std::vector<unsigned char>{(unsigned char)witnessversion});
+            vSolutionsRet.push_back(std::move(witnessprogram));
+            return TX_WITNESS_V1_TAPROOT;
+        }
         if (witnessversion != 0) {
             vSolutionsRet.push_back(std::vector<unsigned char>{(unsigned char)witnessversion});
             vSolutionsRet.push_back(std::move(witnessprogram));
@@ -273,7 +279,7 @@ bool ExtractDestination(const CScript& scriptPubKey, CTxDestination& addressRet)
         std::copy(vSolutions[0].begin(), vSolutions[0].end(), hash.begin());
         addressRet = hash;
         return true;
-    } else if (whichType == TX_WITNESS_UNKNOWN) {
+    } else if (whichType == TX_WITNESS_UNKNOWN || whichType == TX_WITNESS_V1_TAPROOT) {
         WitnessUnknown unk;
         unk.version = vSolutions[0][0];
         std::copy(vSolutions[1].begin(), vSolutions[1].end(), unk.program);
