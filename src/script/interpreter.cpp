@@ -396,8 +396,7 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
 
     try
     {
-        while (pc < pend)
-        {
+        for (; pc < pend; ++opcode_pos) {
             bool fExec = !count(vfExec.begin(), vfExec.end(), false);
             //
             // Read instruction
@@ -1011,6 +1010,7 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
 
                     // Hash starts after the code separator
                     pbegincodehash = pc;
+                    execdata.m_codeseparator_pos = opcode_pos;
                 }
                 break;
 

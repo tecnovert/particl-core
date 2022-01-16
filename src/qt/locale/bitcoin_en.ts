@@ -3271,7 +3271,7 @@
     <name>SendCoinsDialog</name>
     <message>
         <location filename="../forms/sendcoinsdialog.ui" line="+14"/>
-        <location filename="../sendcoinsdialog.cpp" line="+816"/>
+        <location filename="../sendcoinsdialog.cpp" line="+828"/>
         <source>Send Coins</source>
         <translation>Send Coins</translation>
     </message>
@@ -3506,7 +3506,7 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
         <translation>S&amp;end</translation>
     </message>
     <message>
-        <location filename="../sendcoinsdialog.cpp" line="-718"/>
+        <location filename="../sendcoinsdialog.cpp" line="-730"/>
         <source>Copy quantity</source>
         <translation type="unfinished"></translation>
     </message>
@@ -3546,7 +3546,7 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+217"/>
+        <location line="+229"/>
         <source> from wallet &apos;%1&apos;</source>
         <translation type="unfinished"></translation>
     </message>
