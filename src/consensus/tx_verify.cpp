@@ -311,8 +311,7 @@ bool CheckDataOutput(CValidationState &state, const CTxOutData *p)
         return state.Invalid(ValidationInvalidReason::CONSENSUS, false, REJECT_INVALID, "bad-output-data-size");
     }
 
-    size_t max_output_size = GetAdjustedTime() >= Params().GetConsensus().smsg_fee_rate_fix_time ? MAX_DATA_OUTPUT_SIZE : MAX_DATA_OUTPUT_SIZE_OLD;
-    if (p->vData.size() > max_output_size) {
+    if (p->vData.size() > MAX_DATA_OUTPUT_SIZE) {
         return state.Invalid(ValidationInvalidReason::CONSENSUS, false, REJECT_INVALID, "bad-output-data-size");
     }
 
