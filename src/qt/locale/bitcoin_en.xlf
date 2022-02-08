@@ -1459,22 +1459,22 @@ Signing is only possible with addresses of the type &apos;legacy&apos;.</source>
       <trans-unit id="_msg270">
         <source xml:space="preserve">The entered address &quot;%1&quot; is not a valid Particl address.</source>
         <target xml:space="preserve"></target>
-        <context-group purpose="location"><context context-type="linenumber">138</context></context-group>
+        <context-group purpose="location"><context context-type="linenumber">141</context></context-group>
       </trans-unit>
       <trans-unit id="_msg271">
         <source xml:space="preserve">Address &quot;%1&quot; already exists as a receiving address with label &quot;%2&quot; and so cannot be added as a sending address.</source>
         <target xml:space="preserve"></target>
-        <context-group purpose="location"><context context-type="linenumber">171</context></context-group>
+        <context-group purpose="location"><context context-type="linenumber">174</context></context-group>
       </trans-unit>
       <trans-unit id="_msg272">
         <source xml:space="preserve">The entered address &quot;%1&quot; is already in the address book with label &quot;%2&quot;.</source>
         <target xml:space="preserve"></target>
-        <context-group purpose="location"><context context-type="linenumber">176</context></context-group>
+        <context-group purpose="location"><context context-type="linenumber">179</context></context-group>
       </trans-unit>
       <trans-unit id="_msg273">
         <source xml:space="preserve">Could not unlock wallet.</source>
         <target xml:space="preserve"></target>
-        <context-group purpose="location"><context context-type="linenumber">148</context></context-group>
+        <context-group purpose="location"><context context-type="linenumber">151</context></context-group>
       </trans-unit>
       <trans-unit id="_msg274">
         <source xml:space="preserve">New receiving address</source>
@@ -1484,7 +1484,7 @@ Signing is only possible with addresses of the type &apos;legacy&apos;.</source>
       <trans-unit id="_msg275">
         <source xml:space="preserve">New key generation failed.</source>
         <target xml:space="preserve"></target>
-        <context-group purpose="location"><context context-type="linenumber">153</context></context-group>
+        <context-group purpose="location"><context context-type="linenumber">156</context></context-group>
       </trans-unit>
     </group>
   </body></file>
@@ -3728,12 +3728,12 @@ For more information on using this console, type %6.
       <trans-unit id="_msg677">
         <source xml:space="preserve">Could not unlock wallet.</source>
         <target xml:space="preserve"></target>
-        <context-group purpose="location"><context context-type="linenumber">193</context></context-group>
+        <context-group purpose="location"><context context-type="linenumber">194</context></context-group>
       </trans-unit>
       <trans-unit id="_msg678">
         <source xml:space="preserve">Could not generate new %1 address</source>
         <target xml:space="preserve"></target>
-        <context-group purpose="location"><context context-type="linenumber">198</context></context-group>
+        <context-group purpose="location"><context context-type="linenumber">199</context></context-group>
       </trans-unit>
     </group>
   </body></file>

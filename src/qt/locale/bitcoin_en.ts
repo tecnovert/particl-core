@@ -1339,7 +1339,7 @@ Signing is only possible with addresses of the type &apos;legacy&apos;.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+88"/>
+        <location line="+91"/>
         <source>The entered address &quot;%1&quot; is not a valid Particl address.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1359,12 +1359,12 @@ Signing is only possible with addresses of the type &apos;legacy&apos;.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="-108"/>
+        <location line="-111"/>
         <source>New receiving address</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+113"/>
+        <location line="+116"/>
         <source>New key generation failed.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -3568,7 +3568,7 @@ For more information on using this console, type %6.
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+142"/>
+        <location line="+143"/>
         <source>Could not unlock wallet.</source>
         <translation type="unfinished"></translation>
     </message>
