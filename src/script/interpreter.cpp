@@ -2055,20 +2055,18 @@ bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const C
     // scriptSig and scriptPubKey must be evaluated sequentially on the same stack
     // rather than being simply concatenated (see CVE-2010-5141)
     std::vector<std::vector<unsigned char> > stack, stackCopy;
-    if (checker.IsParticlVersion())
-    {
+    if (checker.IsParticlVersion()) {
         assert(witness);
         if (scriptSig.size() != 0) {
             // The scriptSig must be _exactly_ CScript(), otherwise we reintroduce malleability.
             return set_error(serror, SCRIPT_ERR_WITNESS_MALLEATED);
         }
         stack = witness->stack;
-    } else
-    {
+    } else {
         if (!EvalScript(stack, scriptSig, flags, checker, SigVersion::BASE, serror))
             // serror is set
             return false;
-    };
+    }
 
     if (flags & SCRIPT_VERIFY_P2SH)
         stackCopy = stack;
@@ -2135,6 +2133,18 @@ bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const C
         if (flags & SCRIPT_VERIFY_WITNESS) {
             if (pubKey2.IsWitnessProgram(witnessversion, witnessprogram)) {
                 hadWitness = true;
+                if (checker.IsParticlVersion()) {
+                    CScriptWitness witness_copy = *witness;
+                    witness_copy.stack.pop_back();
+
+                    if (scriptSig.size() != 0) {
+                        // The scriptSig must be _exactly_ CScript(), otherwise we reintroduce malleability.
+                        return set_error(serror, SCRIPT_ERR_WITNESS_MALLEATED);
+                    }
+                    if (!VerifyWitnessProgram(witness_copy, witnessversion, witnessprogram, flags, checker, serror, /* is_p2sh */ true)) {
+                        return false;
+                    }
+                } else {
                 if (scriptSig != CScript() << std::vector<unsigned char>(pubKey2.begin(), pubKey2.end())) {
                     // The scriptSig must be _exactly_ a single push of the redeemScript. Otherwise we
                     // reintroduce malleability.
@@ -2142,6 +2152,7 @@ bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const C
                 }
                 if (!VerifyWitnessProgram(*witness, witnessversion, witnessprogram, flags, checker, serror, /* is_p2sh */ true)) {
                     return false;
+                }
                 }
                 // Bypass the cleanstack check at the end. The actual stack is obviously not clean
                 // for witness programs.

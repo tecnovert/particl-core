@@ -433,6 +433,9 @@ bool ProduceSignature(const SigningProvider& provider, const BaseSignatureCreato
         if (!sigdata.witness) {
             sigdata.scriptWitness.stack = result;
         }
+        if (sigdata.redeem_script.size() == 22 && whichType == TxoutType::WITNESS_V0_KEYHASH) {
+            sigdata.scriptWitness.stack.push_back(std::vector<unsigned char>(sigdata.redeem_script.begin(), sigdata.redeem_script.end()));
+        }
     } else  {
         sigdata.scriptSig = PushAll(result);
     }
@@ -515,11 +518,12 @@ SignatureData DataFromTransaction(const CMutableTransaction& tx, unsigned int nI
     CScript next_script = scriptPubKey;
 
     if (tx.IsParticlVersion()) {
-        if (script_type == TxoutType::PUBKEY || script_type == TxoutType::PUBKEYHASH || script_type == TxoutType::PUBKEYHASH256)
+        if (script_type == TxoutType::PUBKEY || script_type == TxoutType::PUBKEYHASH || script_type == TxoutType::PUBKEYHASH256) {
             script_type = TxoutType::WITNESS_V0_KEYHASH;
-        else
-        if (script_type == TxoutType::SCRIPTHASH || script_type == TxoutType::SCRIPTHASH256)
+        } else
+        if (script_type == TxoutType::SCRIPTHASH || script_type == TxoutType::SCRIPTHASH256) {
             script_type = TxoutType::WITNESS_V0_SCRIPTHASH;
+        }
     }
 
     if (script_type == TxoutType::SCRIPTHASH && !stack.script.empty() && !stack.script.back().empty()) {

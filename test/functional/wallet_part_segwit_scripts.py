@@ -103,6 +103,18 @@ class SegwitScriptsTest(ParticlTestFramework):
         assert(ms_standard['address'] in addrs)
         assert(addr_p2wpkh in addrs)
 
+        self.log.info('Test sending from a p2sh-segwit address')
+
+        nodes[1].createwallet('p2sh-segwit')
+        w1_1 = nodes[1].get_wallet_rpc('p2sh-segwit')
+        w1_1.extkeyimportmaster(w1_1.mnemonic('new')['master'])
+        addr_sw_p2sh = w1_1.getnewaddress('segwit script', False, False, False, 'p2sh-segwit')
+        nodes[0].sendtoaddress(addr_sw_p2sh, 10)
+        self.stakeBlocks(1)
+        addr_to = nodes[0].getnewaddress()
+        txid = w1_1.sendtoaddress(addr_to, 1)
+        self.wait_for_mempool(nodes[0], txid)
+
 
 if __name__ == '__main__':
     SegwitScriptsTest().main()
