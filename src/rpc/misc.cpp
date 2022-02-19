@@ -42,7 +42,7 @@ extern const std::string MESSAGE_MAGIC;
 static RPCHelpMan validateaddress()
 {
     return RPCHelpMan{"validateaddress",
-                "\nReturn information about the given bitcoin address.\n",
+                "\nReturn information about the given particl address.\n",
                 {
                     {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The particl address to validate"},
                     {"showaltversions", RPCArg::Type::BOOL, RPCArg::Default{false}, "Display all alternative encodings and versions"},
@@ -757,7 +757,7 @@ static RPCHelpMan echoipc()
                 // and spawn bitcoin-echo below instead of bitcoin-node. But
                 // using bitcoin-node avoids the need to build and install a
                 // new executable just for this one test.
-                auto init = ipc->spawnProcess("bitcoin-node");
+                auto init = ipc->spawnProcess("particl-node");
                 echo = init->makeEcho();
                 ipc->addCleanup(*echo, [init = init.release()] { delete init; });
             } else {
