@@ -5052,8 +5052,6 @@ int CHDWallet::PlaceRealOutputs(std::vector<std::vector<int64_t> > &vMI, size_t 
         return wserrorN(1, sError, __func__, _("Ring size out of range [%d, %d]").translated, MIN_RINGSIZE, MAX_RINGSIZE);
     }
 
-    //GetStrongRandBytes((unsigned char*)&nSecretColumn, sizeof(nSecretColumn));
-    //nSecretColumn %= nRingSize;
     nSecretColumn = GetRandInt(nRingSize);
 
     CHDWalletDB wdb(*m_database);

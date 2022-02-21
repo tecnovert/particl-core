@@ -1,10 +1,14 @@
-22.0.1.0
+
+22.0.2
+==============
+
+- rpc: signrawtransactionwithkey accepts tapscript spending data.
+
+
+22.0.1
 ==============
 
 - script: Remove timelocked script signing.
-- wallet:
-  - Add minimum and maximumAmount to fundrawtransactionfrom and sendtypeto
-  - Add includeWatching option to sendtypeto
 
 
 0.21.2.6
