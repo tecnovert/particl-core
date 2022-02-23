@@ -47,7 +47,7 @@ class DisableTest(ParticlTestFramework):
         self.stakeBlocks(2)
 
         txids = []
-        txids.append(nodes[1].sendtypeto('anon', 'part', [{'address': sx1, 'amount': 1},]))
+        txids.append(nodes[1].sendtypeto('anon', 'part', [{'address': sx1, 'amount': 1},], '', '', 5))
 
         for h in txids:
             assert(self.wait_for_mempool(nodes[1], h))
@@ -74,12 +74,12 @@ class DisableTest(ParticlTestFramework):
         except Exception:
             pass
         try:
-            nodes[1].sendtypeto('anon', 'part', [{'address': sx1, 'amount': 1},])
+            nodes[1].sendtypeto('anon', 'part', [{'address': sx1, 'amount': 1},], '', '', 5)
             assert(False)
         except Exception:
             pass
         try:
-            nodes[1].sendtypeto('anon', 'anon', [{'address': sx1, 'amount': 1},])
+            nodes[1].sendtypeto('anon', 'anon', [{'address': sx1, 'amount': 1},], '', '', 5)
             assert(False)
         except Exception:
             pass
@@ -90,9 +90,9 @@ class DisableTest(ParticlTestFramework):
             pass
 
         txids = []
-        txids.append(nodes[0].sendtypeto('anon', 'anon', [{'address': sx1, 'amount': 1},]))
+        txids.append(nodes[0].sendtypeto('anon', 'anon', [{'address': sx1, 'amount': 1},], '', '', 5))
         txids.append(nodes[0].sendtypeto('part', 'anon', [{'address': sx1, 'amount': 1},]))
-        txids.append(nodes[0].sendtypeto('anon', 'part', [{'address': sx1, 'amount': 1},]))
+        txids.append(nodes[0].sendtypeto('anon', 'part', [{'address': sx1, 'amount': 1},], '', '', 5))
         txids.append(nodes[0].sendtypeto('part', 'blind', [{'address': sx1, 'amount': 1},]))
         txids.append(nodes[0].sendtypeto('blind', 'part', [{'address': sx1, 'amount': 1},]))
 

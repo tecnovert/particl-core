@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2017-2021 The Particl Core developers
+# Copyright (c) 2017-2022 The Particl Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -65,7 +65,7 @@ class AnonTest(ParticlTestFramework):
         for txnHash in txnHashes:
             assert(txnHash in ro['tx'])
 
-        txnHash = nodes[1].sendanontoanon(sxAddrTo0_1, 1, '', '', False, 'node1 -> node0 a->a')
+        txnHash = nodes[1].sendanontoanon(sxAddrTo0_1, 1, '', '', False, 'node1 -> node0 a->a', 5)
         txnHashes = [txnHash,]
 
         assert(self.wait_for_mempool(nodes[0], txnHash))
@@ -87,8 +87,8 @@ class AnonTest(ParticlTestFramework):
         ro = nodes[1].sendtypeto('anon', 'part', outputs, 'comment_to', 'comment_from', 4, 32, True)
         assert(ro['bytes'] > 0)
 
-        txnHashes.append(nodes[1].sendtypeto('anon', 'part', outputs))
-        txnHashes.append(nodes[1].sendtypeto('anon', 'anon', [{'address': sxAddrTo1_1, 'amount': 1},]))
+        txnHashes.append(nodes[1].sendtypeto('anon', 'part', outputs, '', '', 5))
+        txnHashes.append(nodes[1].sendtypeto('anon', 'anon', [{'address': sxAddrTo1_1, 'amount': 1},], '', '', 5))
 
         for txhash in txnHashes:
             assert(self.wait_for_mempool(nodes[0], txhash))
@@ -177,7 +177,7 @@ class AnonTest(ParticlTestFramework):
         # Skip initial rescan by passing -1 as scan_chain_from
         w1_3.extkeyimportmaster('drip fog service village program equip minute dentist series hawk crop sphere olympic lazy garbage segment fox library good alley steak jazz force inmate',
             '', False, 'imported key', 'imported acc', -1)
-        w1_3.getnewstealthaddress('lblsx11')
+        sxaddr1_3 = w1_3.getnewstealthaddress('lblsx11')
         w1_3.walletsettings('other', {'onlyinstance': False})
         w1_3.walletlock()
         assert(w1_3.getwalletinfo()['encryptionstatus'] == 'Locked')
@@ -187,6 +187,36 @@ class AnonTest(ParticlTestFramework):
 
         wi_1_3 = w1_3.getwalletinfo()
         assert(wi_1_3['anon_balance'] == wi_1['anon_balance'])
+
+        self.log.info('Test receiving from locked wallet')
+        sxaddr_to = w1_3.getnewstealthaddress('locked receive')
+        w1_3.walletlock()
+        nodes[1].createwallet('test_genesis_coins_2')
+        w1_4 = nodes[1].get_wallet_rpc('test_genesis_coins_2')
+        self.import_genesis_coins_b(w1_4)
+        assert(w1_3.getwalletinfo()['encryptionstatus'] == 'Locked')
+        txid = w1_4.sendtypeto('part', 'anon', [{'address': sxaddr_to, 'amount': 5}, ])
+        assert(self.wait_for_wtx(w1_3, txid))
+
+        ft = w1_3.filtertransactions()
+        found_tx = False
+        for tx in ft:
+            if tx['txid'] == txid:
+                assert(tx['requires_unlock'] == 'true')
+                found_tx = True
+                break
+        assert(found_tx)
+
+        w1_3.walletpassphrase('test', 30)
+
+        ft = w1_3.filtertransactions()
+        found_tx = False
+        for tx in ft:
+            if tx['txid'] == txid:
+                assert('requires_unlock' not in tx)
+                found_tx = True
+                break
+        assert(found_tx)
 
         self.log.info('Test checkkeyimage')
         unspents = nodes[0].listunspentanon(0, 999999, [], True, {'show_pubkeys': True})
