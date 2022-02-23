@@ -54,7 +54,7 @@ class SegwitScriptsTest(ParticlTestFramework):
         assert(ro['path'] == 'm/0/0')
         assert(ro['iswitness'] == False)
         assert(ro['ischange'] == False)
-        assert('addr_part_native' in ro['labels'])
+        assert(ro['label'] == 'addr_part_native')
         pk0 = ro['pubkey']
 
         ro = nodes[2].getaddressinfo(addr_sw_bech32)
@@ -62,7 +62,7 @@ class SegwitScriptsTest(ParticlTestFramework):
         assert(ro['iswitness'] == True)
         assert(ro['ischange'] == False)
         assert(ro['witness_version'] == 0)
-        assert('btc native segwit' in ro['labels'])
+        assert(ro['label'] == 'btc native segwit')
         pk1 = ro['pubkey']
 
         ro = nodes[2].getaddressinfo(addr_sw_pk2)
