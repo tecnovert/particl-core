@@ -15,6 +15,7 @@
 ==============
 
 - wallet: Fix receiving anon txns on locked wallet and new address.
+- wallet: Fix passing anon_ring_size parameter to fundrawtransactionfrom.
 
 
 0.21.2.6
