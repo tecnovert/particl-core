@@ -1,4 +1,4 @@
-Next Major Version
+23.0.1
 ==============
 
 - rpc: devicesignrawtransactionwithwallet is split out of devicesignrawtransaction.
