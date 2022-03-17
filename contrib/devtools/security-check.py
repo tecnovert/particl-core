@@ -143,6 +143,9 @@ def check_PE_control_flow(binary) -> bool:
     '''
     Check for control flow instrumentation
     '''
+    return True  # TODO: Fix, AttributeError: 'lief.Binary' object has no attribute 'section_from_rva'
+    if binary.abstract.header.is_32:
+        return True
     main = binary.get_symbol('main').value
 
     section_addr = binary.section_from_rva(main).virtual_address
