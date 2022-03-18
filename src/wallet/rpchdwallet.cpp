@@ -3035,10 +3035,12 @@ static bool ParseOutput(
     const CWalletTx           &wtx,
     const isminefilter        &watchonly,
     std::vector<std::string>  &addresses,
-    std::vector<std::string>  &amounts
+    std::vector<std::string>  &amounts,
+    bool                      &watch_only_out
 ) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
     CBitcoinAddress addr;
+    watch_only_out = false;
 
     std::string sKey = strprintf("n%d", o.vout);
     mapValue_t::const_iterator mvi = wtx.mapValue.find(sKey);
@@ -3052,6 +3054,7 @@ static bool ParseOutput(
     if (o.ismine & ISMINE_WATCH_ONLY) {
         if (watchonly & ISMINE_WATCH_ONLY) {
             output.pushKV("involvesWatchonly", true);
+            watch_only_out = true;
         } else {
             return false;
         }
@@ -3099,9 +3102,6 @@ static void ParseOutputs(
         ISMINE_ALL,
         true);
 
-    if (wtx.IsFromMe(ISMINE_WATCH_ONLY) && !(watchonly & ISMINE_WATCH_ONLY)) {
-        return;
-    }
     if (hide_zero_coinstakes && !listStaked.empty() && nFee == 0) {
         return;
     }
@@ -3116,6 +3116,7 @@ static void ParseOutputs(
     }
 
     // Staked
+    size_t num_watchonly = 0;
     if (!listStaked.empty()) {
         if (wtx.GetDepthInMainChain() < 1) {
             entry.pushKV("category", "orphaned_stake");
@@ -3124,6 +3125,7 @@ static void ParseOutputs(
         }
         for (const auto &s : listStaked) {
             UniValue output(UniValue::VOBJ);
+            bool is_watchonly = false;
             if (!ParseOutput(
                 output,
                 s,
@@ -3131,11 +3133,13 @@ static void ParseOutputs(
                 wtx,
                 watchonly,
                 addresses,
-                amounts)) {
+                amounts,
+                is_watchonly)) {
                 return ;
             }
             output.pushKV("amount", ValueFromAmount(s.amount));
             outputs.push_back(output);
+            num_watchonly += is_watchonly ? 1 : 0;
         }
         amount += -nFee;
     } else {
@@ -3143,18 +3147,22 @@ static void ParseOutputs(
         if (!listSent.empty()) {
             for (const auto &s : listSent) {
                 UniValue output(UniValue::VOBJ);
+                bool is_watchonly = false;
                 if (!ParseOutput(output,
                     s,
                     pwallet,
                     wtx,
                     watchonly,
                     addresses,
-                    amounts)) {
+                    amounts,
+                    is_watchonly)) {
+                    LogPrintf("[rm] ret 4\n");
                     return ;
                 }
                 output.pushKV("amount", ValueFromAmount(-s.amount));
                 amount -= s.amount;
                 outputs.push_back(output);
+                num_watchonly += is_watchonly ? 1 : 0;
             }
         }
 
@@ -3162,6 +3170,7 @@ static void ParseOutputs(
         if (!listReceived.empty()) {
             for (const auto &r : listReceived) {
                 UniValue output(UniValue::VOBJ);
+                bool is_watchonly = false;
                 if (!ParseOutput(
                     output,
                     r,
@@ -3169,8 +3178,8 @@ static void ParseOutputs(
                     wtx,
                     watchonly,
                     addresses,
-                    amounts
-                )) {
+                    amounts,
+                    is_watchonly)) {
                     return ;
                 }
                 if (r.destination.index() == DI::_PKHash) {
@@ -3193,8 +3202,21 @@ static void ParseOutputs(
                 }
                 if (!fExists) {
                     outputs.push_back(output);
+                    num_watchonly += is_watchonly ? 1 : 0;
                 }
             }
+        }
+
+        CAmount debit_watchonly = wtx.GetDebit(ISMINE_WATCH_ONLY);
+        CAmount debit_spendable = wtx.GetDebit(ISMINE_SPENDABLE);
+        if (num_watchonly >= outputs.size()) { // Only has watchonly outputs or none
+            bool from_watchonly_only = debit_watchonly && !debit_spendable;
+            if (from_watchonly_only && !(watchonly & ISMINE_WATCH_ONLY)) {
+                return;
+            }
+        }
+        if (debit_watchonly) {
+            entry.__pushKV("involvesWatchonlyInput", "true");
         }
 
         if (wtx.IsCoinBase()) {
@@ -3920,8 +3942,7 @@ static RPCHelpMan filtertransactions()
                 ? a[sort].get_real() > b[sort].get_real()
             : sort == "amount"
                 ? a_amount > b_amount
-            : false
-            );
+            : false);
     });
 
     // Filter, skip, count and sum
