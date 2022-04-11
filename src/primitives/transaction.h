@@ -296,6 +296,7 @@ public:
     virtual secp256k1_pedersen_commitment *GetPCommitment() { return nullptr; };
     virtual std::vector<uint8_t> *GetPRangeproof() { return nullptr; };
     virtual std::vector<uint8_t> *GetPData() { return nullptr; };
+    virtual bool GetPubKey(CCmpPubKey &pk) const { return false; };
 
     virtual bool GetCTFee(CAmount &nFee) const { return false; };
     virtual bool SetCTFee(CAmount &nFee) { return false; };
@@ -484,6 +485,11 @@ public:
     {
         return &vData;
     };
+    bool GetPubKey(CCmpPubKey &pk_) const override
+    {
+        pk_ = pk;
+        return true;
+    }
 };
 
 class CTxOutData : public CTxOutBase
