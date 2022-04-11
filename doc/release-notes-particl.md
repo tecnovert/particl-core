@@ -11,6 +11,12 @@
 - script: Remove timelocked script signing.
 
 
+0.21.2.8
+==============
+
+- wallet: Fix regression summing balances after fully importing watchonly stealthaddress.
+
+
 0.21.2.7
 ==============
 
