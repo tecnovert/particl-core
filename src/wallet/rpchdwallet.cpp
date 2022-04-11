@@ -3156,7 +3156,6 @@ static void ParseOutputs(
                     addresses,
                     amounts,
                     is_watchonly)) {
-                    LogPrintf("[rm] ret 4\n");
                     return ;
                 }
                 output.pushKV("amount", ValueFromAmount(-s.amount));
