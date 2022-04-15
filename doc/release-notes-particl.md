@@ -3,6 +3,14 @@
 ==============
 
 - rpc: signrawtransactionwithkey accepts tapscript spending data.
+- wallet: Fix regression summing balances after fully importing watchonly stealthaddress.
+- net: Restore automatic banning.  Ban peer if misbehaviour score is 2x limit.
+- Disable p2sh-p2wpkh addresses.
+- qt: 'Import Chain' defaults to disabled.
+- wallet, qt: Default ring size set to 12 to match Particl Desktop.
+- wallet: Fix BTC segwit address path and label in getaddressinfo.
+- rpc: Fix bug in filtertransactions hiding txns with watchonly inputs and spendable outputs.
+- qt: Fix missing anon outputs in coincontrol.
 
 
 22.0.1
