@@ -2290,7 +2290,7 @@ void CConnman::ThreadMessageHandler()
             LOCK(cs_main);
             m_msgproc->CheckUnreceivedHeaders(nTimeNow);
             for (auto *pnode : vNodesCopy) {
-                m_msgproc->DecMisbehaving(pnode->id, 1);
+                m_msgproc->DecMisbehaving(pnode->id, 1); // Also reduces persistent misbehaviour score
 
                 pnode->smsgData.DecSmsgMisbehaving();
             }
