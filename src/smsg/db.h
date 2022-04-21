@@ -76,6 +76,11 @@ public:
 
     bool NextPrivKey(leveldb::Iterator *it, const std::string &prefix, CKeyID &idk, SecMsgKey &key);
 
+    /**
+     * Compact a certain range of keys in the database.
+     */
+    void Compact() const;
+
     leveldb::DB *pdb; // points to the global instance
     leveldb::WriteBatch *activeBatch;
 };

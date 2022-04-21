@@ -1,5 +1,5 @@
 // Copyright (c) 2014-2016 The ShadowCoin developers
-// Copyright (c) 2017-2019 The Particl Core developers
+// Copyright (c) 2017-2022 The Particl Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -734,6 +734,20 @@ int CSMSG::LoadKeyStore()
     return SMSG_NO_ERROR;
 };
 
+int CSMSG::CompactDB()
+{
+    LOCK(cs_smsgDB);
+
+    SecMsgDB db;
+    if (!db.Open("cr+")) {
+        return SMSG_GENERAL_ERROR;
+    }
+
+    LogPrint(BCLog::SMSG, "Compacting DB\n");
+    db.Compact();
+    return SMSG_NO_ERROR;
+};
+
 int CSMSG::ReadIni()
 {
     if (!fSecMsgEnabled) {
@@ -921,6 +935,9 @@ bool CSMSG::Start(std::shared_ptr<CWallet> pwalletIn, std::vector<std::shared_pt
 
     if (LoadKeyStore() != 0) {
         return error("%s: LoadKeyStore failed.", __func__);
+    }
+    if (CompactDB() != 0) {
+        return error("%s: CompactDB failed.", __func__);
     }
 
     if (secp256k1_context_smsg) {

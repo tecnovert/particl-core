@@ -614,4 +614,9 @@ bool SecMsgDB::NextPrivKey(leveldb::Iterator *it, const std::string &prefix, CKe
     return true;
 };
 
+void SecMsgDB::Compact() const
+{
+    pdb->CompactRange(nullptr, nullptr);
+}
+
 } // namespace smsg

@@ -389,6 +389,7 @@ public:
     int BuildPurgedSets();
     int AddWalletAddresses();
     int LoadKeyStore();
+    int CompactDB();
 
     int ReadIni();
     int WriteIni();
