@@ -1,8 +1,15 @@
+
 23.0.1
 ==============
 
 - rpc: devicesignrawtransactionwithwallet is split out of devicesignrawtransaction.
   - Workaround for wallet context only provided for wallet rpc commands.
+
+
+22.0.3
+==============
+
+- wallet: Stake thread is awoken when the chain leaves IBD state.
 
 
 22.0.2

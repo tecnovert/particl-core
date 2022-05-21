@@ -5841,6 +5841,10 @@ void CHDWallet::LoadToWallet(const uint256 &hash, CTransactionRecord &rtx)
     return;
 };
 
+void CHDWallet::leavingIBD()
+{
+}
+
 void CHDWallet::RemoveFromTxSpends(const uint256 &hash, const CTransactionRef pt)
 {
     for (const auto &txin : pt->vin) {
@@ -10329,8 +10333,8 @@ bool CHDWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const SyncT
             miw = mapWallet.find(txin.prevout.hash);
             if (miw != mapWallet.end()) {
                 const CWalletTx &prev = miw->second;
-                if (txin.prevout.n < prev.tx->vpout.size()
-                    && IsMine(prev.tx->vpout[txin.prevout.n].get()) & ISMINE_ALL) {
+                if (txin.prevout.n < prev.tx->vpout.size() &&
+                    IsMine(prev.tx->vpout[txin.prevout.n].get()) & ISMINE_ALL) {
                     fIsFromMe = true;
                     break; // only need one match
                 }
@@ -10356,8 +10360,7 @@ bool CHDWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const SyncT
 
             if (fExisted || fIsMine || fIsFromMe) {
                 CTransactionRecord rtx;
-                bool rv = AddToRecord(rtx, tx, tx_state, false);
-                return rv;
+                return AddToRecord(rtx, tx, tx_state, false);
             }
             return false;
         }
