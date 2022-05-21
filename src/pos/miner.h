@@ -37,7 +37,12 @@ bool CheckStake(ChainstateManager &chainman, const CBlock *pblock);
 
 void StartThreadStakeMiner(ChainstateManager &chainman);
 void StopThreadStakeMiner();
+/**
+ * Wake the thread from a possible long sleep
+ * Should be called if chain is synced, wallet unlocked or balance/settings changed
+ */
 void WakeThreadStakeMiner(CHDWallet *pwallet);
+void WakeAllThreadStakeMiner();
 bool ThreadStakeMinerStopped();
 
 void ThreadStakeMiner(size_t nThreadID, std::vector<std::shared_ptr<CWallet>> &vpwallets, size_t nStart, size_t nEnd, ChainstateManager *chainman);

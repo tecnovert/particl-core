@@ -262,3 +262,7 @@ void CMainSignals::TransactionAddedToWallet(const std::string &sWalletName, cons
 void CMainSignals::NewSecureMessage(const smsg::SecureMessage *psmsg, const uint160 &hash) {
     m_internals->Iterate([&](CValidationInterface& callbacks) { callbacks.NewSecureMessage(psmsg, hash); });
 }
+
+void CMainSignals::LeavingIBD() {
+    m_internals->Iterate([&](CValidationInterface& callbacks) { callbacks.LeavingIBD(); });
+}

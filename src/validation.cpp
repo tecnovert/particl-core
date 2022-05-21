@@ -55,6 +55,7 @@
 #include <smsg/smessage.h>
 #include <net.h>
 #include <pos/kernel.h>
+#include <pos/miner.h>
 #include <anon.h>
 #include <rctindex.h>
 #include <insight/insight.h>
@@ -1414,6 +1415,7 @@ bool CChainState::IsInitialBlockDownload() const
 
     static bool check_peer_height = gArgs.GetBoolArg("-checkpeerheight", true);
 
+    {
     LOCK(cs_main);
     if (m_cached_finished_ibd.load(std::memory_order_relaxed))
         return false;
@@ -1423,16 +1425,19 @@ bool CChainState::IsInitialBlockDownload() const
         return true;
     if (m_chain.Tip()->nChainWork < nMinimumChainWork)
         return true;
-    if (m_chain.Tip()->nHeight > COINBASE_MATURITY
-        && m_chain.Tip()->GetBlockTime() < (GetTime() - nMaxTipAge))
+    if (m_chain.Tip()->nHeight > COINBASE_MATURITY &&
+        m_chain.Tip()->GetBlockTime() < (GetTime() - nMaxTipAge))
         return true;
-    if (fParticlMode && check_peer_height
-        && (particl::GetNumPeers() < 1
-            || m_chain.Tip()->nHeight < particl::GetNumBlocksOfPeers()-10))
+    if (fParticlMode && check_peer_height &&
+        (particl::GetNumPeers() < 1 ||
+         m_chain.Tip()->nHeight < particl::GetNumBlocksOfPeers() - 10))
         return true;
 
     LogPrintf("Leaving InitialBlockDownload (latching to false)\n");
     m_cached_finished_ibd.store(true, std::memory_order_relaxed);
+    }
+    GetMainSignals().LeavingIBD();
+    WakeAllThreadStakeMiner();
     return false;
 }
 

@@ -225,6 +225,8 @@ public:
     void ClearCachedBalances() override;
     bool LoadToWallet(const uint256& hash, const UpdateWalletTxFn& fill_wtx) override EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     void LoadToWallet(const uint256 &hash, CTransactionRecord &rtx) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    void blockConnected(const CBlock& block, int height) override;
+    void leavingIBD() override;
 
     /** Remove txn from mapwallet and TxSpends */
     void RemoveFromTxSpends(const uint256 &hash, const CTransactionRef pt) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
@@ -568,6 +570,8 @@ public:
     CAmount m_min_owned_value = 0;      // Wallet will ignore outputs below this value
 
     std::map<CKeyID, uint32_t> m_derived_keys; // Allows multiple provisional derivations from the same extkey
+
+    mutable bool m_found_tx_in_block;
 
 private:
     void ParseAddressForMetaData(const CTxDestination &addr, COutputRecord &rec);

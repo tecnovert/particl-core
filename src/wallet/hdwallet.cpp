@@ -5953,6 +5953,21 @@ void CHDWallet::LoadToWallet(const uint256 &hash, CTransactionRecord &rtx)
     return;
 };
 
+void CHDWallet::blockConnected(const CBlock& block, int height)
+{
+    m_found_tx_in_block = false;
+    CWallet::blockConnected(block, height);
+
+    if (m_found_tx_in_block && !chain().isInitialBlockDownload()) {
+        // Meant to wake the staking thread from a possible long sleep if the balance has changed.
+        WakeThreadStakeMiner(this);
+    }
+}
+
+void CHDWallet::leavingIBD()
+{
+}
+
 void CHDWallet::RemoveFromTxSpends(const uint256 &hash, const CTransactionRef pt)
 {
     for (const auto &txin : pt->vin) {
@@ -10462,8 +10477,8 @@ bool CHDWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, CWalletTx::
             miw = mapWallet.find(txin.prevout.hash);
             if (miw != mapWallet.end()) {
                 const CWalletTx &prev = miw->second;
-                if (txin.prevout.n < prev.tx->vpout.size()
-                    && IsMine(prev.tx->vpout[txin.prevout.n].get()) & ISMINE_ALL) {
+                if (txin.prevout.n < prev.tx->vpout.size() &&
+                    IsMine(prev.tx->vpout[txin.prevout.n].get()) & ISMINE_ALL) {
                     fIsFromMe = true;
                     break; // only need one match
                 }
@@ -10488,12 +10503,8 @@ bool CHDWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, CWalletTx::
 
             if (fExisted || fIsMine || fIsFromMe) {
                 CTransactionRecord rtx;
-                bool rv = AddToRecord(rtx, tx, confirm, false);
-
-                if (!confirm.hashBlock.IsNull()) {
-                    WakeThreadStakeMiner(this);
-                }
-                return rv;
+                m_found_tx_in_block = true;
+                return AddToRecord(rtx, tx, confirm, false);
             }
             return false;
         }
@@ -10524,9 +10535,7 @@ bool CHDWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, CWalletTx::
                 wtx.mapValue.insert(mapNarr.begin(), mapNarr.end());
             }
 
-            if (!confirm.hashBlock.IsNull()) {
-                WakeThreadStakeMiner(this);
-            }
+            m_found_tx_in_block = true;
             return true;
         }
     }

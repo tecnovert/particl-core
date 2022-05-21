@@ -4,8 +4,8 @@
 
 #include <pos/miner.h>
 
-#include <pos/kernel.h>
 #include <miner.h>
+#include <pos/kernel.h>
 #include <chainparams.h>
 #include <util/thread.h>
 #include <util/moneystr.h>
@@ -14,7 +14,6 @@
 
 #include <sync.h>
 #include <net.h>
-#include <validation.h>
 #include <consensus/validation.h>
 #include <node/blockstorage.h>
 
@@ -82,7 +81,7 @@ bool CheckStake(ChainstateManager &chainman, const CBlock *pblock)
     }
 
     return true;
-};
+}
 
 bool ImportOutputs(CBlockTemplate *pblocktemplate, int nHeight)
 {
@@ -174,7 +173,7 @@ bool ImportOutputs(CBlockTemplate *pblocktemplate, int nHeight)
     pblock->vtx.insert(pblock->vtx.begin()+1, MakeTransactionRef(txn));
 
     return true;
-};
+}
 
 void StartThreadStakeMiner(ChainstateManager &chainman)
 {
@@ -205,7 +204,7 @@ void StartThreadStakeMiner(ChainstateManager &chainman)
     }
 
     fStopMinerProc = false;
-};
+}
 
 void StopThreadStakeMiner()
 {
@@ -222,11 +221,10 @@ void StopThreadStakeMiner()
         delete t;
     }
     vStakeThreads.clear();
-};
+}
 
 void WakeThreadStakeMiner(CHDWallet *pwallet)
 {
-    // Call when chain is synced, wallet unlocked or balance changed
     size_t nStakeThread = 0;
     {
     LOCK(pwallet->cs_wallet);
@@ -239,7 +237,15 @@ void WakeThreadStakeMiner(CHDWallet *pwallet)
     }
     StakeThread *t = vStakeThreads[nStakeThread];
     t->m_thread_interrupt();
-};
+}
+
+void WakeAllThreadStakeMiner()
+{
+    LogPrint(BCLog::POS, "WakeAllThreadStakeMiner\n");
+    for (auto t : vStakeThreads) {
+        t->m_thread_interrupt();
+    }
+}
 
 bool ThreadStakeMinerStopped()
 {
@@ -252,7 +258,7 @@ static inline void condWaitFor(size_t nThreadID, int ms)
     StakeThread *t = vStakeThreads[nThreadID];
     t->m_thread_interrupt.reset();
     t->m_thread_interrupt.sleep_for(std::chrono::milliseconds(ms));
-};
+}
 
 void ThreadStakeMiner(size_t nThreadID, std::vector<std::shared_ptr<CWallet>> &vpwallets, size_t nStart, size_t nEnd, ChainstateManager *chainman)
 {
@@ -422,4 +428,4 @@ void ThreadStakeMiner(size_t nThreadID, std::vector<std::shared_ptr<CWallet>> &v
 
         condWaitFor(nThreadID, nWaitFor);
     }
-};
+}
