@@ -3936,19 +3936,19 @@ void CChainState::ReceivedBlockTransactions(const CBlock& block, CBlockIndex* pi
 
 static bool CheckBlockHeader(const CBlockHeader& block, BlockValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW = true)
 {
-    if (fParticlMode
-        && !block.IsParticlVersion())
+    if (fParticlMode &&
+        !block.IsParticlVersion())
         return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "block-version", "bad block version");
 
     // Check timestamp
-    if (fParticlMode
-        && !block.hashPrevBlock.IsNull() // allow genesis block to be created in the future
-        && block.GetBlockTime() > particl::FutureDrift(GetAdjustedTime()))
-        return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "block-timestamp", "block timestamp too far in the future");
+    if (fParticlMode &&
+        !block.hashPrevBlock.IsNull() &&  // Allow genesis block to be created in the future
+        block.GetBlockTime() > particl::FutureDrift(GetAdjustedTime()))
+        return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "time-too-new", "block timestamp too far in the future");
 
     // Check proof of work matches claimed amount
-    if (!fParticlMode
-        && fCheckPOW && !CheckProofOfWork(block.GetHash(), block.nBits, consensusParams))
+    if (!fParticlMode &&
+        fCheckPOW && !CheckProofOfWork(block.GetHash(), block.nBits, consensusParams))
         return state.Invalid(BlockValidationResult::BLOCK_INVALID_HEADER, "high-hash", "proof of work failed");
 
     return true;
