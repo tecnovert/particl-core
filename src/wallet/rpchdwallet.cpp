@@ -4404,6 +4404,7 @@ static RPCHelpMan getstakinginfo()
                         {RPCResult::Type::STR_AMOUNT, "wallettreasurydonationpercent", "User set percentage of the block reward ceded to the treasury"},
                         {RPCResult::Type::STR_AMOUNT, "treasurydonationpercent", "Network enforced percentage of the block reward ceded to the treasury"},
                         {RPCResult::Type::STR_AMOUNT, "minstakeablevalue", "The minimum value for an output to attempt staking in " + CURRENCY_UNIT},
+                        {RPCResult::Type::NUM, "minstakeabledepth", "Minimum depth required in the chain for an output to stake"},
                         {RPCResult::Type::NUM, "currentblocksize", "The last approximate block size in bytes"},
                         {RPCResult::Type::NUM, "currentblockweight", "The last block weight"},
                         {RPCResult::Type::NUM, "currentblocktx", "The number of transactions in the last block"},
@@ -4498,8 +4499,11 @@ static RPCHelpMan getstakinginfo()
         obj.pushKV("treasurydonationpercent", pTreasuryFundSettings->nMinTreasuryStakePercent);
     }
 
-    obj.pushKV("minstakeablevalue", pwallet->m_min_stakeable_value);
+    obj.pushKV("minstakeablevalue", ValueFromAmount(pwallet->m_min_stakeable_value));
 
+    int nHeight = pwallet->chain().getHeightInt();
+    int nRequiredDepth = std::min((int)(Params().GetStakeMinConfirmations() - 1), (int)(nHeight / 2));
+    obj.pushKV("minstakeabledepth", nRequiredDepth);
     obj.pushKV("currentblocksize", (uint64_t)nLastBlockSize);
     obj.pushKV("currentblocktx", (uint64_t)nLastBlockTx);
 
@@ -4534,10 +4538,11 @@ static RPCHelpMan getcoldstakinginfo()
                 RPCResult{
                     RPCResult::Type::OBJ, "", "", {
                         {RPCResult::Type::BOOL, "enabled", "If a valid coldstakingaddress is loaded or not on this wallet"},
-                        {RPCResult::Type::STR, "coldstaking_extkey_id", "The id of the current coldstakingaddress"},
+                        {RPCResult::Type::STR, "coldstaking_extkey_id", /*optional=*/true, "The id of the current coldstakingaddress"},
                         {RPCResult::Type::STR_AMOUNT, "coin_in_stakeable_script", "Current amount of coin in scripts stakeable by this wallet"},
                         {RPCResult::Type::STR_AMOUNT, "coin_in_coldstakeable_script", "Current amount of coin in scripts stakeable by the wallet with the coldstakingaddress"},
                         {RPCResult::Type::STR_AMOUNT, "percent_in_coldstakeable_script", "Percentage of coin in coldstakeable scripts"},
+                        {RPCResult::Type::STR_AMOUNT, "pending_depth", "Amount of coin in this wallet that will stake once it reaches the required depth"},
                         {RPCResult::Type::STR_AMOUNT, "currently_staking", "Amount of coin estimated to be currently staking by this wallet"},
                 }},
                 RPCExamples{
@@ -4578,16 +4583,13 @@ static RPCHelpMan getcoldstakinginfo()
         cctl.m_include_immature = true;
         LOCK(pwallet->cs_wallet);
         nHeight = pwallet->chain().getHeightInt();
-        nRequiredDepth = std::min((int)(Params().GetStakeMinConfirmations()-1), (int)(nHeight / 2));
+        nRequiredDepth = std::min((int)(Params().GetStakeMinConfirmations() - 1), (int)(nHeight / 2));
         pwallet->AvailableCoins(vecOutputs, &cctl, nMinimumAmount, nMaximumAmount, nMinimumSumAmount, nMaximumCount);
     }
 
     LOCK(pwallet->cs_wallet);
 
-    CAmount nStakeable = 0;
-    CAmount nColdStakeable = 0;
-    CAmount nWalletStaking = 0;
-
+    CAmount nStakeable{0}, nColdStakeable{0}, nWalletStaking{0}, nWalletPendingDepth{0};
     CKeyID keyID;
     CScript coinstakePath;
     for (const auto &out : vecOutputs) {
@@ -4603,8 +4605,8 @@ static RPCHelpMan getcoldstakinginfo()
         if (scriptPubKey->IsPayToPublicKeyHash256_CS() || scriptPubKey->IsPayToScriptHash256_CS() || scriptPubKey->IsPayToScriptHash_CS()) {
             // Show output on both the spending and staking wallets
             if (!out.fSpendable) {
-                if (!particl::ExtractStakingKeyID(*scriptPubKey, keyID)
-                    || !pwallet->HaveKey(keyID)) {
+                if (!particl::ExtractStakingKeyID(*scriptPubKey, keyID) ||
+                    !pwallet->HaveKey(keyID)) {
                     continue;
                 }
             }
@@ -4613,23 +4615,24 @@ static RPCHelpMan getcoldstakinginfo()
             continue;
         }
 
-        if (out.nDepth < nRequiredDepth) {
-            continue;
-        }
-
         if (!particl::ExtractStakingKeyID(*scriptPubKey, keyID)) {
             continue;
         }
+
         if (pwallet->HaveKey(keyID)) {
-            nWalletStaking += nValue;
+            if (out.nDepth < nRequiredDepth) {
+                nWalletPendingDepth += nValue;
+            } else {
+                nWalletStaking += nValue;
+            }
         }
     }
 
     bool fEnabled = false;
     UniValue jsonSettings;
     CBitcoinAddress addrColdStaking;
-    if (pwallet->GetSetting("changeaddress", jsonSettings)
-        && jsonSettings["coldstakingaddress"].isStr()) {
+    if (pwallet->GetSetting("changeaddress", jsonSettings) &&
+        jsonSettings["coldstakingaddress"].isStr()) {
         std::string sAddress;
         try { sAddress = jsonSettings["coldstakingaddress"].get_str();
         } catch (std::exception &e) {
@@ -4656,6 +4659,7 @@ static RPCHelpMan getcoldstakinginfo()
     CAmount nTotal = nColdStakeable + nStakeable;
     obj.pushKV("percent_in_coldstakeable_script",
         UniValue(UniValue::VNUM, strprintf("%.2f", nTotal == 0 ? 0.0 : (nColdStakeable * 10000 / nTotal) / 100.0)));
+    obj.pushKV("pending_depth", ValueFromAmount(nWalletPendingDepth));
     obj.pushKV("currently_staking", ValueFromAmount(nWalletStaking));
 
     return obj;
