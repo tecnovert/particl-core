@@ -1,4 +1,10 @@
 
+0.19.2.21
+==============
+
+- wallet: Only mark anon/blind tx outputs as change if wallet owns inputs.
+
+
 0.19.2.20
 ==============
 

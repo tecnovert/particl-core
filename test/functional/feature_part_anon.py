@@ -35,6 +35,7 @@ class AnonTest(ParticlTestFramework):
         nodes[1].extkeyimportmaster('drip fog service village program equip minute dentist series hawk crop sphere olympic lazy garbage segment fox library good alley steak jazz force inmate')
         sxAddrTo1_1 = nodes[1].getnewstealthaddress('lblsx11')
         assert(sxAddrTo1_1 == 'TetbYTGv5LiqyFiUD3a5HHbpSinQ9KiRYDGAMvRzPfz4RnHMbKGAwDr1fjLGJ5Eqg1XDwpeGyqWMiwdK3qM3zKWjzHNpaatdoHVzzA')
+        nodes[2].extkeyimportmaster(nodes[2].mnemonic('new')['master'])
 
         sxAddrTo0_1 = nodes[0].getnewstealthaddress('lblsx01')
 
@@ -68,6 +69,15 @@ class AnonTest(ParticlTestFramework):
         txnHash = nodes[1].sendanontoanon(sxAddrTo0_1, 1, '', '', False, 'node1 -> node0 a->a', 5)
         txnHashes = [txnHash,]
 
+        # Get a change address
+        change_addr2 = nodes[2].deriverangekeys(0, 0, 'internal', False, True)[0]
+        addr_info = nodes[2].getaddressinfo(change_addr2)
+        assert(addr_info['ischange'] is True)
+
+        # Recieving wallet should not mark an output as change if tx spends no inputs
+        txnHash2 = nodes[1].sendtypeto('anon', 'part', [{'address': change_addr2, 'amount': 1, 'narr': 'node1 -> node2 a->p'}, ], '', '', 5)
+        txnHashes.append(txnHash2)
+
         assert(self.wait_for_mempool(nodes[0], txnHash))
         self.stakeBlocks(1)
 
@@ -75,7 +85,29 @@ class AnonTest(ParticlTestFramework):
         for txnHash in txnHashes:
             assert(txnHash in ro['tx'])
 
-        assert(nodes[1].anonoutput()['lastindex'] == 28)
+        assert(nodes[1].anonoutput()['lastindex'] == 29)
+
+        self.log.info('Test listsinceblock')
+        block2_hash = nodes[0].getblockhash(2)
+        rv = nodes[0].listsinceblock(block2_hash)
+        assert(len(rv['transactions']) == 2)
+        found_txn = False
+        for txn in rv['transactions']:
+            if txn['txid'] == txnHashes[0]:
+                found_txn = True
+            else:
+                assert(txn['category'] == 'stake')
+        assert(found_txn is True)
+
+        rv = nodes[1].listsinceblock(block2_hash)
+        assert(len(rv['transactions']) == 2)
+        for txn in rv['transactions']:
+            assert(float(txn['amount']) == -1.0)
+            assert(txn['category'] == 'send')
+
+        rv = nodes[2].listsinceblock(block2_hash)
+        assert(len(rv['transactions']) == 1)
+        assert(rv['transactions'][0]['txid'] == txnHash2)
 
         txnHashes.clear()
         txnHashes.append(nodes[1].sendanontoanon(sxAddrTo0_1, 101, '', '', False, 'node1 -> node0 a->a', 5, 1))
