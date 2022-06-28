@@ -176,13 +176,6 @@ static constexpr double MAX_ADDR_RATE_PER_SECOND{0.1};
  *  is exempt from this limit). */
 static constexpr size_t MAX_ADDR_PROCESSING_TOKEN_BUCKET{MAX_ADDR_TO_SEND};
 
-/** Increase a node's misbehavior score. */
-void Misbehaving(PeerManager *peerman, NodeId nodeid, int howmuch, const std::string& message="")
-{
-    assert(peerman);
-    peerman->Misbehaving(nodeid, howmuch, message);
-};
-
 // Internal stuff
 namespace {
 /** Blocks that are in flight, and that are in the queue to be downloaded. */
