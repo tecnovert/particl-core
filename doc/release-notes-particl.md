@@ -2,7 +2,10 @@
 0.19.2.21
 ==============
 
+- smsg: The smsgdb is periodically compacted.
+- smsg: Added pagination to smsginbox and smsgoutbox.
 - wallet: Only mark anon/blind tx outputs as change if wallet owns inputs.
+- New checkpoints
 
 
 0.19.2.20

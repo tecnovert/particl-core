@@ -1447,12 +1447,12 @@
     </message>
     <message>
         <location line="+7"/>
-        <source>Import Chain</source>
+        <source>Create Import Chain</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+7"/>
-        <source>Only needed if you&apos;re importing </source>
+        <source>Only needed if you&apos;re importing from the previous chain</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
