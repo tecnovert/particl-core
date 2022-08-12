@@ -14,6 +14,7 @@ Test the following RPCs:
     - getchaintxstats
     - getnetworkhashps
     - verifychain
+    - scantxoutset
 
 Tests correspond to code in rpc/blockchain.cpp.
 """
@@ -39,6 +40,7 @@ class BlockchainTest(PivxTestFramework):
         self._test_getblockheader()
         #self._test_getdifficulty()
         self.nodes[0].verifychain(0)
+        self._test_scantxoutset()
 
     def _test_getblockchaininfo(self):
         self.log.info("Test getblockchaininfo")
@@ -107,6 +109,20 @@ class BlockchainTest(PivxTestFramework):
         # 1 hash in 2 should be valid, so difficulty should be 1/2**31
         # binary => decimal => binary math is why we do this check
         assert abs(difficulty * 2**31 - 1) < 0.0001
+
+    def _test_scantxoutset(self):
+        node = self.nodes[0]
+
+        addr = node.getnewaddress()
+        node.sendtoaddress(addr, 10)
+        node.generatetoaddress(1, node.getnewaddress())
+        rv = node.scantxoutset('start', ['addr(' + addr + ')', ])
+        assert(rv['total_amount'] == 10.0)
+        assert(len(rv['unspents']) == 1)
+        script = rv['unspents'][0]['scriptPubKey']
+        rv = node.scantxoutset('start', ['raw(' + script + ')', ])
+        assert(rv['total_amount'] == 10.0)
+
 
 if __name__ == '__main__':
     BlockchainTest().main()
