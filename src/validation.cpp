@@ -4728,7 +4728,8 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
             // Blocks are connected at end of import / reindex
             // CheckProofOfStake is run again during connectblock
             if (!::ChainstateActive().IsInitialBlockDownload() // checks (!fImporting && !fReindex)
-                && (!accept_block || ::ChainActive().Height() > (int)Params().GetStakeMinConfirmations())
+                //&& (!accept_block || ::ChainActive().Height() > (int)Params().GetStakeMinConfirmations())
+                && (::ChainActive().Height() > 1)
                 && !CheckProofOfStake(state, pindexPrev, *block.vtx[0], block.nTime, block.nBits, hashProof, targetProofOfStake)) {
                 return error("ContextualCheckBlock(): check proof-of-stake failed for block %s\n", block.GetHash().ToString());
             }
@@ -4988,6 +4989,7 @@ void CheckDelayedBlocks(const CChainParams& chainparams, const uint256 &block_ha
 
 bool RemoveUnreceivedHeader(const uint256 &hash) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
 {
+    LogPrintf("RemoveUnreceivedHeader %s.\n", hash.ToString());
     BlockMap::iterator mi = ::BlockIndex().find(hash);
     if (mi != ::BlockIndex().end() && (mi->second->nFlags & BLOCK_ACCEPTED)) {
         return false;
@@ -5141,8 +5143,9 @@ bool BlockManager::AcceptBlockHeader(const CBlockHeader& block, CValidationState
             return state.Invalid(ValidationInvalidReason::BLOCK_MISSING_PREV, error("%s: prev block not found", __func__), 0, "prev-blk-not-found");
         pindexPrev = (*mi).second;
 
-        if (pindexPrev->nStatus & BLOCK_FAILED_MASK)
-            return state.Invalid(ValidationInvalidReason::BLOCK_INVALID_PREV, error("%s: prev block invalid", __func__), REJECT_INVALID, "bad-prevblk");
+        if (pindexPrev->nStatus & BLOCK_FAILED_MASK) {
+            return state.Invalid(ValidationInvalidReason::BLOCK_INVALID_PREV, error("%s: prev block invalid, status %d", __func__, pindexPrev->nStatus), REJECT_INVALID, "bad-prevblk");
+        }
         if (!ContextualCheckBlockHeader(block, state, chainparams, pindexPrev, GetAdjustedTime()))
             return error("%s: Consensus::ContextualCheckBlockHeader: %s, %s", __func__, hash.ToString(), FormatStateMessage(state));
 
@@ -5165,7 +5168,9 @@ bool BlockManager::AcceptBlockHeader(const CBlockHeader& block, CValidationState
          * In any case D3 will also be marked as BLOCK_FAILED_CHILD at restart
          * in LoadBlockIndex.
          */
-        if (!pindexPrev->IsValid(BLOCK_VALID_SCRIPTS)) {
+        // Always check for testing
+        //if (!pindexPrev->IsValid(BLOCK_VALID_SCRIPTS)) {
+        {
             // The above does not mean "invalid": it checks if the previous block
             // hasn't been validated up to BLOCK_VALID_SCRIPTS. This is a performance
             // optimization, in the common case of adding a new block to the tip,
@@ -5180,7 +5185,7 @@ bool BlockManager::AcceptBlockHeader(const CBlockHeader& block, CValidationState
                         setDirtyBlockIndex.insert(invalid_walk);
                         invalid_walk = invalid_walk->pprev;
                     }
-                    return state.Invalid(ValidationInvalidReason::BLOCK_INVALID_PREV, error("%s: prev block invalid", __func__), REJECT_INVALID, "bad-prevblk");
+                    return state.Invalid(ValidationInvalidReason::BLOCK_INVALID_PREV, error("%s: %s prev block invalid, ancestor %s", __func__, hash.ToString(), failedit->GetBlockHash().ToString()), REJECT_INVALID, "bad-prevblk");
                 }
             }
         }

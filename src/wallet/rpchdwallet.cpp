@@ -40,6 +40,7 @@
 #include <warnings.h>
 #include <shutdown.h>
 #include <txmempool.h>
+#include <pos/kernel.h>
 
 #include <univalue.h>
 #include <boost/thread.hpp>
@@ -6550,6 +6551,8 @@ static UniValue debugwallet(const JSONRPCRequest &request)
                             {"clear_stakes_seen", RPCArg::Type::BOOL, /* default */ "false", "Clear seen stakes - for use in regtest networks."},
                             {"downgrade_wallets", RPCArg::Type::BOOL, /* default */ "false", "Downgrade all loaded wallets for older releases then shutdown.\n"
                                                                                              "All loaded wallets must be unlocked."},
+                            {"create_invalid_coinstakes", RPCArg::Type::BOOL, /* default */ "false", "Create invalid coinstakes for debugging."},
+                            {"fail_all_coinstakes", RPCArg::Type::BOOL, /* default */ "false", "Fail all coinstakes for debugging."},
                         },
                         "options"},
                 },
@@ -6584,6 +6587,8 @@ static UniValue debugwallet(const JSONRPCRequest &request)
                 {"clear_stakes_seen",                   UniValueType(UniValue::VBOOL)},
                 {"downgrade_wallets",                   UniValueType(UniValue::VBOOL)},
                 {"max_frozen_output_spendable",         UniValueType()},
+                {"create_invalid_coinstakes",           UniValueType(UniValue::VBOOL)},
+                {"fail_all_coinstakes",                 UniValueType(UniValue::VBOOL)},
             }, true, true);
         if (options.exists("list_frozen_outputs")) {
             list_frozen_outputs = options["list_frozen_outputs"].get_bool();
@@ -6608,6 +6613,13 @@ static UniValue debugwallet(const JSONRPCRequest &request)
         }
         if (options.exists("max_frozen_output_spendable")) {
             max_frozen_output_spendable = AmountFromValue(options["max_frozen_output_spendable"]);
+        }
+        if (options.exists("create_invalid_coinstakes")) {
+            pwallet->m_create_invalid_coinstakes = options["create_invalid_coinstakes"].get_bool();
+            fCreateInvalidStake = pwallet->m_create_invalid_coinstakes;
+        }
+        if (options.exists("fail_all_coinstakes")) {
+            fFailStake = options["fail_all_coinstakes"].get_bool();
         }
     }
     if (list_frozen_outputs + spend_frozen_output + trace_frozen_outputs > 1) {

@@ -9,6 +9,8 @@
 
 #include <validation.h>
 
+extern bool fCreateInvalidStake;
+extern bool fFailStake;
 
 // Compute the hash modifier for proof-of-stake
 uint256 ComputeStakeModifierV2(const CBlockIndex *pindexPrev, const uint256 &kernel);

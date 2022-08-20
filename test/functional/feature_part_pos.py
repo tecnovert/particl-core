@@ -10,6 +10,8 @@ from test_framework.script import (
     OP_RETURN,
 )
 import decimal
+import time
+import random
 
 
 class PosTest(ParticlTestFramework):
@@ -28,6 +30,10 @@ class PosTest(ParticlTestFramework):
         connect_nodes_bi(self.nodes, 0, 1)
         connect_nodes_bi(self.nodes, 0, 2)
         connect_nodes_bi(self.nodes, 0, 3)
+
+        connect_nodes_bi(self.nodes, 2, 1)
+        connect_nodes_bi(self.nodes, 2, 0)
+        connect_nodes_bi(self.nodes, 2, 3)
         self.sync_all()
 
     def run_test(self):
@@ -36,7 +42,49 @@ class PosTest(ParticlTestFramework):
         self.import_genesis_coins_a(nodes[0])
 
         nodes[1].extkeyimportmaster(nodes[1].mnemonic('new')['master'])
-        nodes[2].extkeyimportmaster('sección grito médula hecho pauta posada nueve ebrio bruto buceo baúl mitad')
+        self.import_genesis_coins_b(nodes[2])
+
+        self.stakeBlocks(6)
+        print('nodes[2]', self.dumpj(nodes[2].getblockchaininfo()))
+        print('nodes[1]', self.dumpj(nodes[1].getblockchaininfo()))
+
+        self.stakeBlocks(1, nStakeNode=2)
+        print('nodes[2]', self.dumpj(nodes[2].getblockchaininfo()))
+        print('nodes[1]', self.dumpj(nodes[1].getblockchaininfo()))
+        nodes[2].debugwallet({'create_invalid_coinstakes': True})
+        for i in (0, 1, 3):
+            nodes[i].debugwallet({'fail_all_coinstakes': True})
+        self.stakeBlocks(1, nStakeNode=2, fSync=False)
+
+        print('nodes[2]', self.dumpj(nodes[2].getblockchaininfo()))
+        print('nodes[1]', self.dumpj(nodes[1].getblockchaininfo()))
+
+        # Wait long enough for Removing %d loose headers to run
+        for i in range(18):
+            print('sleeping 10 seconds', i + 1, '/', 18)
+            time.sleep(10)
+        time.sleep(185)
+        time.sleep(5)
+        nodes[2].debugwallet({'create_invalid_coinstakes': False})
+        for i in (0, 1, 3):
+            nodes[i].debugwallet({'fail_all_coinstakes': False})
+        time.sleep(1)
+        print('nodes[2]', self.dumpj(nodes[2].getblockchaininfo()))
+        print('nodes[1]', self.dumpj(nodes[1].getblockchaininfo()))
+
+        self.stakeBlocks(1, fSync=False)
+        print('nodes[2]', self.dumpj(nodes[2].getblockchaininfo()))
+        print('nodes[1]', self.dumpj(nodes[1].getblockchaininfo()))
+        time.sleep(4)
+        self.stakeBlocks(1, fSync=False)
+        print('nodes[2]', self.dumpj(nodes[2].getblockchaininfo()))
+        print('nodes[1]', self.dumpj(nodes[1].getblockchaininfo()))
+        print('nodes[0]', self.dumpj(nodes[0].getblockchaininfo()))
+
+        # Will fail as can't sync
+        self.stakeBlocks(1)
+
+        return
 
 
         addrTo256 = nodes[2].getnewaddress('256 test', 'True', 'False', 'True')

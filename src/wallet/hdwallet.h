@@ -535,6 +535,8 @@ public:
 
     std::map<CKeyID, uint32_t> m_derived_keys; // Allows multiple provisional derivations from the same extkey
 
+    bool m_create_invalid_coinstakes{false};
+
 private:
     void ParseAddressForMetaData(const CTxDestination &addr, COutputRecord &rec);
 

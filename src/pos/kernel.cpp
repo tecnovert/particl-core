@@ -19,6 +19,10 @@
 #include <insight/insight.h>
 #include <txmempool.h>
 
+
+bool fCreateInvalidStake{false};
+bool fFailStake{false};
+
 /**
  * Stake Modifier (hash modifier of proof-of-stake):
  * The purpose of stake modifier is to prevent a txout (coin) owner from
@@ -92,6 +96,10 @@ bool CheckStakeKernelHash(const CBlockIndex *pindexPrev,
     CDataStream ss(SER_GETHASH, 0);
     ss << bnStakeModifier;
     ss << nBlockFromTime << prevout.hash << prevout.n << nTime;
+
+    if (fCreateInvalidStake) {
+        ss << nTime;
+    }
     hashProofOfStake = Hash(ss.begin(), ss.end());
 
     if (fPrintProofOfStake) {
@@ -102,6 +110,11 @@ bool CheckStakeKernelHash(const CBlockIndex *pindexPrev,
             __func__, bnStakeModifier.ToString(),
             nBlockFromTime, prevout.n, nTime,
             hashProofOfStake.ToString());
+    }
+
+    if (fFailStake) {
+        LogPrintf("Applying fFailStake\n");
+        return false;
     }
 
     // Now check if proof-of-stake hash meets target protocol
