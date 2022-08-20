@@ -5028,6 +5028,7 @@ bool RemoveUnreceivedHeader(const uint256 &hash) EXCLUSIVE_LOCKS_REQUIRED(cs_mai
     for (auto &entry : remove_headers) {
         LogPrint(BCLog::NET, "Removing loose header %s.\n", entry->second->GetBlockHash().ToString());
         setDirtyBlockIndex.erase(entry->second);
+        g_blockman.m_failed_blocks.erase(entry->second);
 
         if (pindexBestHeader == entry->second) {
             pindexBestHeader = ::ChainActive().Tip();
@@ -5172,7 +5173,9 @@ bool BlockManager::AcceptBlockHeader(const CBlockHeader& block, CValidationState
             // we don't need to iterate over the failed blocks list.
             for (const CBlockIndex* failedit : m_failed_blocks) {
                 if (pindexPrev->GetAncestor(failedit->nHeight) == failedit) {
-                    //assert(failedit->nStatus & BLOCK_FAILED_VALID);
+                    if (!(failedit->nStatus & BLOCK_FAILED_VALID)) {
+                        LogPrintf("ERROR: Valid block in m_failed_blocks!\n");
+                    }
                     CBlockIndex* invalid_walk = pindexPrev;
                     if (failedit->nStatus & BLOCK_FAILED_VALID)
                     while (invalid_walk != failedit) {
