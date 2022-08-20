@@ -81,7 +81,7 @@ class PosTest(ParticlTestFramework):
         print('nodes[1]', self.dumpj(nodes[1].getblockchaininfo()))
         print('nodes[0]', self.dumpj(nodes[0].getblockchaininfo()))
 
-        # Will fail as can't sync
+        # Should pass with the fix
         self.stakeBlocks(1)
 
         return
