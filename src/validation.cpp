@@ -4719,7 +4719,9 @@ bool ChainstateManager::AcceptBlockHeader(const CBlockHeader& block, BlockValida
             // we don't need to iterate over the failed blocks list.
             for (const CBlockIndex* failedit : m_failed_blocks) {
                 if (pindexPrev->GetAncestor(failedit->nHeight) == failedit) {
-                    //assert(failedit->nStatus & BLOCK_FAILED_VALID);
+                    if (!(failedit->nStatus & BLOCK_FAILED_VALID)) {
+                        LogPrintf("ERROR: Valid block in m_failed_blocks!\n");
+                    }
                     CBlockIndex* invalid_walk = pindexPrev;
                     if (failedit->nStatus & BLOCK_FAILED_VALID)
                     while (invalid_walk != failedit) {
@@ -6671,6 +6673,7 @@ bool RemoveUnreceivedHeader(ChainstateManager &chainman, const uint256 &hash) EX
     for (auto &entry : remove_headers) {
         LogPrint(BCLog::NET, "Removing loose header %s.\n", entry->second->GetBlockHash().ToString());
         chainman.ActiveChainstate().m_blockman.m_dirty_blockindex.erase(entry->second);
+        chainman.m_failed_blocks.erase(entry->second);
 
         if (pindexBestHeader == entry->second) {
             pindexBestHeader = chainman.ActiveChain().Tip();
