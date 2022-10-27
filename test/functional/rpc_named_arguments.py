@@ -30,5 +30,16 @@ class NamedArgumentTest(PivxTestFramework):
         assert_equal(node.echo(arg9=None), [None]*10)
         assert_equal(node.echo(arg0=0,arg3=3,arg9=9), [0] + [None]*2 + [3] + [None]*5 + [9])
 
+        # Test getblock verbosity
+        block = node.getblock(blockhash=h, verbosity=0)
+        assert(isinstance(block, str))
+
+        block = node.getblock(blockhash=h, verbosity=1)
+        assert(isinstance(block['tx'][0], str))
+
+        block = node.getblock(blockhash=h, verbosity=2)
+        assert('vin' in block['tx'][0])
+
+
 if __name__ == '__main__':
     NamedArgumentTest().main()
