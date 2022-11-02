@@ -517,6 +517,7 @@ libbitcoin_consensus_a_SOURCES = \
   hash.cpp \
   flat-database.h \
   hash.h \
+  span.h \
   prevector.h \
   crypto/scrypt.h \
   primitives/block.h \
