@@ -1052,6 +1052,8 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState& state, const C
             //            if (!CheckSequenceLocks(tx, STANDARD_LOCKTIME_VERIFY_FLAGS, &lp))
             //                return state.DoS(0, false, REJECT_NONSTANDARD, "non-BIP68-final");
             //
+            if (!CheckSequenceLocks(mempool, tx, STANDARD_LOCKTIME_VERIFY_FLAGS, &lp))
+                return state.DoS(0, false, REJECT_NONSTANDARD, "non-BIP68-final");
         }
         else if (tx.IsSigmaSpend()) {
             nValueIn = sigma::GetSigmaSpendInput(tx);
