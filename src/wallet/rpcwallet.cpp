@@ -4809,6 +4809,48 @@ UniValue setusednumber(const JSONRPCRequest& request)
     return UniValue(int(numberOfUsed));
 }
 
+UniValue rescanblockchain(const JSONRPCRequest& request)
+{
+    CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp))
+        return NullUniValue;
+
+    if (request.fHelp || request.params.size() > 2) {
+        throw std::runtime_error(
+                "rescanblockchain (start_height)\n"
+                "\nRescan the local blockchain for wallet related transactions.\n"
+                "\nArguments:\n"
+                "1. start_height    (numeric, optional) block height where the rescan should start\n"
+                "\nResult:\n"
+                "{\n"
+                "  start_height     (numeric) The block height where the rescan has started. If omitted, rescan started from the genesis block.\n"
+                "}\n"
+                "\nExamples:\n"
+                + HelpExampleCli("rescanblockchain", "100000")
+                + HelpExampleRpc("rescanblockchain", "100000")
+        );
+    }
+
+    CBlockIndex *pindexStart = nullptr;
+    {
+        LOCK(cs_main);
+        pindexStart = chainActive.Genesis();
+
+        if (!request.params[0].isNull()) {
+            pindexStart = chainActive[request.params[0].get_int()];
+            if (!pindexStart) {
+                throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid start_height");
+            }
+        }
+    }
+
+    pwallet->ScanForWalletTransactions(pindexStart, true);
+    UniValue response(UniValue::VOBJ);
+    response.pushKV("start_height", pindexStart->nHeight);
+    return response;
+}
+
 /******************************************************************************/
 
 extern UniValue dumpprivkey(const JSONRPCRequest& request); // in rpcdump.cpp
@@ -4897,6 +4939,8 @@ static const CRPCCommand commands[] =
     { "wallet",             "removetxwallet",           &removetxwallet,           false },
     { "wallet",             "listsigmaspends",          &listsigmaspends,          false },
     { "wallet",             "listlelantusjoinsplits",   &listlelantusjoinsplits,   false },
+
+    { "wallet",             "rescanblockchain",         &rescanblockchain,         true,  {"start_height"} },
 
     //bip47
     { "bip47",              "createrapaddress",         &createrapaddress,         true },
