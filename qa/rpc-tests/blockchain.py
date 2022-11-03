@@ -47,6 +47,7 @@ class BlockchainTest(BitcoinTestFramework):
         self._test_getblockheader()
         self.nodes[0].verifychain(4, 0)
         self._test_scantxoutset()
+        self._test_getblock()
 
     def _test_gettxoutsetinfo(self):
         node = self.nodes[0]
@@ -124,6 +125,18 @@ class BlockchainTest(BitcoinTestFramework):
         script = rv['unspents'][0]['scriptPubKey']
         rv = node.scantxoutset('start', ['raw(' + script + ')', ])
         assert(rv['total_amount'] == 10.0)
+
+    def _test_getblock(self):
+        node = self.nodes[0]
+
+        # Test getblock verbosity
+        besthash = node.getbestblockhash()
+        assert_is_hex_string(node.getblock(blockhash=besthash, verbose=False))
+        assert_is_hex_string(node.getblock(blockhash=besthash, verbosity=0))
+
+        assert_is_hash_string(node.getblock(besthash, 1)['tx'][0])
+        assert_is_hash_string(node.getblock(besthash, True)['tx'][0])
+        assert_is_hex_string(node.getblock(besthash, 2)['tx'][0]['vin'][0]['coinbase'])
 
 
 if __name__ == '__main__':

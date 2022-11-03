@@ -97,6 +97,7 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "listunspentsigmamints", 0 },
     { "listunspentsigmamints", 1 },
     { "listunspentsigmamints", 2 },
+    { "getblock", 1, "verbosity" },
     { "getblock", 1, "verbose" },
     { "getblockheader", 1, "verbose" },
     { "gettransaction", 1, "include_watchonly" },
