@@ -261,6 +261,11 @@ Només és possible firmar amb adreces del tipus "legacy".</translation>
 <context>
     <name>QObject</name>
     <message>
+        <source>Do you want to reset settings to default values, or to abort without making changes?</source>
+        <extracomment>Explanatory text shown on startup when the settings file cannot be read. Prompts user to make a choice between resetting or aborting.</extracomment>
+        <translation type="unfinished">Voleu restablir la configuració als valors predeterminats o sortir sense desar els canvis?</translation>
+    </message>
+    <message>
         <source>A fatal error occurred. Check that settings file is writable, or try running with -nosettings.</source>
         <extracomment>Explanatory text shown on startup when the settings file could not be written. Prompts user to check that we have the ability to write to the file. Explains that the user has the option of running without a settings file.</extracomment>
         <translation type="unfinished">Un error fatal s'ha produit. Revisa que l'arxiu de preferències sigui d'escriptura, o torna-ho a intentar amb -nosettings</translation>
@@ -384,6 +389,14 @@ Només és possible firmar amb adreces del tipus "legacy".</translation>
     </context>
 <context>
     <name>bitcoin-core</name>
+    <message>
+        <source>Settings file could not be read</source>
+        <translation type="unfinished">El fitxer de configuració no es pot llegir</translation>
+    </message>
+    <message>
+        <source>Settings file could not be written</source>
+        <translation type="unfinished">El fitxer de configuració no pot ser escrit</translation>
+    </message>
     <message>
         <source>The %s developers</source>
         <translation type="unfinished">Els desenvolupadors %s</translation>
@@ -650,7 +663,7 @@ Només és possible firmar amb adreces del tipus "legacy".</translation>
     </message>
     <message>
         <source>Error: Dumpfile checksum does not match. Computed %s, expected %s</source>
-        <translation type="unfinished">Error: la suma de comprovació del fitxer bolcat no coincideix. S'ha calculat %s, s'esperava 
+        <translation type="unfinished">Error: la suma de comprovació del fitxer bolcat no coincideix. S'ha calculat %s, s'esperava
 %s</translation>
     </message>
     <message>
@@ -1013,6 +1026,10 @@ Només és possible firmar amb adreces del tipus "legacy".</translation>
         <translation type="unfinished">Crear una nova cartera</translation>
     </message>
     <message>
+        <source>&amp;Minimize</source>
+        <translation type="unfinished">&amp;Minimitza</translation>
+    </message>
+    <message>
         <source>Wallet:</source>
         <translation type="unfinished">Moneder:</translation>
     </message>
@@ -1197,6 +1214,10 @@ Només és possible firmar amb adreces del tipus "legacy".</translation>
         <translation type="unfinished">Carrega la transacció Particl signada parcialment</translation>
     </message>
     <message>
+        <source>Load PSBT from &amp;clipboard…</source>
+        <translation type="unfinished">Carrega la PSBT des del porta-retalls.</translation>
+    </message>
+    <message>
         <source>Load Partially Signed Particl Transaction from clipboard</source>
         <translation type="unfinished">Carrega la transacció de Particl signada parcialment des del porta-retalls</translation>
     </message>
@@ -1281,6 +1302,10 @@ Només és possible firmar amb adreces del tipus "legacy".</translation>
     <message>
         <source>%1 client</source>
         <translation type="unfinished">Client de %1</translation>
+    </message>
+    <message>
+        <source>&amp;Hide</source>
+        <translation type="unfinished">&amp;Amaga</translation>
     </message>
     <message numerus="yes">
         <source>%n active connection(s) to Particl network.</source>
@@ -4091,8 +4116,8 @@ Nota: atès que la tarifa es calcula per byte, una tarifa de "100 satoshis per k
         <source>No wallet has been loaded.
 Go to File &gt; Open Wallet to load a wallet.
 - OR -</source>
-        <translation type="unfinished">No s'ha carregat cap cartera. 
-Ves a Arxiu &gt; Obrir Cartera per a carregar cartera. 
+        <translation type="unfinished">No s'ha carregat cap cartera.
+Ves a Arxiu &gt; Obrir Cartera per a carregar cartera.
 - O -</translation>
     </message>
     <message>
