@@ -3,16 +3,14 @@
 ==============
 
 - qt: Fix crash when retreiving record transaction descriptions.
+- wallet: Fix walletpassphrasechange after encryptwallet without restarting.
 
 
 23.0.2
 ==============
 
-- consensus: Fix rare fork possibility.
-  - A block index is added for an invalid block, to prevent nodes trying
-    to redownload the same block from peers.
-    The failed block index is added to m_failed_blocks, but wasn't being
-    removed when the block index is removed to prevent DoS issues.
+- Coincontrol allow_other_inputs defaults to true
+  - Added allow_other_inputs to smsg rpc functions which accept a coincontrol parameter.
 
 
 23.0.1
