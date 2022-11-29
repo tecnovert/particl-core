@@ -166,6 +166,34 @@ class MnemonicTest(ParticlTestFramework):
         mnemonic_out = node.mnemonicfromentropy({'entropy': entropy_hex})
         assert (mnemonic_out == test_mnemonic)
 
+        self.log.info('Test that the real words appear in the shares')
+        mnemonic = node.mnemonic('new', '', 'english', 16)['mnemonic']
+        num_shares = 1024
+        threshold = 4
+        shares = node.splitmnemonic({'mnemonic': mnemonic, 'numshares': num_shares, 'threshold': threshold})
+        assert (len(shares) == num_shares)
+
+        found_real = 0
+        print('mnemonic', mnemonic)
+        original_words = mnemonic.split(' ')
+        for share in shares:
+            #print('share', share)
+            share_words = share.split(' ')
+
+            len_mnemonic = len(original_words)
+            len_share = len(share_words)
+            shift_words = len_share - len_mnemonic
+
+            fb = found_real
+            for i, word in enumerate(original_words):
+                if share_words[i + shift_words] == word:
+                    found_real += 1
+                    print('Found real at', i)
+            if fb != found_real:
+                print('share', share)
+        print('found_real', found_real)
+        assert (found_real > 0)
+
 
 if __name__ == '__main__':
     MnemonicTest().main()
