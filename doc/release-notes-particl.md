@@ -1,4 +1,10 @@
 
+23.0.4
+==============
+
+- rpc: Fix listunspentblind filter by address
+
+
 23.0.3
 ==============
 
