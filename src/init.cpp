@@ -1592,14 +1592,6 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     if (!fs::exists(blocksDir))
         fs::create_directories(blocksDir);
 
-    // block tree db settings
-    int dbMaxOpenFiles = gArgs.GetIntArg("-dbmaxopenfiles", particl::DEFAULT_DB_MAX_OPEN_FILES);
-    bool dbCompression = gArgs.GetBoolArg("-dbcompression", particl::DEFAULT_DB_COMPRESSION);
-
-    LogPrintf("Block index database configuration:\n");
-    LogPrintf("* Using %d max open files\n", dbMaxOpenFiles);
-    LogPrintf("* Compression is %s\n", dbCompression ? "enabled" : "disabled");
-
     // cache size calculations
     CacheSizes cache_sizes = CalculateCacheSizes(args, g_enabled_filter_types.size());
 
@@ -1613,6 +1605,14 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
                   cache_sizes.filter_index * (1.0 / 1024 / 1024), BlockFilterTypeName(filter_type));
     }
     LogPrintf("* Using %.1f MiB for chain state database\n", cache_sizes.coins_db * (1.0 / 1024 / 1024));
+
+    // block tree db settings
+    cache_sizes.max_open_files = gArgs.GetIntArg("-dbmaxopenfiles", particl::DEFAULT_DB_MAX_OPEN_FILES);
+    cache_sizes.compression = gArgs.GetBoolArg("-dbcompression", particl::DEFAULT_DB_COMPRESSION);
+
+    LogPrintf("Block index database configuration:\n");
+    LogPrintf("* Using %d max open files\n", cache_sizes.max_open_files);
+    LogPrintf("* Compression is %s\n", cache_sizes.compression ? "enabled" : "disabled");
 
     assert(!node.mempool);
     assert(!node.chainman);

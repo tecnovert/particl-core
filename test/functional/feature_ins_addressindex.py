@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2014-2015 The Bitcoin Core developers
-# Copyright (c) 2017-2022 The Particl Core developers
+# Copyright (c) 2017-2023 The Particl Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -22,10 +22,10 @@ class AddressIndexTest(ParticlTestFramework):
         self.extra_args = [
             # Nodes 0/1 are "wallet" nodes
             ['-debug',],
-            ['-debug','-addressindex'],
+            ['-debug', '-addressindex'],
             # Nodes 2/3 are used for testing
-            ['-debug','-addressindex',],
-            ['-debug','-addressindex'],]
+            ['-debug', '-addressindex', '-dbcompression'],
+            ['-debug', '-addressindex', '-dbcompression'],]
 
     def skip_test_if_missing_module(self):
         self.skip_if_no_wallet()

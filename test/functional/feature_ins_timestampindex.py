@@ -18,10 +18,10 @@ class TimestampIndexTest(ParticlTestFramework):
         self.extra_args = [
             # Nodes 0/1 are "wallet" nodes
             ['-debug',],
-            ['-debug','-timestampindex'],
+            ['-debug', '-timestampindex'],
             # Nodes 2/3 are used for testing
-            ['-debug',],
-            ['-debug','-timestampindex'],]
+            ['-debug', ],
+            ['-debug', '-timestampindex', '-dbcompression'],]
 
     def skip_test_if_missing_module(self):
         self.skip_if_no_wallet()

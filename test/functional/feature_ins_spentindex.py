@@ -20,8 +20,8 @@ class SpentIndexTest(ParticlTestFramework):
             ['-debug',],
             ['-debug','-spentindex'],
             # Nodes 2/3 are used for testing
-            ['-debug','-spentindex'],
-            ['-debug','-spentindex', '-txindex'],]
+            ['-debug','-spentindex', '-dbcompression'],
+            ['-debug','-spentindex', '-txindex', '-dbcompression'],]
 
     def skip_test_if_missing_module(self):
         self.skip_if_no_wallet()

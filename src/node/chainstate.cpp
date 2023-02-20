@@ -60,7 +60,7 @@ ChainstateLoadResult LoadChainstate(ChainstateManager& chainman, const CacheSize
     // new CBlockTreeDB tries to delete the existing file, which
     // fails if it's still open from the previous loop. Close it first:
     pblocktree.reset();
-    pblocktree.reset(new CBlockTreeDB(cache_sizes.block_tree_db, options.block_tree_db_in_memory, options.reindex));
+    pblocktree.reset(new CBlockTreeDB(cache_sizes.block_tree_db, options.block_tree_db_in_memory, options.reindex, cache_sizes.compression, cache_sizes.max_open_files));
 
     if (options.reindex) {
         pblocktree->WriteReindexing(true);
@@ -213,7 +213,7 @@ bool ShouldAutoReindex(ChainstateManager &chainman, const CacheSizes& cache_size
 
     // pblocktree shouldn't be open yet, temporarily open it to read flags
     pblocktree.reset();
-    pblocktree.reset(new CBlockTreeDB(cache_sizes.block_tree_db, options.block_tree_db_in_memory, false));
+    pblocktree.reset(new CBlockTreeDB(cache_sizes.block_tree_db, options.block_tree_db_in_memory, false, cache_sizes.compression, cache_sizes.max_open_files));
 
     if (pblocktree->CountBlockIndex() < 1) {
         return false; // db will be initialised later in LoadBlockIndex

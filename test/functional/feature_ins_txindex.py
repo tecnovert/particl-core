@@ -18,10 +18,10 @@ class TxIndexTest(ParticlTestFramework):
         self.extra_args = [
             # Nodes 0/1 are "wallet" nodes
             ['-debug',],
-            ['-debug','-txindex'],
+            ['-debug', '-txindex'],
             # Nodes 2/3 are used for testing
-            ['-debug','-txindex'],
-            ['-debug','-txindex'],]
+            ['-debug', '-txindex', '-dbcompression'],
+            ['-debug', '-txindex', '-dbcompression'],]
 
     def skip_test_if_missing_module(self):
         self.skip_if_no_wallet()
