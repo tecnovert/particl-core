@@ -1637,11 +1637,13 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
                                               /*block_tree_db_in_memory=*/false,
                                               /*coins_db_in_memory=*/false,
                                               /*shutdown_requested=*/ShutdownRequested,
-                                              /*coins_error_cb=*/[]() {
+                                              /*coins_error_cb=*/[](){
                                                   uiInterface.ThreadSafeMessageBox(
                                                                                    _("Error reading from database, shutting down."),
                                                                                    "", CClientUIInterface::MSG_ERROR);
-                                              });
+                                              },
+                                              dbCompression,
+                                              dbMaxOpenFiles);
         } catch (const std::exception& e) {
             LogPrintf("%s\n", e.what());
             maybe_load_error = ChainstateLoadingError::ERROR_GENERIC_BLOCKDB_OPEN_FAILED;

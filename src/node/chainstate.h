@@ -72,7 +72,9 @@ std::optional<ChainstateLoadingError> LoadChainstate(bool fReset,
                                                      bool block_tree_db_in_memory,
                                                      bool coins_db_in_memory,
                                                      std::function<bool()> shutdown_requested = nullptr,
-                                                     std::function<void()> coins_error_cb = nullptr);
+                                                     std::function<void()> coins_error_cb = nullptr,
+                                                     bool dbCompression = false,
+                                                     int dbMaxOpenFiles = 1000);
 
 enum class ChainstateLoadVerifyError {
     ERROR_BLOCK_FROM_FUTURE,

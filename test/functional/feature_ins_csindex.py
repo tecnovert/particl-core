@@ -16,8 +16,8 @@ class TxIndexTest(ParticlTestFramework):
         self.num_nodes = 3
         self.extra_args = [
             ['-debug', ],
-            ['-debug', '-txindex', '-csindex'],
-            ['-debug', '-txindex', '-csindex'], ]
+            ['-debug', '-txindex', '-csindex', '-dbcompression'],
+            ['-debug', '-txindex', '-csindex', '-dbcompression'], ]
 
     def skip_test_if_missing_module(self):
         self.skip_if_no_wallet()

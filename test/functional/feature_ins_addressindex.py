@@ -24,8 +24,8 @@ class AddressIndexTest(ParticlTestFramework):
             ['-debug',],
             ['-debug','-addressindex'],
             # Nodes 2/3 are used for testing
-            ['-debug','-addressindex',],
-            ['-debug','-addressindex'],]
+            ['-debug','-addressindex', '-dbcompression'],
+            ['-debug','-addressindex', '-dbcompression'],]
 
     def skip_test_if_missing_module(self):
         self.skip_if_no_wallet()

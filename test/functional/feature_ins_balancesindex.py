@@ -12,8 +12,8 @@ class BalancesIndexTest(ParticlTestFramework):
         self.num_nodes = 3
         self.extra_args = [
             ['-debug', ],
-            ['-debug', '-balancesindex'],
-            ['-debug', '-balancesindex'], ]
+            ['-debug', '-balancesindex', '-dbcompression'],
+            ['-debug', '-balancesindex', '-dbcompression'], ]
 
     def skip_test_if_missing_module(self):
         self.skip_if_no_wallet()

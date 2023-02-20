@@ -22,7 +22,9 @@ std::optional<ChainstateLoadingError> LoadChainstate(bool fReset,
                                                      bool block_tree_db_in_memory,
                                                      bool coins_db_in_memory,
                                                      std::function<bool()> shutdown_requested,
-                                                     std::function<void()> coins_error_cb)
+                                                     std::function<void()> coins_error_cb,
+                                                     bool dbCompression,
+                                                     int dbMaxOpenFiles)
 {
     {
     auto is_coinsview_empty = [&](CChainState* chainstate) EXCLUSIVE_LOCKS_REQUIRED(::cs_main) {
@@ -39,14 +41,14 @@ std::optional<ChainstateLoadingError> LoadChainstate(bool fReset,
     // new CBlockTreeDB tries to delete the existing file, which
     // fails if it's still open from the previous loop. Close it first:
     pblocktree.reset();
-    pblocktree.reset(new CBlockTreeDB(nBlockTreeDBCache, block_tree_db_in_memory, fReset));
+    pblocktree.reset(new CBlockTreeDB(nBlockTreeDBCache, block_tree_db_in_memory, fReset, dbCompression, dbMaxOpenFiles));
 
     // Automatically start reindexing if necessary
     if (!fReset && particl::ShouldAutoReindex(chainman)) {
         fReindex = true;
         fReset = true;
         pblocktree.reset();
-        pblocktree.reset(new CBlockTreeDB(nBlockTreeDBCache, block_tree_db_in_memory, fReset));
+        pblocktree.reset(new CBlockTreeDB(nBlockTreeDBCache, block_tree_db_in_memory, fReset, dbCompression, dbMaxOpenFiles));
     }
 
     if (fReset) {
