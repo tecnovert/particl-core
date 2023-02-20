@@ -70,6 +70,12 @@
         <translation type="unfinished">Estas son sus direcciones Particl para enviar pagos. Compruebe siempre la cantidad y la dirección de recibo antes de transferir monedas.</translation>
     </message>
     <message>
+        <source>These are your Particl addresses for receiving payments. Use the 'Create new receiving address' button in the receive tab to create new addresses.
+Signing is only possible with addresses of the type 'legacy'.</source>
+        <translation type="unfinished">lista de tus direcciones de Particl para recibir pagos. Para crear una nueva direccion elija en la pestana recibir la opcion "Crear una nueva direccion" 
+Registrarse solo es posible utilizando  una direccion tipo "Legal"</translation>
+    </message>
+    <message>
         <source>&amp;Copy Address</source>
         <translation type="unfinished">Copiar dirección</translation>
     </message>
