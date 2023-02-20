@@ -813,7 +813,9 @@ static RPCHelpMan migratewallet()
                 throw JSONRPCError(RPC_WALLET_ERROR, "TODO");
             }
 
-            EnsureWalletIsUnlocked(*wallet);
+            if (wallet->IsCrypted()) {
+                throw JSONRPCError(RPC_WALLET_WRONG_ENC_STATE, "Error: migratewallet on encrypted wallets is currently unsupported.");
+            }
 
             WalletContext& context = EnsureWalletContext(request.context);
 

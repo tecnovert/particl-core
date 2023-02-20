@@ -31,13 +31,13 @@ class SignMessagesWithPrivTest(BitcoinTestFramework):
         self.log.info('test signing with priv_key')
         priv_key = 'cUeKHd5orzT3mz8P9pxyREHfsWtVfgsfDjiZZBcjUBAaGk1BTj7N'
         expected_signature = 'INbVnW4e6PeRmsv2Qgu8NuopvrVjkcxob+sX8OcZG0SALhWybUjzMLPdAsXI46YZGb0KQTRii+wWIQzRpG/U+S0='
-        signature = self.nodes[0].signmessagewithprivkey(priv_key, message)
+        signature = self.nodes[0].signmessagewithprivkey(priv_key, message, 'Bitcoin Signed Message:\n')
         assert_equal(expected_signature, signature)
 
         self.log.info('test that verifying with P2PKH address succeeds')
         addresses = self.addresses_from_privkey(priv_key)
         assert_equal(addresses[0], 'mpLQjfK79b7CCV4VMJWEWAj5Mpx8Up5zxB')
-        assert self.nodes[0].verifymessage(addresses[0], signature, message)
+        assert self.nodes[0].verifymessage(addresses[0], signature, message, 'Bitcoin Signed Message:\n')
 
         self.log.info('test that verifying with non-P2PKH addresses throws error')
         for non_p2pkh_address in addresses[1:]:
@@ -45,7 +45,7 @@ class SignMessagesWithPrivTest(BitcoinTestFramework):
 
         self.log.info('test parameter validity and error codes')
         # signmessagewithprivkey has two required parameters
-        for num_params in [0, 1, 3, 4, 5]:
+        for num_params in [0, 1, 4, 5]:
             param_list = ["dummy"]*num_params
             assert_raises_rpc_error(-1, "signmessagewithprivkey", self.nodes[0].signmessagewithprivkey, *param_list)
         # verifymessage has three required parameters

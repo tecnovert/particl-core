@@ -247,8 +247,8 @@ class WalletTaprootTest(BitcoinTestFramework):
         assert(result[0]['success'])
         address_type = "bech32m" if "tr" in pattern else "bech32"
         for i in range(4):
-            addr_g = addr_gen.getnewaddress(address_type=address_type)
-            addr_g = self.addr_gen.getnewaddress('', address_type)
+            #addr_g = addr_gen.getnewaddress(address_type=address_type)
+            addr_g = addr_gen.getnewaddress('', address_type)
             if treefn is not None:
                 addr_r = self.make_addr(treefn, keys, i)
                 assert_equal(addr_g, addr_r)
@@ -291,7 +291,7 @@ class WalletTaprootTest(BitcoinTestFramework):
         address_type = "bech32m" if "tr" in pattern else "bech32"
         for i in range(4):
             #addr_g = rpc_online.getnewaddress(address_type=address_type)
-            addr_g = self.rpc_online.getnewaddress('', address_type)
+            addr_g = rpc_online.getnewaddress('', address_type)
             if treefn is not None:
                 addr_r = self.make_addr(treefn, keys_pay, i)
                 assert_equal(addr_g, addr_r)
@@ -344,7 +344,7 @@ class WalletTaprootTest(BitcoinTestFramework):
         address_type = "bech32m" if "tr" in pattern else "bech32"
         for i in range(4):
             #addr_g = psbt_online.getnewaddress(address_type=address_type)
-            addr_g = self.psbt_online.getnewaddress('', address_type)
+            addr_g = psbt_online.getnewaddress('', address_type)
             if treefn is not None:
                 addr_r = self.make_addr(treefn, keys_pay, i)
                 assert_equal(addr_g, addr_r)
