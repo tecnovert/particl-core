@@ -6140,8 +6140,8 @@ int CHDWallet::ExtKeyImportAccount(CHDWalletDB *pwdb, CStoredExtKey &sekIn, int6
     if (pwdb->ReadExtKey(idAccount, sekExist)) {
         // Add secret if exists in db
         *sek = sekExist;
-        if (!sek->kp.IsValidV()
-            && sekIn.kp.IsValidV()) {
+        if (!sek->kp.IsValidV() &&
+            sekIn.kp.IsValidV()) {
             sek->kp = sekIn.kp;
             std::vector<uint8_t> v;
             sek->mapValue[EKVT_ADDED_SECRET_AT] = SetCompressedInt64(v, GetTime());
@@ -6165,6 +6165,7 @@ int CHDWallet::ExtKeyImportAccount(CHDWalletDB *pwdb, CStoredExtKey &sekIn, int6
         if (!sek->kp.IsValidV() &&
             sekAccount->kp.IsValidV()) {
             sekAccount->kp = sek->kp;
+            sekAccount->sLabel = sLabel;
             std::vector<uint8_t> v;
             sekAccount->mapValue[EKVT_ADDED_SECRET_AT] = SetCompressedInt64(v, GetTime());
 
@@ -6215,7 +6216,7 @@ int CHDWallet::ExtKeyImportAccount(CHDWalletDB *pwdb, CStoredExtKey &sekIn, int6
         return werrorN(1, "%s: UnsetWalletFlag failed.", __func__);
     }
     return 0;
-};
+}
 
 int CHDWallet::ExtKeySetMaster(CHDWalletDB *pwdb, CKeyID &idNewMaster)
 {
@@ -6399,9 +6400,9 @@ int CHDWallet::ExtKeyCreateAccount(CStoredExtKey *sekAccount, CKeyID &idMaster, 
 
     if (sekAccount->kp.IsValidV()) {
         CExtKey evExternal, evInternal, evStealth;
-        if (sekAccount->DeriveNextKey(evExternal, nExternal, false) != 0
-            || sekAccount->DeriveNextKey(evInternal, nInternal, false) != 0
-            || sekAccount->DeriveNextKey(evStealth, nStealth, true) != 0) {
+        if (sekAccount->DeriveNextKey(evExternal, nExternal, false) != 0 ||
+            sekAccount->DeriveNextKey(evInternal, nInternal, false) != 0 ||
+            sekAccount->DeriveNextKey(evStealth, nStealth, true) != 0) {
             return werrorN(1, "Could not derive account chain keys.");
         }
 
@@ -6412,8 +6413,8 @@ int CHDWallet::ExtKeyCreateAccount(CStoredExtKey *sekAccount, CKeyID &idMaster, 
         sekStealth->kp = CExtKeyPair(evStealth);
     } else {
         CExtPubKey epExternal, epInternal;
-        if (sekAccount->DeriveNextKey(epExternal, nExternal, false) != 0
-            || sekAccount->DeriveNextKey(epInternal, nInternal, false) != 0) {
+        if (sekAccount->DeriveNextKey(epExternal, nExternal, false) != 0 ||
+            sekAccount->DeriveNextKey(epInternal, nInternal, false) != 0) {
             return werrorN(1, "Could not derive account chain keys.");
         }
         sekExternal->kp = CExtKeyPair(epExternal);
@@ -8070,7 +8071,7 @@ int CHDWallet::NewStealthKeyFromAccount(const std::string &sLabel, CEKAStealthKe
     akStealthOut.SetSxAddr(sxAddr);
     AddressBookChangedNotify(sxAddr, CT_NEW);
     return 0;
-};
+}
 
 int CHDWallet::InitAccountStealthV2Chains(CHDWalletDB *pwdb, CExtKeyAccount *sea)
 {
@@ -8155,7 +8156,7 @@ int CHDWallet::InitAccountStealthV2Chains(CHDWalletDB *pwdb, CExtKeyAccount *sea
     }
 
     return 0;
-};
+}
 
 int CHDWallet::SaveStealthAddress(CHDWalletDB *pwdb, CExtKeyAccount *sea, const CEKAStealthKey &akStealth, bool fBech32)
 {
@@ -11175,6 +11176,12 @@ CWallet::ScanResult CHDWallet::ScanForWalletTransactions(const uint256& start_bl
             NewStealthKeyV2FromAccount(&wdb, idDefaultAccount, "", akStealth, 0, nullptr, true, &nScanKey, &nSpendKey);
             nScanKey += 1;
             nSpendKey += 1;
+            if (LogAcceptCategory(BCLog::HDWALLET)) {
+                CStealthAddress sxAddr;
+                if (0 == akStealth.SetSxAddr(sxAddr)) {
+                    WalletLogPrintf("Adding v2 stealth address %s to lookahead.\n", sxAddr.Encoded(true));
+                }
+            }
         }
 
         if (!wdb.TxnCommit()) {
@@ -13809,8 +13816,8 @@ int LoopExtKeysInDB(CHDWallet *pwallet, bool fInactive, bool fInAccount, LoopExt
 
         ssKey >> ckeyId;
         ssValue >> sek;
-        if (!fInAccount
-            && sek.nFlags & EAF_IN_ACCOUNT) {
+        if (!fInAccount &&
+            sek.nFlags & EAF_IN_ACCOUNT) {
             continue;
         }
         callback.ProcessKey(ckeyId, sek);
