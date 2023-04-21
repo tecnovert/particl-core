@@ -10,6 +10,7 @@
 #include <util/thread.h>
 #include <util/syserror.h>
 #include <util/moneystr.h>
+#include <common/args.h>
 #include <primitives/block.h>
 #include <primitives/transaction.h>
 

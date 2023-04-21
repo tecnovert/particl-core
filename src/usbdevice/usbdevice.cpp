@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2022 The Particl Core developers
+// Copyright (c) 2018-2023 The Particl Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -9,16 +9,17 @@
 #include <usbdevice/ledgerdevice.h>
 #include <usbdevice/trezordevice.h>
 #include <usbdevice/usbwrapper.h>
+#include <common/args.h>
+
+#ifdef ENABLE_WALLET
+#include <wallet/hdwallet.h>
+#endif
 
 #include <hidapi/hidapi.h>
 
 #include <stdint.h>
 #include <univalue.h>
 #include <chainparams.h>
-
-#ifdef ENABLE_WALLET
-#include <wallet/hdwallet.h>
-#endif
 
 #include <google/protobuf/stubs/common.h>
 

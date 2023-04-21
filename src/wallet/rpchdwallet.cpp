@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2022 The Particl Core developers
+// Copyright (c) 2017-2023 The Particl Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -46,6 +46,7 @@
 #include <warnings.h>
 #include <shutdown.h>
 #include <txmempool.h>
+#include <common/args.h>
 
 #include <univalue.h>
 

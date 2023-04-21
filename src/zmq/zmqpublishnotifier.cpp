@@ -9,6 +9,7 @@
 #include <crypto/common.h>
 #include <kernel/cs_main.h>
 #include <logging.h>
+#include <common/args.h>
 #include <netaddress.h>
 #include <netbase.h>
 #include <node/blockstorage.h>

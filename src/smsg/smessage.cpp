@@ -1,5 +1,5 @@
 // Copyright (c) 2014-2016 The ShadowCoin developers
-// Copyright (c) 2017-2022 The Particl Core developers
+// Copyright (c) 2017-2023 The Particl Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -47,9 +47,10 @@ Notes:
 #include <node/context.h>
 #include <node/blockstorage.h>
 #include <util/string.h>
-#include <util/system.h>
 #include <util/syserror.h>
 #include <timedata.h>
+#include <logging.h>
+#include <common/args.h>
 
 #ifdef ENABLE_WALLET
 #include <wallet/coincontrol.h>
@@ -58,6 +59,7 @@ Notes:
 #include <policy/policy.h>
 #endif
 
+#include <xxhash/xxhash.h>
 
 #include <stdint.h>
 #include <time.h>
@@ -66,7 +68,6 @@ Notes:
 #include <errno.h>
 #include <limits>
 
-#include <xxhash/xxhash.h>
 
 smsg::CSMSG smsgModule;
 

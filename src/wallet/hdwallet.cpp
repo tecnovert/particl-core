@@ -38,6 +38,7 @@
 #include <wallet/fees.h>
 #include <wallet/spend.h>
 #include <node/interface_ui.h>
+#include <common/args.h>
 
 #if ENABLE_USBDEVICE
 #include <usbdevice/usbdevice.h>

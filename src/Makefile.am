@@ -147,6 +147,7 @@ BITCOIN_CORE_H = \
   checkqueue.h \
   clientversion.h \
   coins.h \
+  common/args.h \
   common/bloom.h \
   common/init.h \
   common/run_command.h \
@@ -285,6 +286,7 @@ BITCOIN_CORE_H = \
   shutdown.h \
   signet.h \
   streams.h \
+  support/allocators/pool.h \
   smsg/db.h \
   smsg/net.h \
   smsg/types.h \
@@ -744,7 +746,9 @@ libparticl_common_a_SOURCES = \
   bech32.cpp \
   chainparams.cpp \
   coins.cpp \
+  common/args.cpp \
   common/bloom.cpp \
+  common/config.cpp \
   common/init.cpp \
   common/interfaces.cpp \
   common/run_command.cpp \
@@ -1077,6 +1081,8 @@ libparticlkernel_la_SOURCES = \
   chainparams.cpp \
   clientversion.cpp \
   coins.cpp \
+  common/args.cpp \
+  common/config.cpp \
   compressor.cpp \
   consensus/merkle.cpp \
   consensus/tx_check.cpp \
