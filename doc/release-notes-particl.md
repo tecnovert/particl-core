@@ -1,5 +1,5 @@
 
-23.0.4
+23.1.4
 ==============
 
 - rpc: Fix listunspentblind filter by address
@@ -7,6 +7,8 @@
 - wallet: Locked blinded outputs are processed in order when unlocked.
   - Should make the onlyinstance option obsolete.
 - rpc: debugwallet added some output for a locked wallet if no parameters provided.
+- New checkpoints.
+- Merged BTC 23.1
 
 
 23.0.3
