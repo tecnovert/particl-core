@@ -618,6 +618,7 @@ inspecting signatures in Mach-O binaries.")
            (list zip
                  (make-mingw-pthreads-cross-toolchain "i686-w64-mingw32")
                  (make-nsis-for-gcc-10 nsis-i686)
+                 nss-certs
                  osslsigncode))
           ((string-contains target "-linux-")
            (list (make-bitcoin-cross-toolchain target)))

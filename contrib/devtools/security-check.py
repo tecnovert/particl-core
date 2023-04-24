@@ -158,6 +158,9 @@ def check_PE_Canary(binary) -> bool:
     '''
     Check for use of stack canary
     '''
+
+    if binary.has_symbol('___stack_chk_fail'):  # i686
+        return True
     return binary.has_symbol('__stack_chk_fail')
 
 def check_MACHO_NOUNDEFS(binary) -> bool:
