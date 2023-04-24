@@ -1,8 +1,9 @@
 
-Next Major Version
+25.0.1
 ==============
 
-- listunspent include_immature parameter is deprecated, repalced by include_immature_coinbase
+- listunspent include_immature parameter is deprecated, repalced by include_immature_coinbase.
+- New checkpoints.
 
 
 24.0.1
