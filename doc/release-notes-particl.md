@@ -1,3 +1,11 @@
+0.19.2.23
+==============
+
+- wallet: Fix walletpassphrasechange after encryptwallet without restarting.
+- New checkpoints.
+- Added new PID for Ledger Nano S Plus (5015).
+
+
 0.19.2.22
 ==============
 

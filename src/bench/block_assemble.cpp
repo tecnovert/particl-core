@@ -11,6 +11,7 @@
 
 
 #include <list>
+#include <array>
 #include <vector>
 
 static void AssembleBlock(benchmark::State& state)

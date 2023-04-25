@@ -32,6 +32,7 @@
 #include <smsg/smessage.h>
 
 #include <memory>
+#include <array>
 #include <typeinfo>
 
 #if defined(NDEBUG)
