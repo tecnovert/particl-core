@@ -217,9 +217,7 @@ static void ListRecord(const CHDWallet *phdw, const uint256 &hash, const CTransa
             entry.pushKV("walletconflicts", conflicts);
 
             PushTime(entry, "time", rtx.GetTxTime());
-            if (r.nFlags & ORF_FROM) {
-                entry.pushKV("abandoned", rtx.IsAbandoned());
-            }
+            entry.pushKV("abandoned", rtx.IsAbandoned());
         }
 
         if (!r.sNarration.empty()) {
@@ -690,6 +688,7 @@ static void ListTransactions(const CWallet& wallet, const CWalletTx& wtx, int nM
                 entry.pushKV("account", label); // For exchanges
             }
             entry.pushKV("vout", r.vout);
+            entry.pushKV("abandoned", wtx.isAbandoned());
             if (fLong) {
                 WalletTxToJSON(wallet, wtx, entry);
             }
@@ -776,6 +775,7 @@ static std::vector<RPCResult> TransactionDescriptionString()
            {RPCResult::Type::ARR, "parent_descs", /*optional=*/true, "Only if 'category' is 'received'. List of parent descriptors for the scriptPubKey of this coin.", {
                {RPCResult::Type::STR, "desc", "The descriptor string."},
            }},
+           {RPCResult::Type::BOOL, "abandoned", /*optional=*/true, "'true' if the transaction has been abandoned (inputs are respendable)."},
            };
 }
 
@@ -818,8 +818,7 @@ RPCHelpMan listtransactions()
                         },
                         TransactionDescriptionString()),
                         {
-                            {RPCResult::Type::BOOL, "abandoned", /*optional=*/true, "'true' if the transaction has been abandoned (inputs are respendable). Only available for the \n"
-                                 "'send' category of transactions."},
+                            {RPCResult::Type::BOOL, "abandoned", "'true' if the transaction has been abandoned (inputs are respendable)."},
                         })},
                     }
                 },
@@ -977,8 +976,7 @@ RPCHelpMan listsinceblock()
                             },
                             TransactionDescriptionString()),
                             {
-                                {RPCResult::Type::BOOL, "abandoned", /*optional=*/true, "'true' if the transaction has been abandoned (inputs are respendable). Only available for the \n"
-                                     "'send' category of transactions."},
+                                {RPCResult::Type::BOOL, "abandoned", "'true' if the transaction has been abandoned (inputs are respendable)."},
                                 {RPCResult::Type::STR, "label", /*optional=*/true, "A comment for the address/transaction, if any"},
                             })},
                         }},
@@ -1149,8 +1147,7 @@ RPCHelpMan gettransaction()
                                 {RPCResult::Type::NUM, "vout", "the vout value"},
                                 {RPCResult::Type::STR_AMOUNT, "fee", /*optional=*/true, "The amount of the fee in " + CURRENCY_UNIT + ". This is negative and only available for the \n"
                                     "'send' category of transactions."},
-                                {RPCResult::Type::BOOL, "abandoned", /*optional=*/true, "'true' if the transaction has been abandoned (inputs are respendable). Only available for the \n"
-                                     "'send' category of transactions."},
+                                {RPCResult::Type::BOOL, "abandoned", /*optional=*/true, "'true' if the transaction has been abandoned (inputs are respendable)."},
                                 {RPCResult::Type::ARR, "parent_descs", /*optional=*/true, "Only if 'category' is 'received'. List of parent descriptors for the scriptPubKey of this coin.", {
                                     {RPCResult::Type::STR, "desc", "The descriptor string."},
                                 }},
@@ -1215,6 +1212,7 @@ const std::shared_ptr<const CWallet> pwallet = GetWalletForJSONRPCRequest(reques
             if (mri != phdw->mapRecords.end()) {
                 const CTransactionRecord &rtx = mri->second;
                 RecordTxToJSON(pwallet->chain(), phdw, mri->first, rtx, entry, filter, verbose);
+                entry.pushKV("abandoned", rtx.IsAbandoned());
                 return entry;
             }
         }

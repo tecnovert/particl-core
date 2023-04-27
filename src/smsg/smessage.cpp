@@ -542,7 +542,7 @@ int CSMSG::BuildBucketSet()
 
         // TODO files must be split if > 2GB
         // time_noFile.dat
-        size_t sep = fileName.find_first_of("_");
+        size_t sep = fileName.find_first_of('_');
         if (sep == std::string::npos) {
             continue;
         }
@@ -2183,7 +2183,7 @@ bool CSMSG::ScanBuckets(bool scan_all)
 
         // TODO files must be split if > 2GB
         // time_noFile.dat
-        size_t sep = fileName.find_first_of("_");
+        size_t sep = fileName.find_first_of('_');
         if (sep == std::string::npos) {
             continue;
         }
@@ -2362,7 +2362,7 @@ int CSMSG::WalletUnlocked(wallet::CWallet *pwallet)
 
         // TODO files must be split if > 2GB
         // time_noFile_wl.dat
-        size_t sep = fileName.find_first_of("_");
+        size_t sep = fileName.find_first_of('_');
         if (sep == std::string::npos) {
             continue;
         }
