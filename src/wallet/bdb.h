@@ -194,10 +194,11 @@ private:
     Dbc* m_cursor;
 
 public:
-    explicit BerkeleyCursor(BerkeleyDatabase& database);
+    explicit BerkeleyCursor(BerkeleyDatabase& database, BerkeleyBatch* batch=nullptr);
     ~BerkeleyCursor() override;
 
     Status Next(DataStream& key, DataStream& value) override;
+    Dbc* dbc() const { return m_cursor; }
 };
 
 /** RAII class that provides access to a Berkeley database */
@@ -210,6 +211,7 @@ public:
     bool WriteKey(DataStream&& key, DataStream&& value, bool overwrite = true) override;
     bool EraseKey(DataStream&& key) override;
     bool HasKey(DataStream&& key) override;
+    bool ErasePrefix(Span<const std::byte> prefix) override;
 
 //protected:
     Db* pdb{nullptr};
@@ -235,6 +237,9 @@ public:
     bool TxnCommit() override;
     bool TxnAbort() override;
 
+    DbTxn* txn() const { return activeTxn; }
+
+    //Particl
     int ReadAtCursor2(Dbc* pcursor, DataStream& ssKey, DataStream& ssValue, bool setRange = false);
 };
 

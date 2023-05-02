@@ -248,11 +248,27 @@ public:
      */
     std::optional<AddressPurpose> purpose;
 
-    bool fBech32{false};
+    /**
+     * Whether coins with this address have previously been spent. Set when the
+     * the wallet avoid_reuse option is enabled and this is an IsMine address
+     * that has already received funds and spent them. This is used during coin
+     * selection to increase privacy by not creating different transactions
+     * that spend from the same addresses.
+     */
+    bool previously_spent{false};
 
-    std::vector<uint32_t> vPath; // Index to m is stored in first entry
+    /**
+     * Map containing data about previously generated receive requests
+     * requesting funds to be sent to this address. Only present for IsMine
+     * addresses. Map keys are decimal numbers uniquely identifying each
+     * request, and map values are serialized RecentRequestEntry objects
+     * containing BIP21 URI information including message and amount.
+     */
+    std::map<std::string, std::string> receive_requests{};
 
-    mutable uint8_t nOwned = 0; // 0 unknown, 1 yes, 2 no
+    bool fBech32{false}; // Particl: If address should be encoded in bech32
+    std::vector<uint32_t> vPath; // Particl: Index to m is stored in first entry
+    mutable uint8_t nOwned = 0; // Particl: 0 unknown, 1 yes, 2 no
 
     /**
      * Additional address metadata map that can currently hold two types of keys:
@@ -590,8 +606,10 @@ public:
 
     bool LoadMinVersion(int nVersion) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet) { AssertLockHeld(cs_wallet); nWalletVersion = nVersion; return true; }
 
-    //! Adds a destination data tuple to the store, without saving it to disk
-    void LoadDestData(const CTxDestination& dest, const std::string& key, const std::string& value) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    //! Marks destination as previously spent.
+    void LoadAddressPreviouslySpent(const CTxDestination& dest) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    //! Appends payment request to destination.
+    void LoadAddressReceiveRequest(const CTxDestination& dest, const std::string& id, const std::string& request) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     //! Holds a timestamp at which point the wallet is scheduled (externally) to be relocked. Caller must arrange for actual relocking to occur via Lock().
     int64_t nRelockTime GUARDED_BY(cs_wallet){0};
@@ -826,11 +844,12 @@ public:
 
     virtual bool DelAddressBook(const CTxDestination& address);
 
-    bool IsAddressUsed(const CTxDestination& dest) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
-    bool SetAddressUsed(WalletBatch& batch, const CTxDestination& dest, bool used) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    bool IsAddressPreviouslySpent(const CTxDestination& dest) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    bool SetAddressPreviouslySpent(WalletBatch& batch, const CTxDestination& dest, bool used) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     std::vector<std::string> GetAddressReceiveRequests() const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     bool SetAddressReceiveRequest(WalletBatch& batch, const CTxDestination& dest, const std::string& id, const std::string& value) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    bool EraseAddressReceiveRequest(WalletBatch& batch, const CTxDestination& dest, const std::string& id) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     unsigned int GetKeyPoolSize() const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 

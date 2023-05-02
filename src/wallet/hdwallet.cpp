@@ -12473,7 +12473,7 @@ bool CHDWallet::GetSpendingTxid(const uint256& hash, unsigned int n, uint256 &sp
 bool CHDWallet::IsSpentKey(const CScript& scriptPubKey) const
 {
     CTxDestination dst;
-    return ExtractDestination(scriptPubKey, dst) && IsMine(dst) && IsAddressUsed(dst);
+    return ExtractDestination(scriptPubKey, dst) && IsMine(dst) && IsAddressPreviouslySpent(dst);
 }
 
 void CHDWallet::SetSpentKeyState(const CScript *pscript, bool used)
@@ -12482,8 +12482,8 @@ void CHDWallet::SetSpentKeyState(const CScript *pscript, bool used)
     CTxDestination dst;
     if (pscript && ExtractDestination(*pscript, dst)) {
         if (IsMine(dst)) {
-            if (used != IsAddressUsed(dst)) {
-                SetAddressUsed(batch, dst, used);
+            if (used != IsAddressPreviouslySpent(dst)) {
+                SetAddressPreviouslySpent(batch, dst, used);
             }
         }
     }
@@ -12498,11 +12498,11 @@ void CHDWallet::SetSpentKeyState(WalletBatch& batch, const uint256& hash, unsign
         CTxDestination dst;
         if (pscript && ExtractDestination(*pscript, dst)) {
             if (IsMine(dst)) {
-                if (used != IsAddressUsed(dst)) {
+                if (used != IsAddressPreviouslySpent(dst)) {
                     if (used) {
                         tx_destinations.insert(dst);
                     }
-                    SetAddressUsed(batch, dst, used);
+                    SetAddressPreviouslySpent(batch, dst, used);
                 }
             }
         }
