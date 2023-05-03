@@ -359,6 +359,12 @@ public:
         return (CTxOutStandard*)this;
     }
 
+    const CTxOut GetCTxOut() const
+    {
+        assert(nVersion == OUTPUT_STANDARD);
+        return CTxOut(GetValue(), *GetPScriptPubKey());
+    }
+
     bool setTxout(CTxOut &txout) const
     {
         if (nVersion != OUTPUT_STANDARD) {

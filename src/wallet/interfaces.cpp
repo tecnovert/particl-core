@@ -671,6 +671,11 @@ public:
                 const CWalletTx& wtx = it->second;
                 int depth = m_wallet->GetTxDepthInMainChain(wtx);
                 if (depth >= 0) {
+                    if (m_wallet_part) {
+                        COutput utxo(COutPoint(wtx.GetHash(), output.n), wtx.tx->vpout.at(output.n)->GetCTxOut(), depth, -1, true, true, true, wtx.GetTxTime(), false);
+                        result.back() = MakeWalletTxOut(*m_wallet, utxo);
+                        continue;
+                    }
                     COutput utxo(COutPoint(wtx.GetHash(), output.n), wtx.tx->vout.at(output.n), depth, -1, true, true, true, wtx.GetTxTime(), false);
                     result.back() = MakeWalletTxOut(*m_wallet, utxo);
                 }
