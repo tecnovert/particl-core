@@ -1163,6 +1163,7 @@ RPCHelpMan gettransaction()
                         {
                             {RPCResult::Type::ELISION, "", "Equivalent to the RPC decoderawtransaction method, or the RPC getrawtransaction method when `verbose` is passed."},
                         }},
+                        RESULT_LAST_PROCESSED_BLOCK,
                         {RPCResult::Type::ARR, "smsgs_funded", /*optional=*/true, "", {
                             {RPCResult::Type::OBJ, "", "",
                             {
@@ -1213,6 +1214,7 @@ const std::shared_ptr<const CWallet> pwallet = GetWalletForJSONRPCRequest(reques
                 const CTransactionRecord &rtx = mri->second;
                 RecordTxToJSON(pwallet->chain(), phdw, mri->first, rtx, entry, filter, verbose);
                 entry.pushKV("abandoned", rtx.IsAbandoned());
+                AppendLastProcessedBlock(entry, *pwallet);
                 return entry;
             }
         }
@@ -1245,6 +1247,7 @@ const std::shared_ptr<const CWallet> pwallet = GetWalletForJSONRPCRequest(reques
     }
     AddSmsgFundingInfo(*wtx.tx, entry);
 
+    AppendLastProcessedBlock(entry, *pwallet);
     return entry;
 },
     };

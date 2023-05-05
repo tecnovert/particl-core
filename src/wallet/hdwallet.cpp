@@ -11571,7 +11571,7 @@ util::Result<SelectionResult> CHDWallet::SelectCoins(const std::vector<COutput>&
     // calculate value from preset inputs and store them
     std::set<COutPoint> preset_coins;
     std::vector<COutPoint> vPresetInputs;
-    coin_control.ListSelected(vPresetInputs);
+    vPresetInputs = coin_control.ListSelected();
 
     for (const auto &outpoint : vPresetInputs) {
         int input_bytes = -1;
@@ -11580,10 +11580,12 @@ util::Result<SelectionResult> CHDWallet::SelectCoins(const std::vector<COutput>&
             input_bytes = CalculateMaximumSignedInputSize(txout, this, &coin_control);
         } else {
             // The input is external. We either did not find the tx in mapWallet, or we did but couldn't compute the input size with wallet data
-            if (!coin_control.GetExternalOutput(outpoint, txout)) {
-                // Not ours, and we don't have solving data.
+            const auto out{coin_control.GetExternalOutput(outpoint)};
+            if (!out) {
                 return util::Error{strprintf(_("Not found pre-selected input %s"), outpoint.ToString())};
             }
+
+            txout = *out;
         }
         COutput output(outpoint, txout, /*depth=*/ 0, input_bytes, /*spendable=*/ true, /*solvable=*/ true, /*safe=*/ true, /*time=*/ 0, /*from_me=*/ false, coin_selection_params.m_effective_feerate);
         if (coin_selection_params.m_subtract_fee_outputs) {
@@ -11797,7 +11799,7 @@ bool CHDWallet::SelectBlindedCoins(const std::vector<COutputR> &vAvailableCoins,
 
     std::vector<COutPoint> vPresetInputs;
     if (coinControl) {
-        coinControl->ListSelected(vPresetInputs);
+        vPresetInputs = coinControl->ListSelected();
     }
 
     for (const auto &outpoint : vPresetInputs) {

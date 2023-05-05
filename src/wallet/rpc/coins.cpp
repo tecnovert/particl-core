@@ -488,6 +488,7 @@ RPCHelpMan getbalances()
                     {RPCResult::Type::STR_AMOUNT, "anon_immature", /*optional=*/true, "immature anon balance (outputs created by the wallet or confirmed outputs below spendable depth)"},
                     {RPCResult::Type::STR_AMOUNT, "anon_untrusted_pending", /*optional=*/true, "untrusted pending anon balance (outputs created by others that are in the mempool)"},
                 }},
+                RESULT_LAST_PROCESSED_BLOCK,
             }
             },
         RPCExamples{
@@ -554,6 +555,7 @@ RPCHelpMan getbalances()
 
             balances.pushKV("watchonly", balances_watchonly);
         }
+        AppendLastProcessedBlock(balances, wallet);
         return balances;
     }
 
@@ -580,6 +582,8 @@ RPCHelpMan getbalances()
         balances_watchonly.pushKV("immature", ValueFromAmount(bal.m_watchonly_immature));
         balances.pushKV("watchonly", balances_watchonly);
     }
+
+    AppendLastProcessedBlock(balances, wallet);
     return balances;
 },
     };

@@ -3099,7 +3099,7 @@ bool Chainstate::ConnectBlock(const CBlock& block, BlockValidationState& state, 
     m_blockman.m_dirty_blockindex.insert(pindex); // pindex has changed, must save to disk
 
     if ((!fIsGenesisBlock || fParticlMode) &&
-        !m_blockman.WriteUndoDataForBlock(blockundo, state, pindex, params)) {
+        !m_blockman.WriteUndoDataForBlock(blockundo, state, *pindex)) {
         return false;
     }
 
@@ -5154,7 +5154,7 @@ bool Chainstate::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, BlockV
     // Write block to history file
     if (fNewBlock) *fNewBlock = true;
     try {
-        FlatFilePos blockPos{m_blockman.SaveBlockToDisk(block, pindex->nHeight, m_chain, params, dbp)};
+        FlatFilePos blockPos{m_blockman.SaveBlockToDisk(block, pindex->nHeight, m_chain, dbp)};
         if (blockPos.IsNull()) {
             state.Error(strprintf("%s: Failed to find position to write new block to disk", __func__));
             return false;
@@ -5628,7 +5628,7 @@ bool ChainstateManager::LoadBlockIndex()
     bool needs_init = fReindex;
 
     if (!fReindex) {
-        bool ret = m_blockman.LoadBlockIndexDB(GetConsensus());
+        bool ret{m_blockman.LoadBlockIndexDB()};
         if (!ret) return false;
 
         m_blockman.ScanAndUnlinkAlreadyPrunedFiles();
@@ -5748,7 +5748,7 @@ bool Chainstate::LoadGenesisBlock()
 
     try {
         const CBlock& block = params.GenesisBlock();
-        FlatFilePos blockPos{m_blockman.SaveBlockToDisk(block, 0, m_chain, params, nullptr)};
+        FlatFilePos blockPos{m_blockman.SaveBlockToDisk(block, 0, m_chain, nullptr)};
         if (blockPos.IsNull()) {
             return error("%s: writing genesis block to disk failed", __func__);
         }
@@ -5825,6 +5825,9 @@ void Chainstate::LoadExternalBlockFile(
                 // next block, but it's still possible to rewind to the start of the current block (without a disk read).
                 nRewind = nBlockPos + nSize;
                 blkdat.SkipTo(nRewind);
+
+                std::shared_ptr<CBlock> pblock{}; // needs to remain available after the cs_main lock is released to avoid duplicate reads from disk
+
                 {
                     LOCK(cs_main);
                     // detect out of order blocks, and store them for later
@@ -5843,7 +5846,7 @@ void Chainstate::LoadExternalBlockFile(
 
                         // This block can be processed immediately; rewind to its start, read and deserialize it.
                         blkdat.SetPos(nBlockPos);
-                        std::shared_ptr<CBlock> pblock{std::make_shared<CBlock>()};
+                        pblock = std::make_shared<CBlock>();
                         blkdat >> *pblock;
                         nRewind = blkdat.GetPos();
 
@@ -5865,6 +5868,21 @@ void Chainstate::LoadExternalBlockFile(
                     BlockValidationState state;
                     state.m_chainman = chainman;
                     if (!ActivateBestChain(state, nullptr)) {
+                        break;
+                    }
+                }
+
+                if (m_blockman.IsPruneMode() && !fReindex && pblock) {
+                    // must update the tip for pruning to work while importing with -loadblock.
+                    // this is a tradeoff to conserve disk space at the expense of time
+                    // spent updating the tip to be able to prune.
+                    // otherwise, ActivateBestChain won't be called by the import process
+                    // until after all of the block files are loaded. ActivateBestChain can be
+                    // called by concurrent network message processing. but, that is not
+                    // reliable for the purpose of pruning while importing.
+                    BlockValidationState state;
+                    if (!ActivateBestChain(state, pblock)) {
+                        LogPrint(BCLog::REINDEX, "failed to activate chain (%s)\n", state.ToString());
                         break;
                     }
                 }

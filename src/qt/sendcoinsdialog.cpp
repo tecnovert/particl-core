@@ -392,7 +392,7 @@ bool SendCoinsDialog::PrepareSendText(QString& question_string, QString& informa
     if (m_coin_control->NumSelected() > 0)  {
         sCoinControl += ",\"inputs\":[";
         bool fNeedCommaInputs = false;
-        for (const auto &op : m_coin_control->setSelected) {
+        for (const auto &op : m_coin_control->m_selected_inputs) {
             sCoinControl += fNeedCommaInputs ? ",{" : "{";
             sCoinControl += "\"tx\":\"" + QString::fromStdString(op.hash.ToString()) + "\"";
             sCoinControl += ",\"n\":" + QString::number(op.n);

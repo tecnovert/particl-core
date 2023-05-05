@@ -384,10 +384,13 @@ struct SnapshotTestSetup : TestChain100Setup {
                 .datadir = m_args.GetDataDirNet(),
                 .adjusted_time_callback = GetAdjustedTime,
             };
+            node::BlockManager::Options blockman_opts{
+                .chainparams = chainman_opts.chainparams,
+            };
             // For robustness, ensure the old manager is destroyed before creating a
             // new one.
             m_node.chainman.reset();
-            m_node.chainman = std::make_unique<ChainstateManager>(chainman_opts, node::BlockManager::Options{});
+            m_node.chainman = std::make_unique<ChainstateManager>(chainman_opts, blockman_opts);
 
             m_node.smsgman = SmsgManager::make();
             m_node.chainman->m_smsgman = m_node.smsgman.get();
