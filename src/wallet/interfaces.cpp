@@ -50,7 +50,7 @@ extern void RecordTxToJSON(interfaces::Chain& chain, const CHDWallet *phdw, cons
 
 void LockWallet(CWallet* pWallet)
 {
-    LOCK(pWallet->cs_wallet);
+    LOCK2(pWallet->m_relock_mutex, pWallet->cs_wallet);
     pWallet->nRelockTime = 0;
     pWallet->Lock();
 }
