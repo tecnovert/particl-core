@@ -8885,14 +8885,21 @@ bool CHDWallet::CommitTransaction(CWalletTx &wtxNew, CTransactionRecord &rtx, CV
     wtxNew.fFromMe = true;
 
     CWalletTx *wtx_broadcast = nullptr;
+    CTransactionRef tx = wtxNew.tx;
     if (is_record) {
         uint256 null_hash;
         assert(null_hash.IsNull());
         rtx.nFlags |= ORF_FROM;
-        AddToRecord(rtx, *wtxNew.tx, null_hash, -1);
+
+        // Must scan for stealth addresses here, as the wallet can be locked before the txn gets to AddToWalletIfInvolvingMe
+        // As the utxos already exist on rtx, unlock tokens would not be written
+        mapValue_t mapNarr;
+        size_t nCT = 0, nRingCT = 0;
+        ScanForOwnedOutputs(*tx, nCT, nRingCT, mapNarr);
+
+        AddToRecord(rtx, *tx, null_hash, -1);
         wtx_broadcast = &wtxNew;
     } else {
-        CTransactionRef tx = wtxNew.tx;
         mapValue_t mapNarr;
         FindStealthTransactions(*tx, mapNarr);
 
@@ -9427,8 +9434,9 @@ bool CHDWallet::ProcessLockedBlindedOutputs()
                 ProcessPlaceholder(*stx.tx.get(), rtx);
             }
 
-            if (!wdb.WriteTxRecord(op.hash, rtx)
-                || !wdb.WriteStoredTx(op.hash, stx)) {
+            if (!wdb.WriteTxRecord(op.hash, rtx) ||
+                !wdb.WriteStoredTx(op.hash, stx)) {
+                WalletLogPrintf("%s: Error: WriteTxRecord failed for %s.\n", __func__, op.ToString());
                 return false;
             }
 
@@ -10862,7 +10870,7 @@ bool CHDWallet::AddToRecord(CTransactionRecord &rtxIn, const CTransaction &tx,
             fHave = true;
         } else {
             pout = &rout;
-            pout->nFlags |= ORF_LOCKED; // mark new output as locked
+            pout->nFlags |= ORF_LOCKED; // Mark new output as locked
         }
 
         pout->n = i;
@@ -10950,6 +10958,7 @@ bool CHDWallet::AddToRecord(CTransactionRecord &rtxIn, const CTransaction &tx,
         stx.tx = MakeTransactionRef(tx);
         if (!wdb.WriteTxRecord(txhash, rtx) ||
             !wdb.WriteStoredTx(txhash, stx)) {
+            WalletLogPrintf("ERROR - WriteTxRecord or WriteStoredTx failed!\n");
             return false;
         }
     }
