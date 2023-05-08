@@ -36,7 +36,13 @@
   - Convert mnemonics to and from entropy and word form.
 
 
-23.0.4
+23.1.5
+==============
+
+- wallet: Fix missing blinding factor bug.
+
+
+23.1.4
 ==============
 
 - rpc: Fix listunspentblind filter by address
