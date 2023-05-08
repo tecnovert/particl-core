@@ -1,4 +1,10 @@
 
+23.1.5
+==============
+
+- wallet: Fix missing blinding factor bug.
+
+
 23.1.4
 ==============
 
