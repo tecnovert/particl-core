@@ -8902,12 +8902,19 @@ bool CHDWallet::CommitTransaction(CWalletTx &wtxNew, CTransactionRecord &rtx, Tx
     WalletLogPrintf("CommitTransaction:\n%s", wtxNew.tx->ToString()); /* Continued */
 
     CWalletTx *wtx_broadcast = nullptr;
+    CTransactionRef tx = wtxNew.tx;
     if (is_record) {
         rtx.nFlags |= ORF_FROM;
-        AddToRecord(rtx, *wtxNew.tx, TxStateInactive{});
+
+        // Must scan for stealth addresses here, as the wallet can be locked before the txn gets to AddToWalletIfInvolvingMe
+        // As the utxos already exist on rtx, unlock tokens would not be written
+        mapValue_t mapNarr;
+        size_t nCT = 0, nRingCT = 0;
+        ScanForOwnedOutputs(*tx, nCT, nRingCT, mapNarr);
+
+        AddToRecord(rtx, *tx, TxStateInactive{});
         wtx_broadcast = &wtxNew;
     } else {
-        CTransactionRef tx = wtxNew.tx;
         mapValue_t mapNarr;
         FindStealthTransactions(*tx, mapNarr);
 
@@ -9491,6 +9498,7 @@ bool CHDWallet::ProcessLockedBlindedOutputs()
 
             if (!wdb.WriteTxRecord(op.hash, rtx) ||
                 !wdb.WriteStoredTx(op.hash, stx)) {
+                WalletLogPrintf("%s: Error: WriteTxRecord failed for %s.\n", __func__, op.ToString());
                 return false;
             }
 
@@ -9508,6 +9516,7 @@ bool CHDWallet::ProcessLockedBlindedOutputs()
 
     // Trigger a rescan from the deepest anon out, spend info may need to be updated
     // Only possible if outputs were spent from a different wallet.
+    // TODO: Remove, obsolete after sorted_outpoints
     if (!m_is_only_instance &&
         earliest_anon_out_time != std::numeric_limits<int64_t>::max()) {
         WalletRescanReserver reserver(*this);
@@ -11027,7 +11036,7 @@ bool CHDWallet::AddToRecord(CTransactionRecord &rtxIn, const CTransaction &tx, c
             fHave = true;
         } else {
             pout = &rout;
-            pout->nFlags |= ORF_LOCKED; // mark new output as locked
+            pout->nFlags |= ORF_LOCKED; // Mark new output as locked
         }
 
         pout->n = i;
@@ -11114,6 +11123,7 @@ bool CHDWallet::AddToRecord(CTransactionRecord &rtxIn, const CTransaction &tx, c
         stx.tx = MakeTransactionRef(tx);
         if (!wdb.WriteTxRecord(txhash, rtx) ||
             !wdb.WriteStoredTx(txhash, stx)) {
+            WalletLogPrintf("ERROR - WriteTxRecord or WriteStoredTx failed!\n");
             return false;
         }
     }
