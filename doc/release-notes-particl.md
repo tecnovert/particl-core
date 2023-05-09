@@ -3,6 +3,7 @@
 ==============
 
 - wallet: Fix missing blinding factor bug.
+- hardware devices: Temporarily disable Ledger Nano S Plus support.
 
 
 23.1.4
