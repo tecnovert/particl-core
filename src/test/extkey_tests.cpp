@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2022 The Particl Core developers
+// Copyright (c) 2017-2023 The Particl Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -218,7 +218,7 @@ void RunDeriveTests()
 
 
     // Switch to testnet
-    SelectParams(CBaseChainParams::TESTNET);
+    SelectParams(ChainType::TESTNET);
 
     // Pass testnet key on testnet
     BOOST_CHECK(0 == extKey58.Set58(vTestNetPairs[0].vKey58.c_str()));
@@ -228,7 +228,7 @@ void RunDeriveTests()
 
 
     // Return to mainnet
-    SelectParams(CBaseChainParams::MAIN);
+    SelectParams(ChainType::MAIN);
 
     return;
 };
@@ -454,7 +454,7 @@ void RunSerialiseTests()
 
 
     // Switch to testnet
-    SelectParams(CBaseChainParams::TESTNET);
+    SelectParams(ChainType::TESTNET);
 
     id = sk.GetID();
     BOOST_CHECK(true == addr.Set(id, CChainParams::EXT_KEY_HASH)
@@ -482,7 +482,7 @@ void RunSerialiseTests()
     BOOST_CHECK(kpT == kp);
 
     // Return to mainnet
-    SelectParams(CBaseChainParams::MAIN);
+    SelectParams(ChainType::MAIN);
 };
 
 BOOST_AUTO_TEST_CASE(extkey_path)
@@ -505,7 +505,7 @@ BOOST_AUTO_TEST_CASE(extkey_regtest_keys)
     CExtKey58 ek58;
 
     // Switch to testnet
-    SelectParams(CBaseChainParams::REGTEST);
+    SelectParams(ChainType::REGTEST);
 
     BOOST_CHECK(0 == ek58.Set58("pparszMzzW1247AwkKCH1MqneucXJfDoR3M5KoLsJZJpHkcjayf1xUMwPoTcTfUoQ32ahnkHhjvD2vNiHN5dHL6zmx8vR799JxgCw95APdkwuGm1",
         CChainParams::EXT_PUBLIC_KEY, &Params()));
@@ -522,7 +522,7 @@ BOOST_AUTO_TEST_CASE(extkey_regtest_keys)
     }
 
     // Return to mainnet
-    SelectParams(CBaseChainParams::MAIN);
+    SelectParams(ChainType::MAIN);
 }
 
 BOOST_AUTO_TEST_CASE(extkey_account)

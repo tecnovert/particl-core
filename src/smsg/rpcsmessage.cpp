@@ -2496,7 +2496,7 @@ static RPCHelpMan smsggetfeerate()
 
             int64_t smsg_fee_rate_target;
             CBlock block;
-            if (!node::ReadBlockFromDisk(block, pTip, Params().GetConsensus())) {
+            if (!chainman.m_blockman.ReadBlockFromDisk(block, *pTip)) {
                 throw JSONRPCError(RPC_MISC_ERROR, "Block not found on disk");
             }
             block.vtx[0]->GetSmsgFeeRate(smsg_fee_rate_target);

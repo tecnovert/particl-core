@@ -885,7 +885,7 @@ bool CSMSG::Start(std::shared_ptr<wallet::CWallet> pwalletIn, std::vector<std::s
     if (fSecMsgEnabled) {
         return error("%s: Secure messaging is already started.", __func__);
     }
-    if (Params().NetworkIDString() == "regtest" &&
+    if (Params().GetChainType() == ChainType::REGTEST &&
         gArgs.GetBoolArg("-smsgsregtestadjust", true)) {
         SMSG_SECONDS_IN_HOUR    = 60 * 2; // seconds
         SMSG_BUCKET_LEN         = 60 * 2; // seconds
@@ -2086,8 +2086,8 @@ bool CSMSG::ScanChainForPublicKeys(CBlockIndex *pindexStart)
         LOCK(cs_smsgDB);
 
         SecMsgDB addrpkdb;
-        if (!addrpkdb.Open("cw")
-            || !addrpkdb.TxnBegin()) {
+        if (!addrpkdb.Open("cw") ||
+            !addrpkdb.TxnBegin()) {
             return false;
         }
 
@@ -2095,7 +2095,7 @@ bool CSMSG::ScanChainForPublicKeys(CBlockIndex *pindexStart)
         while (pindex) {
             nBlocks++;
             CBlock block;
-            if (!node::ReadBlockFromDisk(block, pindex, Params().GetConsensus())) {
+            if (!m_node->chainman->m_blockman.ReadBlockFromDisk(block, *pindex)) {
                 LogPrintf("%s: ReadBlockFromDisk failed.\n", __func__);
             } else {
                 smsg::ScanBlock(*this, block, addrpkdb,

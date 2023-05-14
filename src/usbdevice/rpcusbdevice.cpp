@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2021 The Particl Core developers
+// Copyright (c) 2018-2023 The Particl Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -597,7 +597,7 @@ static RPCHelpMan devicesignrawtransaction()
 
             uint256 txid = ParseHashO(prevOut, "txid");
 
-            int nOut = find_value(prevOut, "vout").getInt<int>();
+            int nOut = prevOut.find_value("vout").getInt<int>();
             if (nOut < 0) {
                 throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "vout must be positive");
             }
@@ -623,7 +623,7 @@ static RPCHelpMan devicesignrawtransaction()
             newcoin.out.scriptPubKey = scriptPubKey;
             newcoin.out.nValue = 0;
             if (prevOut.exists("amount")) {
-                newcoin.out.nValue = AmountFromValue(find_value(prevOut, "amount"));
+                newcoin.out.nValue = AmountFromValue(prevOut.find_value("amount"));
             }
             newcoin.nHeight = 1;
             view.AddCoin(out, std::move(newcoin), true);
@@ -639,7 +639,7 @@ static RPCHelpMan devicesignrawtransaction()
                         {"scriptPubKey", UniValueType(UniValue::VSTR)},
                         {"redeemScript", UniValueType(UniValue::VSTR)},
                     });
-                UniValue v = find_value(prevOut, "redeemScript");
+                UniValue v = prevOut.find_value("redeemScript");
                 if (!v.isNull()) {
                     std::vector<unsigned char> rsData(ParseHexV(v, "redeemScript"));
                     CScript redeemScript(rsData.begin(), rsData.end());
@@ -1301,7 +1301,7 @@ static RPCHelpMan devicesignrawtransactionwithwallet()
 
             uint256 txid = ParseHashO(prevOut, "txid");
 
-            int nOut = find_value(prevOut, "vout").getInt<int>();
+            int nOut = prevOut.find_value("vout").getInt<int>();
             if (nOut < 0) {
                 throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "vout must be positive");
             }
@@ -1327,7 +1327,7 @@ static RPCHelpMan devicesignrawtransactionwithwallet()
             newcoin.out.scriptPubKey = scriptPubKey;
             newcoin.out.nValue = 0;
             if (prevOut.exists("amount")) {
-                newcoin.out.nValue = AmountFromValue(find_value(prevOut, "amount"));
+                newcoin.out.nValue = AmountFromValue(prevOut.find_value("amount"));
             }
             newcoin.nHeight = 1;
             view.AddCoin(out, std::move(newcoin), true);
@@ -1343,7 +1343,7 @@ static RPCHelpMan devicesignrawtransactionwithwallet()
                         {"scriptPubKey", UniValueType(UniValue::VSTR)},
                         {"redeemScript", UniValueType(UniValue::VSTR)},
                     });
-                UniValue v = find_value(prevOut, "redeemScript");
+                UniValue v = prevOut.find_value("redeemScript");
                 if (!v.isNull()) {
                     std::vector<unsigned char> rsData(ParseHexV(v, "redeemScript"));
                     CScript redeemScript(rsData.begin(), rsData.end());

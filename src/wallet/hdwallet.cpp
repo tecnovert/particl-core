@@ -57,14 +57,17 @@ static constexpr size_t OUTPUT_GROUP_MAX_ENTRIES{100};
 
 static uint8_t GetOutputType(ChainstateManager *pchainman, const COutPoint &prevout)
 {
+    if (!pchainman) {
+        return 0;
+    }
     LOCK(cs_main);
     Coin coin;
-    if (pchainman && pchainman->ActiveChainstate().CoinsTip().GetCoin(prevout, coin)) {
+    if (pchainman->ActiveChainstate().CoinsTip().GetCoin(prevout, coin)) {
         return coin.nType;
     }
 
     uint256 hash_block;
-    const CTransactionRef tx = node::GetTransaction(nullptr, nullptr, prevout.hash, Params().GetConsensus(), hash_block);
+    const CTransactionRef tx = node::GetTransaction(nullptr, nullptr, prevout.hash, hash_block, pchainman->m_blockman);
     if (tx) {
         if (tx->vpout.size() > prevout.n) {
             return tx->vpout[prevout.n]->GetType();
@@ -2369,7 +2372,12 @@ CAmount CHDWallet::GetOutputValue(const COutPoint &op, bool fAllowTXIndex) const
     }
 
     uint256 hash_block;
-    const CTransactionRef txOut = node::GetTransaction(nullptr, nullptr, op.hash, Params().GetConsensus(), hash_block);
+
+    ChainstateManager *pchainman = chain().getChainman();
+    if (pchainman) {
+        assert(false); // Chainstate manager not found
+    }
+    const CTransactionRef txOut = node::GetTransaction(nullptr, nullptr, op.hash, hash_block, pchainman->m_blockman);
     if (txOut) {
         if (txOut->GetNumVOuts() > op.n) {
             return txOut->vpout[op.n]->GetValue();

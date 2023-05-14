@@ -393,7 +393,6 @@ bool RewindToHeight(ChainstateManager &chainman, CTxMemPool &mempool, int nToHei
     nBlocks = 0;
     int64_t nLastRCTOutput = 0;
 
-    const CChainParams &chainparams = Params();
     CCoinsViewCache &view = chainman.ActiveChainstate().CoinsTip();
     view.fForceDisconnect = true;
     BlockValidationState state;
@@ -409,7 +408,7 @@ bool RewindToHeight(ChainstateManager &chainman, CTxMemPool &mempool, int nToHei
 
         std::shared_ptr<CBlock> pblock = std::make_shared<CBlock>();
         CBlock& block = *pblock;
-        if (!node::ReadBlockFromDisk(block, pindex, chainparams.GetConsensus())) {
+        if (!chainman.m_blockman.ReadBlockFromDisk(block, *pindex)) {
             return errorN(false, sError, __func__, "ReadBlockFromDisk failed.");
         }
         if (DISCONNECT_OK != chainman.ActiveChainstate().DisconnectBlock(block, pindex, view)) {

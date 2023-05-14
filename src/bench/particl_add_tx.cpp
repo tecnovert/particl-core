@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2021 The Particl Core developers
+// Copyright (c) 2017-2023 The Particl Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -134,7 +134,7 @@ static std::shared_ptr<CHDWallet> CreateTestWallet(wallet::WalletContext& wallet
 
 static void AddTx(benchmark::Bench& bench, const std::string from, const std::string to, const bool owned)
 {
-    TestingSetup test_setup{CBaseChainParams::REGTEST, {}, true, true, true /* fParticlMode */};
+    TestingSetup test_setup{ChainType::REGTEST, {}, true, true, /*fParticlMode*/true};
     const auto context = util::AnyPtr<node::NodeContext>(&test_setup.m_node);
 
     std::unique_ptr<interfaces::Chain> chain = interfaces::MakeChain(test_setup.m_node);

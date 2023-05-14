@@ -15,7 +15,7 @@
 #include <boost/test/unit_test.hpp>
 
 struct SmsgTestingSetup : public TestingSetup {
-    SmsgTestingSetup() : TestingSetup(CBaseChainParams::MAIN, {}, true, true, true /* fParticlMode */) {
+    SmsgTestingSetup() : TestingSetup(ChainType::MAIN, {}, true, true, true /* fParticlMode */) {
         smsgModule.m_node = &m_node;
     }
 };

@@ -6,6 +6,7 @@
 #define BITCOIN_ZMQ_ZMQABSTRACTNOTIFIER_H
 
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <string>
 
@@ -17,7 +18,7 @@ class SecureMessage;
 class uint160;
 class CZMQAbstractNotifier;
 
-using CZMQNotifierFactory = std::unique_ptr<CZMQAbstractNotifier> (*)();
+using CZMQNotifierFactory = std::function<std::unique_ptr<CZMQAbstractNotifier>()>;
 
 class CZMQAbstractNotifier
 {

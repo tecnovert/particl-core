@@ -90,14 +90,6 @@ NodeClock::time_point NodeClock::now() noexcept
     return time_point{ret};
 };
 
-template <typename T>
-static T GetSystemTime()
-{
-    const auto now = std::chrono::duration_cast<T>(std::chrono::system_clock::now().time_since_epoch());
-    assert(now.count() > 0);
-    return now;
-}
-
 void SetMockTime(int64_t nMockTimeIn)
 {
     Assert(nMockTimeIn >= 0);
@@ -119,11 +111,6 @@ void SetMockTime(std::chrono::seconds mock_time_in)
 std::chrono::seconds GetMockTime()
 {
     return std::chrono::seconds(nMockTime.load(std::memory_order_relaxed));
-}
-
-int64_t GetTimeMillis()
-{
-    return int64_t{GetSystemTime<std::chrono::milliseconds>().count()};
 }
 
 int64_t GetTime() { return GetTime<std::chrono::seconds>().count(); }
@@ -166,6 +153,13 @@ struct timeval MillisToTimeval(std::chrono::milliseconds ms)
 {
     return MillisToTimeval(count_milliseconds(ms));
 }
+
+/** Returns the system time (not mockable) */
+int64_t GetTimeMillis()
+{
+    auto duration = SteadyClock::now().time_since_epoch();
+    return std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+};
 
 namespace part
 {

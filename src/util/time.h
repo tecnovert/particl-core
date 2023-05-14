@@ -71,9 +71,6 @@ using MillisecondsDouble = std::chrono::duration<double, std::chrono::millisecon
  */
 int64_t GetTime();
 
-/** Returns the system time (not mockable) */
-int64_t GetTimeMillis();
-
 void SetMockTimeOffset(int64_t nMockTimeIn);
 
 /**
@@ -125,6 +122,9 @@ struct timeval MillisToTimeval(std::chrono::milliseconds ms);
 
 /** Sanity check epoch match normal Unix epoch */
 bool ChronoSanityCheck();
+
+/** Returns the system time (not mockable) */
+int64_t GetTimeMillis();
 
 namespace part
 {

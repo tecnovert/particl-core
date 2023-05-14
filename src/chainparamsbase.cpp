@@ -7,13 +7,9 @@
 
 #include <common/args.h>
 #include <tinyformat.h>
+#include <util/chaintype.h>
 
 #include <assert.h>
-
-const std::string CBaseChainParams::MAIN = "main";
-const std::string CBaseChainParams::TESTNET = "test";
-const std::string CBaseChainParams::SIGNET = "signet";
-const std::string CBaseChainParams::REGTEST = "regtest";
 
 void SetupChainParamsBaseOptions(ArgsManager& argsman)
 {
@@ -40,23 +36,23 @@ const CBaseChainParams& BaseParams()
  * Port numbers for incoming Tor connections (8334, 18334, 38334, 18445) have
  * been chosen arbitrarily to keep ranges of used ports tight.
  */
-std::unique_ptr<CBaseChainParams> CreateBaseChainParams(const std::string& chain)
+std::unique_ptr<CBaseChainParams> CreateBaseChainParams(const ChainType chain)
 {
-    if (chain == CBaseChainParams::MAIN) {
-        return std::make_unique<CBaseChainParams>("", 51735, 51734);
-    } else if (chain == CBaseChainParams::TESTNET) {
+    switch (chain) {
+    case ChainType::MAIN:
+        return std::make_unique<CBaseChainParams>("",  51735, 51734);
+    case ChainType::TESTNET:
         return std::make_unique<CBaseChainParams>("testnet", 51935, 51934);
-    } else if (chain == CBaseChainParams::SIGNET) {
+    case ChainType::SIGNET:
         return std::make_unique<CBaseChainParams>("signet", 31932, 31934);
-    } else if (chain == CBaseChainParams::REGTEST) {
+    case ChainType::REGTEST:
         return std::make_unique<CBaseChainParams>("regtest", 51936, 51931);
-    } else {
-        throw std::runtime_error(strprintf("%s: Unknown chain %s.", __func__, chain));
     }
+    assert(false);
 }
 
-void SelectBaseParams(const std::string& chain)
+void SelectBaseParams(const ChainType chain)
 {
     globalChainBaseParams = CreateBaseChainParams(chain);
-    gArgs.SelectConfigNetwork(chain);
+    gArgs.SelectConfigNetwork(ChainTypeToString(chain));
 }

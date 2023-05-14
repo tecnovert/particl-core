@@ -36,16 +36,14 @@
 #include <utility>
 #include <vector>
 
-namespace Consensus {
-struct Params;
-}
-
-
 // Particl
 #include <util/strencodings.h>
 #include <smsg/smessage.h>
 
-using node::ReadBlockFromDisk;
+
+namespace Consensus {
+struct Params;
+}
 
 static std::multimap<std::string, CZMQAbstractPublishNotifier*> mapPublishNotifiers;
 
@@ -277,10 +275,9 @@ bool CZMQPublishRawBlockNotifier::NotifyBlock(const CBlockIndex *pindex)
 {
     LogPrint(BCLog::ZMQ, "Publish rawblock %s to %s\n", pindex->GetBlockHash().GetHex(), this->address);
 
-    const Consensus::Params& consensusParams = Params().GetConsensus();
     CDataStream ss(SER_NETWORK, PROTOCOL_VERSION | RPCSerializationFlags());
     CBlock block;
-    if (!ReadBlockFromDisk(block, pindex, consensusParams)) {
+    if (!m_get_block_by_index(block, *pindex)) {
         zmqError("Can't read block from disk");
         return false;
     }

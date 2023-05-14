@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE(stake_test)
     }
     UniValue rv;
 
-    std::unique_ptr<CChainParams> regtestChainParams = CreateChainParams(gArgs, CBaseChainParams::REGTEST);
+    std::unique_ptr<CChainParams> regtestChainParams = CreateChainParams(gArgs, ChainType::REGTEST);
     const CChainParams &chainparams = *regtestChainParams;
 
     BOOST_REQUIRE(chainparams.GenesisBlock().GetHash() == chain_active.Tip()->GetBlockHash());
@@ -158,7 +158,7 @@ BOOST_AUTO_TEST_CASE(stake_test)
     BOOST_REQUIRE(pindexDelete);
 
     CBlock block;
-    BOOST_REQUIRE(node::ReadBlockFromDisk(block, pindexDelete, chainparams.GetConsensus()));
+    BOOST_REQUIRE(m_node.chainman->m_blockman.ReadBlockFromDisk(block, *pindexDelete));
 
     const CTxIn &txin = block.vtx[0]->vin[0];
 
@@ -256,7 +256,7 @@ BOOST_AUTO_TEST_CASE(stake_test)
     StakeNBlocks(pwallet, 1);
 
     CBlock blockLast;
-    BOOST_REQUIRE(node::ReadBlockFromDisk(blockLast, chain_active.Tip(), chainparams.GetConsensus()));
+    BOOST_REQUIRE(m_node.chainman->m_blockman.ReadBlockFromDisk(blockLast, *chain_active.Tip()));
 
     BOOST_REQUIRE(blockLast.vtx.size() == 2);
     BOOST_REQUIRE(blockLast.vtx[1]->GetHash() == tx_new->GetHash());
@@ -314,7 +314,7 @@ BOOST_AUTO_TEST_CASE(stake_test)
         uint256 prevTipHash = pindexPrev->GetBlockHash();
 
         CBlock block;
-        BOOST_REQUIRE(node::ReadBlockFromDisk(block, pindexDelete, chainparams.GetConsensus()));
+        BOOST_REQUIRE(m_node.chainman->m_blockman.ReadBlockFromDisk(block, *pindexDelete));
 
         {
         LOCK(cs_main);
@@ -399,7 +399,7 @@ BOOST_AUTO_TEST_CASE(stake_test)
             BOOST_REQUIRE(pindexDelete);
 
             CBlock block;
-            BOOST_REQUIRE(node::ReadBlockFromDisk(block, pindexDelete, chainparams.GetConsensus()));
+            BOOST_REQUIRE(m_node.chainman->m_blockman.ReadBlockFromDisk(block, *pindexDelete));
 
             CCoinsViewCache &view = chainstate_active.CoinsTip();
             LOCK(m_node.mempool->cs);

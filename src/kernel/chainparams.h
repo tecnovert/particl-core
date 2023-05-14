@@ -11,6 +11,7 @@
 #include <primitives/block.h>
 #include <protocol.h>
 #include <uint256.h>
+#include <util/chaintype.h>
 #include <util/hash_type.h>
 
 #include <cstdint>
@@ -148,8 +149,10 @@ public:
     uint64_t AssumedChainStateSize() const { return m_assumed_chain_state_size; }
     /** Whether it is possible to mine blocks on demand (no retargeting) */
     bool MineBlocksOnDemand() const { return consensus.fPowNoRetargeting; }
-    /** Return the network string */
-    std::string NetworkIDString() const { return strNetworkID; }
+    /** Return the chain type string */
+    std::string GetChainTypeString() const { return ChainTypeToString(m_chain_type); }
+    /** Return the chain type */
+    ChainType GetChainType() const { return m_chain_type; }
     /** Return the list of hostnames to look up for DNS seeds */
     const std::vector<std::string>& DNSSeeds() const { return vSeeds; }
     const std::vector<unsigned char>& Base58Prefix(Base58Type type) const { return base58Prefixes[type]; }
@@ -195,10 +198,9 @@ public:
     static std::unique_ptr<CChainParams> TestNet();
 
     // Particl
-    const std::string &NetworkID() const { return strNetworkID; }
     int BIP44ID() const { return nBIP44ID; }
     void SetOld();
-    Consensus::Params& GetConsensus_nc() { assert(strNetworkID == "regtest"); return consensus; }
+    Consensus::Params& GetConsensus_nc() { assert(GetChainType() == ChainType::REGTEST); return consensus; }
 
     uint32_t GetModifierInterval() const { return nModifierInterval; }
     uint32_t GetStakeMinConfirmations() const { return nStakeMinConfirmations; }
@@ -224,7 +226,7 @@ public:
 
     void SetCoinYearReward(int64_t nCoinYearReward_)
     {
-        assert(strNetworkID == "regtest");
+        assert(GetChainType() == ChainType::REGTEST);
         nCoinYearReward = nCoinYearReward_;
     }
 protected:
@@ -239,7 +241,7 @@ protected:
     std::vector<std::string> vSeeds;
     std::vector<unsigned char> base58Prefixes[MAX_BASE58_TYPES];
     std::string bech32_hrp;
-    std::string strNetworkID;
+    ChainType m_chain_type;
     CBlock genesis;
     std::vector<uint8_t> vFixedSeeds;
     bool fDefaultConsistencyChecks;

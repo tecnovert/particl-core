@@ -186,7 +186,7 @@ bool CheckStakeKernelHash(const CBlockIndex *pindexPrev,
     return true;
 }
 
-bool GetKernelInfo(const CBlockIndex *blockindex, const CTransaction &tx, uint256 &hash, CAmount &value, CScript &script, uint256 &blockhash)
+bool GetKernelInfo(const node::BlockManager& blockman, const CBlockIndex *blockindex, const CTransaction &tx, uint256 &hash, CAmount &value, CScript &script, uint256 &blockhash)
 {
     if (!blockindex->pprev) {
         return false;
@@ -197,8 +197,8 @@ bool GetKernelInfo(const CBlockIndex *blockindex, const CTransaction &tx, uint25
     const COutPoint &prevout = tx.vin[0].prevout;
     CTransactionRef txPrev;
     CBlock blockKernel; // block containing stake kernel, GetTransaction should only fill the header.
-    if (!node::GetTransaction(prevout.hash, txPrev, Params().GetConsensus(), blockKernel)
-        || prevout.n >= txPrev->vpout.size()) {
+    if (!node::GetTransaction(prevout.hash, txPrev, blockKernel, /*blockIndex*/ nullptr, blockman) ||
+        prevout.n >= txPrev->vpout.size()) {
         return false;
     }
     const CTxOutBase *outPrev = txPrev->vpout[prevout.n].get();

@@ -19,8 +19,8 @@
 #include <boost/test/unit_test.hpp>
 
 
-HDWalletTestingSetup::HDWalletTestingSetup(const std::string &chainName):
-    TestingSetup(chainName, { "-balancesindex" }, true, true, true /* fParticlMode */),
+HDWalletTestingSetup::HDWalletTestingSetup(const ChainType chain_type):
+    TestingSetup(chain_type, { "-balancesindex" }, true, true, true /* fParticlMode */),
     m_wallet_loader{interfaces::MakeWalletLoader(*m_node.chain, *Assert(m_node.args))}
 {
     pwalletMain = std::make_shared<CHDWallet>(m_node.chain.get(), "", CreateMockWalletDatabaseBDB());

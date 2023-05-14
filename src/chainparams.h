@@ -8,12 +8,12 @@
 
 #include <kernel/chainparams.h>
 
-#include <chainparamsbase.h>
 #include <consensus/params.h>
 #include <netaddress.h>
 #include <primitives/block.h>
 #include <chain.h>
 #include <protocol.h>
+#include <util/chaintype.h>
 #include <util/hash_type.h>
 
 #include <cstdint>
@@ -22,12 +22,12 @@
 #include <unordered_map>
 #include <vector>
 
+class ArgsManager;
+
 /**
  * Creates and returns a std::unique_ptr<CChainParams> of the chosen chain.
- * @returns a CChainParams* of the chosen chain.
- * @throws a std::runtime_error if the chain is not supported.
  */
-std::unique_ptr<CChainParams> CreateChainParams(const ArgsManager& args, const std::string& chain);
+std::unique_ptr<CChainParams> CreateChainParams(const ArgsManager& args, const ChainType chain);
 
 /**
  * Return the currently selected parameters. This won't change after app
@@ -38,16 +38,15 @@ const CChainParams *pParams();
 bool HaveParams();
 
 /**
- * Sets the params returned by Params() to those for the given chain name.
- * @throws std::runtime_error when the chain is not supported.
+ * Sets the params returned by Params() to those for the given chain type.
  */
-void SelectParams(const std::string& chain);
+void SelectParams(const ChainType chain);
 
 /**
  * Toggle old parameters for unit tests
  */
 void SetOldParams(std::unique_ptr<CChainParams> &params);
-void ResetParams(std::string sNetworkId, bool fParticlModeIn);
+void ResetParams(const ChainType chain, bool fParticlModeIn);
 
 /**
  * mutable handle to regtest params

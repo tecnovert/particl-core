@@ -26,6 +26,7 @@
 #include <smsg/manager.h>
 
 using node::SnapshotMetadata;
+using node::BlockManager;
 
 BOOST_FIXTURE_TEST_SUITE(validation_chainstatemanager_tests, ChainTestingSetup)
 
@@ -384,8 +385,9 @@ struct SnapshotTestSetup : TestChain100Setup {
                 .datadir = m_args.GetDataDirNet(),
                 .adjusted_time_callback = GetAdjustedTime,
             };
-            node::BlockManager::Options blockman_opts{
+            const BlockManager::Options blockman_opts{
                 .chainparams = chainman_opts.chainparams,
+                .blocks_dir = m_args.GetBlocksDirPath(),
             };
             // For robustness, ensure the old manager is destroyed before creating a
             // new one.

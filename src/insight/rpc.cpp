@@ -85,7 +85,7 @@ bool getAddressesFromParams(const UniValue& params, std::vector<std::pair<uint25
         addresses.push_back(std::make_pair(hashBytes, type));
     } else
     if (params[0].isObject()) {
-        UniValue addressValues = find_value(params[0].get_obj(), "addresses");
+        UniValue addressValues = params[0].get_obj().find_value("addresses");
         if (!addressValues.isArray()) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Addresses is expected to be an array");
         }
@@ -247,7 +247,7 @@ return RPCHelpMan{"getaddressutxos",
 
     bool includeChainInfo = false;
     if (request.params[0].isObject()) {
-        UniValue chainInfo = find_value(request.params[0].get_obj(), "chainInfo");
+        UniValue chainInfo = request.params[0].get_obj().find_value("chainInfo");
         if (chainInfo.isBool()) {
             includeChainInfo = chainInfo.get_bool();
         }
@@ -355,10 +355,10 @@ static RPCHelpMan getaddressdeltas()
     }
     ChainstateManager &chainman = EnsureAnyChainman(request.context);
 
-    UniValue startValue = find_value(request.params[0].get_obj(), "start");
-    UniValue endValue = find_value(request.params[0].get_obj(), "end");
+    UniValue startValue = request.params[0].get_obj().find_value("start");
+    UniValue endValue = request.params[0].get_obj().find_value("end");
 
-    UniValue chainInfo = find_value(request.params[0].get_obj(), "chainInfo");
+    UniValue chainInfo = request.params[0].get_obj().find_value("chainInfo");
     bool includeChainInfo = false;
     if (chainInfo.isBool()) {
         includeChainInfo = chainInfo.get_bool();
@@ -550,8 +550,8 @@ static RPCHelpMan getaddresstxids()
     int start = 0;
     int end = 0;
     if (request.params[0].isObject()) {
-        UniValue startValue = find_value(request.params[0].get_obj(), "start");
-        UniValue endValue = find_value(request.params[0].get_obj(), "end");
+        UniValue startValue = request.params[0].get_obj().find_value("start");
+        UniValue endValue = request.params[0].get_obj().find_value("end");
         if (startValue.isNum() && endValue.isNum()) {
             start = startValue.getInt<int>();
             end = endValue.getInt<int>();
@@ -629,8 +629,8 @@ static RPCHelpMan getspentinfo()
     const CTxMemPool& mempool = EnsureMemPool(node);
     ChainstateManager &chainman = EnsureChainman(node);
 
-    UniValue txidValue = find_value(request.params[0].get_obj(), "txid");
-    UniValue indexValue = find_value(request.params[0].get_obj(), "index");
+    UniValue txidValue = request.params[0].get_obj().find_value("txid");
+    UniValue indexValue = request.params[0].get_obj().find_value("index");
 
     if (!txidValue.isStr() || !indexValue.isNum()) {
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid txid or index");
@@ -837,7 +837,7 @@ return RPCHelpMan{"getblockdeltas",
         throw JSONRPCError(RPC_INTERNAL_ERROR, "Block not available (pruned data)");
     }
 
-    if (!node::ReadBlockFromDisk(block, pblockindex, Params().GetConsensus())) {
+    if (!chainman.m_blockman.ReadBlockFromDisk(block, *pblockindex)) {
         throw JSONRPCError(RPC_INTERNAL_ERROR, "Can't read block from disk");
     }
 
@@ -888,8 +888,8 @@ static RPCHelpMan getblockhashes()
 
     if (request.params.size() > 2) {
         if (request.params[2].isObject()) {
-            UniValue noOrphans = find_value(request.params[2].get_obj(), "noOrphans");
-            UniValue returnLogical = find_value(request.params[2].get_obj(), "logicalTimes");
+            UniValue noOrphans = request.params[2].get_obj().find_value("noOrphans");
+            UniValue returnLogical = request.params[2].get_obj().find_value("logicalTimes");
 
             if (noOrphans.isBool()) {
                 fActiveOnly = noOrphans.get_bool();
@@ -1133,7 +1133,7 @@ static RPCHelpMan getblockreward()
     }
 
     CBlock block;
-    if (!node::ReadBlockFromDisk(block, pblockindex, Params().GetConsensus())) {
+    if (!chainman.m_blockman.ReadBlockFromDisk(block, *pblockindex)) {
         throw JSONRPCError(RPC_MISC_ERROR, "Block not found on disk");
     }
 
@@ -1176,7 +1176,7 @@ static RPCHelpMan getblockreward()
 
         CBlockIndex *blockindex = nullptr;
         uint256 hash_block;
-        const CTransactionRef tx_prev = node::GetTransaction(blockindex, node.mempool.get(), txin.prevout.hash, Params().GetConsensus(), hash_block);
+        const CTransactionRef tx_prev = node::GetTransaction(blockindex, node.mempool.get(), txin.prevout.hash, hash_block, chainman.m_blockman);
         if (!tx_prev) {
             throw JSONRPCError(RPC_MISC_ERROR, "Transaction not found on disk");
         }

@@ -10,13 +10,13 @@
 #include <consensus/merkle.h>
 #include <consensus/params.h>
 #include <hash.h>
-#include <chainparamsbase.h>
 #include <logging.h>
 #include <primitives/block.h>
 #include <primitives/transaction.h>
 #include <script/interpreter.h>
 #include <script/script.h>
 #include <uint256.h>
+#include <util/chaintype.h>
 #include <util/strencodings.h>
 
 #include <algorithm>
@@ -33,7 +33,7 @@ int64_t CChainParams::GetCoinYearReward(int64_t nTime) const
 {
     static const int64_t nSecondsInYear = 365 * 24 * 60 * 60;
 
-    if (strNetworkID != "regtest") {
+    if (GetChainType() != ChainType::REGTEST) {
         // After HF2: 8%, 8%, 7%, 7%, 6%
         if (nTime >= consensus.exploit_fix_2_time) {
             int64_t nPeriodsSinceHF2 = (nTime - consensus.exploit_fix_2_time) / (nSecondsInYear * 2);
@@ -426,7 +426,7 @@ static CBlock CreateGenesisBlock(uint32_t nTime, uint32_t nNonce, uint32_t nBits
 
 void CChainParams::SetOld()
 {
-    if (NetworkID() == CBaseChainParams::MAIN) {
+    if (GetChainType() == ChainType::MAIN) {
         consensus.script_flag_exceptions.clear();
         consensus.script_flag_exceptions.emplace( // BIP16 exception
             uint256S("0x00000000000002dc756eebf4f49723ed8d30cc28a5f108eb94b1ba88ac4f9c22"), SCRIPT_VERIFY_NONE);
@@ -452,7 +452,7 @@ void CChainParams::SetOld()
 
         bech32_hrp = "bc";
     } else
-    if (NetworkID() == CBaseChainParams::TESTNET) {
+    if (GetChainType() == ChainType::TESTNET) {
         consensus.powLimit = uint256S("00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
 
         genesis = CreateGenesisBlock(1296688602, 414098458, 0x1d00ffff, 1, 50 * COIN);
@@ -466,7 +466,7 @@ void CChainParams::SetOld()
 
         bech32_hrp = "tb";
     } else
-    if (NetworkID() == CBaseChainParams::REGTEST) {
+    if (GetChainType() == ChainType::REGTEST) {
         genesis = CreateGenesisBlock(1296688602, 2, 0x207fffff, 1, 50 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
         /*
@@ -492,7 +492,7 @@ void CChainParams::SetOld()
 class CMainParams : public CChainParams {
 public:
     CMainParams() {
-        strNetworkID = CBaseChainParams::MAIN;
+        m_chain_type = ChainType::MAIN;
         consensus.signet_blocks = false;
         consensus.signet_challenge.clear();
         consensus.nSubsidyHalvingInterval = 210000;
@@ -683,7 +683,7 @@ public:
 class CTestNetParams : public CChainParams {
 public:
     CTestNetParams() {
-        strNetworkID = CBaseChainParams::TESTNET;
+        m_chain_type = ChainType::TESTNET;
         consensus.signet_blocks = false;
         consensus.signet_challenge.clear();
         consensus.nSubsidyHalvingInterval = 210000;
@@ -884,7 +884,7 @@ public:
             vSeeds = *options.seeds;
         }
 
-        strNetworkID = CBaseChainParams::SIGNET;
+        m_chain_type = ChainType::SIGNET;
         consensus.signet_blocks = true;
         consensus.signet_challenge.assign(bin.begin(), bin.end());
         consensus.nSubsidyHalvingInterval = 210000;
@@ -952,7 +952,7 @@ class CRegTestParams : public CChainParams {
 public:
     explicit CRegTestParams(const RegTestOptions& opts)
     {
-        strNetworkID =  CBaseChainParams::REGTEST;
+        m_chain_type = ChainType::REGTEST;
         consensus.signet_blocks = false;
         consensus.signet_challenge.clear();
         consensus.nSubsidyHalvingInterval = 150;

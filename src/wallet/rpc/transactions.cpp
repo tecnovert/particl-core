@@ -904,11 +904,11 @@ RPCHelpMan listtransactions()
 
         size_t nSearchStart = 0;
         for(int i = (int)retRecords.size() - 1; i >= 0; --i) {
-            int64_t nInsertTime = find_value(retRecords[i], "time").getInt<int64_t>();
+            int64_t nInsertTime = retRecords[i].find_value("time").getInt<int64_t>();
             bool fFound = false;
             for (size_t k = nSearchStart; k < result.size(); k++) {
                 nSearchStart = k;
-                int64_t nTime = find_value(result[k], "time").getInt<int64_t>();
+                int64_t nTime = result[k].find_value("time").getInt<int64_t>();
                 if (nTime > nInsertTime) {
                     result.insert(k, retRecords[i]);
                     fFound = true;

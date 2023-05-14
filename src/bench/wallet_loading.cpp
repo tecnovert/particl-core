@@ -54,7 +54,7 @@ static void AddTx(CWallet& wallet)
 
 static void WalletLoading(benchmark::Bench& bench, bool legacy_wallet)
 {
-    const auto test_setup = MakeNoLogFileContext<TestingSetup>(CBaseChainParams::REGTEST);
+    const auto test_setup = MakeNoLogFileContext<TestingSetup>(ChainType::REGTEST);
     test_setup->m_args.ForceSetArg("-unsafesqlitesync", "1");
 
     WalletContext context;

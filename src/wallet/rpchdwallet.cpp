@@ -5859,7 +5859,7 @@ static UniValue createsignatureinner(const JSONRPCRequest &request, ChainstateMa
 
     uint256 txid = ParseHashO(prevOut, "txid");
 
-    int nOut = find_value(prevOut, "vout").getInt<int>();
+    int nOut = prevOut.find_value("vout").getInt<int>();
     if (nOut < 0) {
         throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "vout must be positive");
     }
@@ -5891,7 +5891,7 @@ static UniValue createsignatureinner(const JSONRPCRequest &request, ChainstateMa
             }
         } else {
             uint256 hashBlock;
-            CTransactionRef txn = node::GetTransaction(nullptr, mempool, prev_out.hash, Params().GetConsensus(), hashBlock);
+            CTransactionRef txn = node::GetTransaction(nullptr, mempool, prev_out.hash, hashBlock, pchainman->m_blockman);
             if (txn) {
                 if (txn->GetNumVOuts() > prev_out.n) {
                     txout = txn->vpout[prev_out.n];
@@ -7950,7 +7950,6 @@ static RPCHelpMan tallyvotes()
     int nEndHeight = request.params[2].getInt<int>();
 
     CBlock block;
-    const Consensus::Params& consensusParams = Params().GetConsensus();
 
     std::map<int, int> mapVotes;
     std::pair<std::map<int, int>::iterator, bool> ri;
@@ -7963,12 +7962,12 @@ static RPCHelpMan tallyvotes()
             break;
         }
         if (pindex->nHeight <= nEndHeight) {
-            if (!node::ReadBlockFromDisk(block, pindex, consensusParams)) {
+            if (!chainman.m_blockman.ReadBlockFromDisk(block, *pindex)) {
                 continue;
             }
 
-            if (block.vtx.size() < 1
-                || !block.vtx[0]->IsCoinStake()) {
+            if (block.vtx.size() < 1 ||
+                !block.vtx[0]->IsCoinStake()) {
                 continue;
             }
 
@@ -8211,7 +8210,7 @@ static RPCHelpMan createrawparttransaction()
 
         uint256 txid = ParseHashO(o, "txid");
 
-        const UniValue& vout_v = find_value(o, "vout");
+        const UniValue& vout_v = o.find_value("vout");
         if (!vout_v.isNum()) {
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, missing vout key");
         }
@@ -8230,7 +8229,7 @@ static RPCHelpMan createrawparttransaction()
         }
 
         // set the sequence number if passed in the parameters object
-        const UniValue& sequenceObj = find_value(o, "sequence");
+        const UniValue& sequenceObj = o.find_value("sequence");
         if (sequenceObj.isNum()) {
             int64_t seqNr64 = sequenceObj.getInt<int64_t>();
             if (seqNr64 < 0 || seqNr64 > std::numeric_limits<uint32_t>::max()) {
@@ -8240,7 +8239,7 @@ static RPCHelpMan createrawparttransaction()
             }
         }
 
-        const UniValue &blindObj = find_value(o, "blindingfactor");
+        const UniValue &blindObj = o.find_value("blindingfactor");
         if (blindObj.isStr()) {
             std::string s = blindObj.get_str();
             if (!IsHex(s) || !(s.size() == 64)) {
@@ -8263,7 +8262,7 @@ static RPCHelpMan createrawparttransaction()
         CTempRecipient r;
 
         uint8_t nType = OUTPUT_STANDARD;
-        const UniValue &typeObj = find_value(o, "type");
+        const UniValue &typeObj = o.find_value("type");
         if (typeObj.isStr()) {
             std::string s = typeObj.get_str();
             nType = WordToType(s, true);
@@ -8711,7 +8710,7 @@ static RPCHelpMan fundrawtransactionfrom()
             mInputBlinds[n] = im.blind;
             im.nType = OUTPUT_CT;
         }
-        const UniValue &typeObj = find_value(inputAmounts[sKey], "type");
+        const UniValue &typeObj = inputAmounts[sKey].find_value("type");
         if (typeObj.isStr()) {
             std::string s = typeObj.get_str();
             im.nType = WordToType(s);
@@ -9359,7 +9358,7 @@ static RPCHelpMan verifyrawtransaction()
 
             uint256 txid = ParseHashO(prevOut, "txid");
 
-            int nOut = find_value(prevOut, "vout").getInt<int>();
+            int nOut = prevOut.find_value("vout").getInt<int>();
             if (nOut < 0) {
                 throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "vout must be positive");
             }
@@ -9388,7 +9387,7 @@ static RPCHelpMan verifyrawtransaction()
                     throw JSONRPCError(RPC_INVALID_PARAMETER, "Both \"amount\" and \"amount_commitment\" found.");
                 }
                 newcoin.nType = OUTPUT_STANDARD;
-                newcoin.out.nValue = AmountFromValue(find_value(prevOut, "amount"));
+                newcoin.out.nValue = AmountFromValue(prevOut.find_value("amount"));
             } else
             if (prevOut.exists("amount_commitment")) {
                 std::string s = prevOut["amount_commitment"].get_str();
@@ -9543,7 +9542,7 @@ static bool PruneBlockFile(ChainstateManager &chainman, FILE *fp, bool test_only
         try {
             // locate a header
             unsigned char buf[CMessageHeader::MESSAGE_START_SIZE];
-            blkdat.FindByte(chainparams.MessageStart()[0]);
+            blkdat.FindByte(std::byte(chainparams.MessageStart()[0]));
             nRewind = blkdat.GetPos()+1;
             blkdat >> buf;
             if (memcmp(buf, chainparams.MessageStart(), CMessageHeader::MESSAGE_START_SIZE))
@@ -9662,9 +9661,9 @@ static RPCHelpMan pruneorphanedblocks()
         FILE *fp;
         for (;;) {
             FlatFilePos pos(nFile, 0);
-            fs::path blk_filepath = node::GetBlockPosFilename(pos);
-            if (!fs::exists(blk_filepath)
-                || !(fp = node::OpenBlockFile(pos, true)))
+            fs::path blk_filepath = chainman.m_blockman.GetBlockPosFilename(pos);
+            if (!fs::exists(blk_filepath) ||
+                !(fp = chainman.m_blockman.OpenBlockFile(pos, true)))
                 break;
             LogPrintf("Pruning block file blk%05u.dat...\n", (unsigned int)nFile);
             size_t num_blocks_in_file = 0, num_blocks_removed = 0;
@@ -9680,7 +9679,7 @@ static RPCHelpMan pruneorphanedblocks()
 
             UniValue obj(UniValue::VOBJ);
             obj.pushKV("test_mode", test_only);
-            obj.pushKV("filename", fs::PathToString(node::GetBlockPosFilename(pos)));
+            obj.pushKV("filename", fs::PathToString(chainman.m_blockman.GetBlockPosFilename(pos)));
             obj.pushKV("blocks_in_file", (int)num_blocks_in_file);
             obj.pushKV("blocks_removed", (int)num_blocks_removed);
             files.push_back(obj);

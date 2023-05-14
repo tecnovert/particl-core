@@ -42,6 +42,7 @@
 #include <timedata.h>
 #include <txdb.h>
 #include <txmempool.h>
+#include <util/chaintype.h>
 #include <util/strencodings.h>
 #include <util/string.h>
 #include <util/system.h>
@@ -66,6 +67,7 @@
 using kernel::ValidationCacheSizes;
 using node::ApplyArgsManOptions;
 using node::BlockAssembler;
+using node::BlockManager;
 using node::CalculateCacheSizes;
 using node::LoadChainstate;
 using node::RegenerateCommitments;
@@ -104,7 +106,7 @@ std::ostream& operator<<(std::ostream& os, const uint256& num)
     return os;
 }
 
-BasicTestingSetup::BasicTestingSetup(const std::string& chainName, const std::vector<const char*>& extra_args, bool fParticlModeIn)
+BasicTestingSetup::BasicTestingSetup(const ChainType chainType, const std::vector<const char*>& extra_args, bool fParticlModeIn)
     : m_path_root{fs::temp_directory_path() / "test_common_" PACKAGE_NAME / g_insecure_rand_ctx_temp_path.rand256().ToString()},
       m_args{}
 {
@@ -148,8 +150,8 @@ BasicTestingSetup::BasicTestingSetup(const std::string& chainName, const std::ve
         }
     }
     fBalancesIndex = m_node.args->GetBoolArg("-balancesindex", particl::DEFAULT_BALANCESINDEX);
-    SelectParams(chainName);
-    ResetParams(chainName, fParticlMode);
+    SelectParams(chainType);
+    ResetParams(chainType, fParticlMode);
     SeedInsecureRand();
     if (G_TEST_LOG_FUN) LogInstance().PushBackCallback(G_TEST_LOG_FUN);
     InitLogging(*m_node.args);
@@ -180,8 +182,8 @@ BasicTestingSetup::~BasicTestingSetup()
     gArgs.ClearArgs();
 }
 
-ChainTestingSetup::ChainTestingSetup(const std::string& chainName, const std::vector<const char*>& extra_args, bool fParticlModeIn)
-    : BasicTestingSetup(chainName, extra_args, fParticlModeIn)
+ChainTestingSetup::ChainTestingSetup(const ChainType chainType, const std::vector<const char*>& extra_args, bool fParticlModeIn)
+    : BasicTestingSetup(chainType, extra_args, fParticlModeIn)
 {
     const CChainParams& chainparams = Params();
 
@@ -202,8 +204,9 @@ ChainTestingSetup::ChainTestingSetup(const std::string& chainName, const std::ve
         .adjusted_time_callback = GetAdjustedTime,
         .check_block_index = true,
     };
-    node::BlockManager::Options blockman_opts{
+    const BlockManager::Options blockman_opts{
         .chainparams = chainman_opts.chainparams,
+        .blocks_dir = m_args.GetBlocksDirPath(),
     };
     m_node.chainman = std::make_unique<ChainstateManager>(chainman_opts, blockman_opts);
     m_node.chainman->m_blockman.m_block_tree_db = std::make_unique<CBlockTreeDB>(DBParams{
@@ -236,7 +239,7 @@ ChainTestingSetup::~ChainTestingSetup()
     m_node.smsgman.reset();
 }
 
-void TestingSetup::LoadVerifyActivateChainstate()
+void ChainTestingSetup::LoadVerifyActivateChainstate()
 {
     auto& chainman{*Assert(m_node.chainman)};
     node::ChainstateLoadOptions options;
@@ -272,15 +275,15 @@ void TestingSetup::LoadVerifyActivateChainstate()
 }
 
 TestingSetup::TestingSetup(
-    const std::string& chainName,
+    const ChainType chainType,
     const std::vector<const char*>& extra_args,
     const bool coins_db_in_memory,
     const bool block_tree_db_in_memory,
     const bool fParticlModeIn)
-    : ChainTestingSetup(chainName, extra_args, fParticlModeIn),
-      m_coins_db_in_memory(coins_db_in_memory),
-      m_block_tree_db_in_memory(block_tree_db_in_memory)
+    : ChainTestingSetup(chainType, extra_args, fParticlModeIn)
 {
+    m_coins_db_in_memory = coins_db_in_memory;
+    m_block_tree_db_in_memory = block_tree_db_in_memory;
     // Ideally we'd move all the RPC tests to the functional testing framework
     // instead of unit tests, but for now we need these here.
     RegisterAllCoreRPCCommands(tableRPC);
@@ -305,11 +308,11 @@ TestingSetup::TestingSetup(
 }
 
 TestChain100Setup::TestChain100Setup(
-        const std::string& chain_name,
+        const ChainType chain_type,
         const std::vector<const char*>& extra_args,
         const bool coins_db_in_memory,
         const bool block_tree_db_in_memory)
-    : TestingSetup{CBaseChainParams::REGTEST, extra_args, coins_db_in_memory, block_tree_db_in_memory}
+    : TestingSetup{ChainType::REGTEST, extra_args, coins_db_in_memory, block_tree_db_in_memory}
 {
     SetMockTime(1598887952);
     constexpr std::array<unsigned char, 32> vchKey = {

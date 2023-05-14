@@ -100,11 +100,11 @@ static std::optional<int> WalletAppInit(ArgsManager& args, int argc, char* argv[
         return EXIT_FAILURE;
     }
     // Check for chain settings (Params() calls are only valid after this clause)
-    SelectParams(args.GetChainName());
+    SelectParams(args.GetChainType());
     if (!fParticlMode) {
         WITNESS_SCALE_FACTOR = WITNESS_SCALE_FACTOR_BTC;
-        if (args.GetChainName() == CBaseChainParams::REGTEST) {
-            ResetParams(CBaseChainParams::REGTEST, fParticlMode);
+        if (args.GetChainType() == ChainType::REGTEST) {
+            ResetParams(ChainType::REGTEST, fParticlMode);
         }
     }
 

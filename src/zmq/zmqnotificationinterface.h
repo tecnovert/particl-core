@@ -10,6 +10,7 @@
 #include <netaddress.h>
 
 #include <cstdint>
+#include <functional>
 #include <list>
 #include <memory>
 #include <thread>
@@ -29,7 +30,7 @@ public:
 
     std::list<const CZMQAbstractNotifier*> GetActiveNotifiers() const;
 
-    static CZMQNotificationInterface* Create();
+    static std::unique_ptr<CZMQNotificationInterface> Create(std::function<bool(CBlock&, const CBlockIndex&)> get_block_by_index);
 
 protected:
     bool Initialize();
@@ -58,6 +59,6 @@ private:
     std::vector<CSubNet> vWhitelistedRange;
 };
 
-extern CZMQNotificationInterface* g_zmq_notification_interface;
+extern std::unique_ptr<CZMQNotificationInterface> g_zmq_notification_interface;
 
 #endif // BITCOIN_ZMQ_ZMQNOTIFICATIONINTERFACE_H
