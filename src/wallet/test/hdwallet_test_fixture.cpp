@@ -9,6 +9,7 @@
 #include <wallet/hdwallet.h>
 #include <wallet/rpc/wallet.h>
 #include <wallet/coincontrol.h>
+#include <wallet/test/util.h>
 #include <validation.h>
 #include <util/system.h>
 #include <blind.h>

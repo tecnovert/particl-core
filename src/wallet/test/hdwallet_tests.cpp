@@ -15,6 +15,7 @@
 #include <consensus/validation.h>
 #include <wallet/coincontrol.h>
 #include <wallet/types.h>
+#include <wallet/test/util.h>
 #include <policy/policy.h>
 
 #include <boost/test/unit_test.hpp>
@@ -384,9 +385,9 @@ BOOST_AUTO_TEST_CASE(multisig_Solver1)
     // one key that would satisfy an (a|b) or 2-of-3 keys needed
     // to spend an escrow transaction.
     //
-    CHDWallet keystore(m_node.chain.get(), "", CreateDummyWalletDatabase());
-    CHDWallet emptykeystore(m_node.chain.get(), "", CreateDummyWalletDatabase());
-    CHDWallet partialkeystore(m_node.chain.get(), "", CreateDummyWalletDatabase());
+    CHDWallet keystore(m_node.chain.get(), "", CreateMockableWalletDatabase());
+    CHDWallet emptykeystore(m_node.chain.get(), "", CreateMockableWalletDatabase());
+    CHDWallet partialkeystore(m_node.chain.get(), "", CreateMockableWalletDatabase());
     CKey key[3];
     std::vector<CTxDestination> keyaddr(3); // Wmaybe-uninitialized
     for (int i = 0; i < 3; i++) {
@@ -486,8 +487,8 @@ BOOST_AUTO_TEST_CASE(multisig_Solver1)
 BOOST_AUTO_TEST_CASE(opiscoinstake_test)
 {
     SeedInsecureRand();
-    CHDWallet keystoreA(m_node.chain.get(), "", CreateDummyWalletDatabase());
-    CHDWallet keystoreB(m_node.chain.get(), "", CreateDummyWalletDatabase());
+    CHDWallet keystoreA(m_node.chain.get(), "", CreateMockableWalletDatabase());
+    CHDWallet keystoreB(m_node.chain.get(), "", CreateMockableWalletDatabase());
 
     CKey kA, kB;
     InsecureNewKey(kA, true);
