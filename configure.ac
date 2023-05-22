@@ -118,9 +118,6 @@ else
 AX_CXX_COMPILE_STDCXX([20], [noext], [mandatory])
 fi
 
-dnl check if additional link flags are required for std::filesystem
-CHECK_FILESYSTEM
-
 dnl Unless the user specified OBJCXX, force it to be the same as CXX. This ensures
 dnl that we get the same -std flags for both.
 m4_ifdef([AC_PROG_OBJCXX],[
@@ -1427,7 +1424,9 @@ if test "$use_usdt" != "no"; then
   AC_COMPILE_IFELSE([
     AC_LANG_PROGRAM(
       [#include <sys/sdt.h>],
-      [DTRACE_PROBE("context", "event");]
+      [DTRACE_PROBE(context, event);
+       int a, b, c, d, e, f, g;
+       DTRACE_PROBE7(context, event, a, b, c, d, e, f, g);]
     )],
     [AC_MSG_RESULT([yes]); AC_DEFINE([ENABLE_TRACING], [1], [Define to 1 to enable tracepoints for Userspace, Statically Defined Tracing])],
     [AC_MSG_RESULT([no]); use_usdt=no;]
