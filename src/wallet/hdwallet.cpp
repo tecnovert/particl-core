@@ -5791,6 +5791,139 @@ void CHDWallet::leavingIBD()
 {
 }
 
+void CHDWallet::blockDisconnected(const interfaces::BlockInfo& block)
+{
+    assert(block.data);
+    LOCK(cs_wallet);
+
+    // At block disconnection, this will change an abandoned transaction to
+    // be unconfirmed, whether or not the transaction is added back to the mempool.
+    // User may have to call abandontransaction again. It may be addressed in the
+    // future with a stickier abandoned state or even removing abandontransaction call.
+    m_last_block_processed_height = block.height - 1;
+    m_last_block_processed = *Assert(block.prev_hash);
+
+    int disconnect_height = block.height;
+
+    auto try_updating_state = [&](CWalletTx& tx) {
+        if (!tx.isConflicted()) return TxUpdate::UNCHANGED;
+        if (tx.state<TxStateConflicted>()->conflicting_block_height >= disconnect_height) {
+            tx.m_state = TxStateInactive{};
+            return TxUpdate::CHANGED;
+        }
+        return TxUpdate::UNCHANGED;
+    };
+    auto try_updating_rtx_state = [&](CTransactionRecord &rtx) {
+        if (!rtx.isConflicted()) return TxUpdate::UNCHANGED;
+        int conflicting_height = rtx.block_height;
+        if (conflicting_height >= disconnect_height) {
+            // TODO, undo conflicted state
+            //rtx.nIndex = -1;
+            //rtx.blockHash = block.hash;
+            //rtx.block_height = conflicting_height;
+        }
+        return TxUpdate::UNCHANGED;
+    };
+
+    for (const CTransactionRef& ptx : Assert(block.data)->vtx) {
+        SyncTransaction(ptx, TxStateInactive{});
+
+        for (const CTxIn& tx_in : ptx->vin) {
+            // No other wallet transactions conflicted with this transaction
+            if (mapTxSpends.count(tx_in.prevout) < 1) continue;
+
+            std::pair<TxSpends::const_iterator, TxSpends::const_iterator> range = mapTxSpends.equal_range(tx_in.prevout);
+
+            // For all of the spends that conflict with this transaction
+            for (TxSpends::const_iterator _it = range.first; _it != range.second; ++_it) {
+                MapRecords_t::iterator mri;
+                if ((mri = mapRecords.find(_it->second)) != mapRecords.end()) {
+                    CTransactionRecord &rtx = mri->second;
+                    if (!rtx.isConflicted()) {
+                        continue;
+                    }
+
+                    RecursiveUpdateTxState(_it->second, try_updating_state, try_updating_rtx_state);
+                    continue;
+                }
+                CWalletTx& wtx = mapWallet.find(_it->second)->second;
+
+                if (!wtx.isConflicted()) continue;
+
+                RecursiveUpdateTxState(wtx.tx->GetHash(), try_updating_state, try_updating_rtx_state);
+            }
+        }
+    }
+    ClearCachedBalances();
+}
+
+void CHDWallet::RecursiveUpdateTxState(const uint256& tx_hash, const TryUpdatingStateFn& try_updating_state, const TryUpdatingRTXStateFn& try_updating_rtx_state) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet) {
+    // Do not flush the wallet here for performance reasons
+    WalletBatch batch(GetDatabase(), false);
+    CHDWalletDB walletdb(*m_database, false);
+
+    std::set<uint256> todo;
+    std::set<uint256> done;
+
+    todo.insert(tx_hash);
+
+    size_t nChangedRecords{0};
+    while (!todo.empty()) {
+        uint256 now = *todo.begin();
+        todo.erase(now);
+        done.insert(now);
+
+        MapRecords_t::iterator mri;
+        MapWallet_t::iterator mwi;
+        if ((mri = mapRecords.find(now)) != mapRecords.end()) {
+            CTransactionRecord &rtx = mri->second;
+
+            TxUpdate update_state = try_updating_rtx_state(rtx);
+            if (update_state != TxUpdate::UNCHANGED) {
+                walletdb.WriteTxRecord(now, rtx);
+                nChangedRecords++;
+
+                if (update_state == TxUpdate::NOTIFY_CHANGED) {
+                    NotifyTransactionChanged(now, CT_UPDATED);
+                }
+            }
+        } else
+        if ((mwi = mapWallet.find(now)) != mapWallet.end()) {
+            CWalletTx &wtx = mwi->second;
+            TxUpdate update_state = try_updating_state(wtx);
+            if (update_state != TxUpdate::UNCHANGED) {
+
+                wtx.MarkDirty();
+                batch.WriteTx(wtx);
+                // Iterate over all its outputs, and update those tx states as well (if applicable)
+                for (unsigned int i = 0; i < wtx.tx->vout.size(); ++i) {
+                    std::pair<TxSpends::const_iterator, TxSpends::const_iterator> range = mapTxSpends.equal_range(COutPoint(now, i));
+                    for (TxSpends::const_iterator iter = range.first; iter != range.second; ++iter) {
+                        if (!done.count(iter->second)) {
+                            todo.insert(iter->second);
+                        }
+                    }
+                }
+
+                if (update_state == TxUpdate::NOTIFY_CHANGED) {
+                    NotifyTransactionChanged(wtx.GetHash(), CT_UPDATED);
+                }
+
+                // If a transaction changes its tx state, that usually changes the balance
+                // available of the outputs it spends. So force those to be recomputed
+                MarkInputsDirty(wtx.tx);
+            }
+        } else {
+            // Not in wallet
+            continue;
+        }
+    }
+
+    if (nChangedRecords > 0) { // HACK, alternative is to load CStoredTransaction to get vin
+        MarkDirty();
+    }
+}
+
 void CHDWallet::RemoveFromTxSpends(const uint256 &hash, const CTransactionRef pt)
 {
     for (const auto &txin : pt->vin) {
@@ -12716,7 +12849,6 @@ void CHDWallet::MarkConflicted(const uint256 &hashBlock, int conflicting_height,
             CTransactionRecord &rtx = mri->second;
 
             int currentconfirm = GetDepthInMainChain(rtx);
-
             if (conflictconfirms < currentconfirm) {
                 // Block is 'more conflicted' than current confirm; update.
                 // Mark transaction as conflicted with this block.

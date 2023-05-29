@@ -229,6 +229,12 @@ public:
     bool LoadToWallet(const uint256& hash, const UpdateWalletTxFn& fill_wtx) override EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     void LoadToWallet(const uint256 &hash, CTransactionRecord &rtx) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     void leavingIBD() override;
+    void blockDisconnected(const interfaces::BlockInfo& block) override;
+
+    using TryUpdatingRTXStateFn = std::function<TxUpdate(CTransactionRecord &rtx)>;
+
+    /** Mark a transaction (and its in-wallet descendants) as a particular tx state. */
+    void RecursiveUpdateTxState(const uint256& tx_hash, const TryUpdatingStateFn& try_updating_state, const TryUpdatingRTXStateFn& try_updating_rtx_state) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     /** Remove txn from mapwallet and TxSpends */
     void RemoveFromTxSpends(const uint256 &hash, const CTransactionRef pt) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
