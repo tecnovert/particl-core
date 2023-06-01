@@ -52,7 +52,7 @@ KNOWN_VIOLATIONS = [
     "src/util/time.cpp:.*mktime",
     "src/util/time.cpp:.*strftime",
     "src/util/strencodings.cpp:.*strtoll",
-    "src/util/system.cpp:.*fprintf",
+    "src/util/strencodings.cpp:.*fprintf",
     "src/smsg/smessage.h:.*fprintf",
     "src/smsg/smessage.cpp:.*fprintf",
     "src/smsg/smessage.cpp:.*sscanf",

@@ -17,6 +17,7 @@
 #include <node/miner.h>
 #include <pos/miner.h>
 #include <util/string.h>
+#include <util/any.h>
 #include <util/translation.h>
 
 CTransactionRef CreateTxn(CHDWallet *pwallet, CBitcoinAddress &address, CAmount amount, int type_in, int type_out, int nRingSize = 5)

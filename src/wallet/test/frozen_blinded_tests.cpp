@@ -20,6 +20,7 @@
 #include <insight/insight.h>
 #include <rpc/rpcutil.h>
 #include <rpc/util.h>
+#include <util/any.h>
 #include <util/string.h>
 #include <util/translation.h>
 #include <util/moneystr.h>

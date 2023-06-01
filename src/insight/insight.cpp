@@ -16,7 +16,6 @@
 
 #include <primitives/transaction.h>
 #include <script/interpreter.h>
-#include <util/system.h>
 
 bool fAddressIndex = false;
 bool fTimestampIndex = false;

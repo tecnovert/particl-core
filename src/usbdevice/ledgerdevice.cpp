@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2019 The Particl Core developers
+// Copyright (c) 2018-2023 The Particl Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -6,7 +6,6 @@
 
 #include <hidapi/hidapi.h>
 #include <stdio.h>
-#include <util/system.h>
 #include <coins.h>
 #include <pubkey.h>
 #include <crypto/common.h>

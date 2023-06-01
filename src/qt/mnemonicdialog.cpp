@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2021 The Particl Core developers
+// Copyright (c) 2017-2023 The Particl Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -12,8 +12,8 @@
 #include <interfaces/wallet.h>
 #include <interfaces/node.h>
 
+#include <util/any.h>
 #include <rpc/rpcutil.h>
-#include <util/system.h>
 #include <key/mnemonic.h>
 #include <key/extkey.h>
 

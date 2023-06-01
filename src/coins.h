@@ -24,7 +24,7 @@
 #include <insight/spentindex.h>
 #include <rctindex.h>
 #include <smsg/types.h>
-#include <util/system.h>
+#include <common/globals.h>
 
 /**
  * A UTXO entry.

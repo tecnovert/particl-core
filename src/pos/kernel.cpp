@@ -10,7 +10,6 @@
 #include <serialize.h>
 #include <streams.h>
 #include <hash.h>
-#include <util/system.h>
 #include <script/interpreter.h>
 #include <script/script.h>
 #include <policy/policy.h>

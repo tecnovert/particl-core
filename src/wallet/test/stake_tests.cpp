@@ -13,6 +13,7 @@
 #include <validation.h>
 #include <blind.h>
 #include <rpc/rpcutil.h>
+#include <util/any.h>
 #include <util/string.h>
 #include <util/translation.h>
 #include <node/blockstorage.h>

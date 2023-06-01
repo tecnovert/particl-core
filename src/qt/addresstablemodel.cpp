@@ -13,7 +13,6 @@
 #include <wallet/hdwallet.h>
 #include <wallet/rpchdwallet.h>
 #include <rpc/rpcutil.h>
-#include <util/system.h>
 #include <univalue.h>
 
 #include <algorithm>

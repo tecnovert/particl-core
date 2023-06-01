@@ -9,7 +9,6 @@
 
 #include <support/allocators/secure.h>
 #include <random.h>
-#include <util/system.h>
 #include <serialize.h>
 #include <streams.h>
 #include <version.h>

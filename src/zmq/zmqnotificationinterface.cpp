@@ -73,11 +73,11 @@ void CZMQNotificationInterface::ThreadZAP()
 
         bool fAccept = true;
         if (vWhitelistedRange.size() > 0) {
-            CNetAddr addr;
-            if (!LookupHost(address.c_str(), addr, false)) {
-                fAccept = false;
+            std::optional<CNetAddr> net_addr{LookupHost(address.c_str(), false)};
+            if (net_addr.has_value()) {
+                fAccept = IsWhitelistedRange(net_addr.value());
             } else {
-                fAccept = IsWhitelistedRange(addr);
+                fAccept = false;
             }
         }
 

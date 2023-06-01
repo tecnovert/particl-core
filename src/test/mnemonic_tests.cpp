@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2022 The Particl Core developers
+// Copyright (c) 2017-2023 The Particl Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -9,7 +9,6 @@
 #include <key/mnemonic.h>
 #include <key/extkey.h>
 #include <key_io.h>
-#include <util/system.h>
 #include <util/strencodings.h>
 #include <random.h>
 #include <univalue.h>

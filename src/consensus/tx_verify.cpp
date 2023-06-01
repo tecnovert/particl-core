@@ -25,7 +25,6 @@
 #include <consensus/params.h>
 #include <chainparams.h>
 #include <timedata.h>
-#include <util/system.h>
 #include <common/args.h>
 
 

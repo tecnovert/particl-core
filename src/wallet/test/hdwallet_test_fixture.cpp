@@ -11,7 +11,6 @@
 #include <wallet/coincontrol.h>
 #include <wallet/test/util.h>
 #include <validation.h>
-#include <util/system.h>
 #include <blind.h>
 #include <node/miner.h>
 #include <pos/miner.h>

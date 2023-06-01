@@ -133,65 +133,17 @@ bool TorControlConnection::Connect(const std::string& tor_control_center, const 
         Disconnect();
     }
 
-    // Parse tor_control_center address:port
+    const std::optional<CService> control_service{Lookup(tor_control_center, 9051, fNameLookup)};
+    if (!control_service.has_value()) {
+        LogPrintf("tor: Failed to look up control center %s\n", tor_control_center);
+        return false;
+    }
+
     struct sockaddr_storage control_address;
     socklen_t control_address_len = sizeof(control_address);
-
-    // Leaving lookuptorcontrolhost in for now as it has the ability to select which protocol to use.
-    if (gArgs.IsArgSet("-lookuptorcontrolhost")) {
-        std::string lookup_protocol = gArgs.GetArg("-lookuptorcontrolhost", "");
-        uint16_t port{0};
-        char str_port[6];
-        std::string host;
-        SplitHostPort(tor_control_center, port, host);
-        if (port == 0) {
-            LogPrintf("tor: Error parsing socket address %s.  Port must be specified.\n", tor_control_center);
-            return false;
-        }
-        evutil_snprintf(str_port, sizeof(str_port), "%d", (int) port);
-
-        struct addrinfo aiHint;
-        memset(&aiHint, 0, sizeof(struct addrinfo));
-        aiHint.ai_socktype = SOCK_STREAM;
-        aiHint.ai_protocol = IPPROTO_TCP;
-        if (lookup_protocol == "ipv4") {
-            aiHint.ai_family = AF_INET;
-        } else
-        if (lookup_protocol == "ipv6") {
-            aiHint.ai_family = AF_INET6;
-        } else
-        if (lookup_protocol == "any") {
-            aiHint.ai_family = AF_UNSPEC;
-        } else {
-            LogPrintf("tor: Error, unknown -lookuptorcontrolhost option: \"%s\"\n", lookup_protocol);
-            return false;
-        }
-        aiHint.ai_flags = fNameLookup ? AI_ADDRCONFIG : AI_NUMERICHOST;
-        struct addrinfo *aiRes = nullptr;
-
-        int err = evutil_getaddrinfo(host.c_str(), str_port, &aiHint, &aiRes);
-        if (err != 0 || !aiRes || aiRes->ai_addrlen > sizeof(control_address)) {
-            LogPrintf("tor: Error parsing socket address %s: %s\n", host, evutil_gai_strerror(err));
-            return false;
-        }
-
-        memcpy((char*)&control_address, (char*)aiRes->ai_addr, aiRes->ai_addrlen);
-        control_address_len = aiRes->ai_addrlen;
-
-        evutil_freeaddrinfo(aiRes);
-    } else {
-        CService control_service;
-        if (!Lookup(tor_control_center, control_service, 9051, fNameLookup)) {
-            LogPrintf("tor: Failed to look up control center %s\n", tor_control_center);
-            return false;
-        }
-
-        struct sockaddr_storage control_address;
-        socklen_t control_address_len = sizeof(control_address);
-        if (!control_service.GetSockAddr(reinterpret_cast<struct sockaddr*>(&control_address), &control_address_len)) {
-            LogPrintf("tor: Error parsing socket address %s\n", tor_control_center);
-            return false;
-        }
+    if (!control_service.value().GetSockAddr(reinterpret_cast<struct sockaddr*>(&control_address), &control_address_len)) {
+        LogPrintf("tor: Error parsing socket address %s\n", tor_control_center);
+        return false;
     }
 
     // Create a new socket, set up callbacks and enable notification bits

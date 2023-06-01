@@ -1,4 +1,4 @@
-// Copyright (c) 2021 tecnovert
+// Copyright (c) 2021-2023 tecnovert
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -19,6 +19,7 @@
 #include <blind.h>
 #include <rpc/rpcutil.h>
 #include <rpc/util.h>
+#include <util/any.h>
 #include <util/string.h>
 #include <util/translation.h>
 #include <util/moneystr.h>

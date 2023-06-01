@@ -395,6 +395,7 @@ namespace part
     std::string &RTrimWhitespace(std::string &s);
     std::string &TrimWhitespace(std::string &s);
     bool endsWith(const std::string &str, const std::string &suffix);
+    std::string BytesReadable(uint64_t nBytes);
 }
 
 #endif // BITCOIN_UTIL_STRENCODINGS_H
