@@ -551,9 +551,21 @@ public:
     void ApplyDelta(const uint256& hash, CAmount &nFeeDelta) const EXCLUSIVE_LOCKS_REQUIRED(cs);
     void ClearPrioritisation(const uint256& hash) EXCLUSIVE_LOCKS_REQUIRED(cs);
 
-    bool HaveKeyImage(const CCmpPubKey &ki, uint256 &hash) const;
+    bool HaveKeyImage(const CCmpPubKey &ki, uint256 &hash) const; // Particl
 
-public:
+    struct delta_info {
+        /** Whether this transaction is in the mempool. */
+        const bool in_mempool;
+        /** The fee delta added using PrioritiseTransaction(). */
+        const CAmount delta;
+        /** The modified fee (base fee + delta) of this entry. Only present if in_mempool=true. */
+        std::optional<CAmount> modified_fee;
+        /** The prioritised transaction's txid. */
+        const uint256 txid;
+    };
+    /** Return a vector of all entries in mapDeltas with their corresponding delta_info. */
+    std::vector<delta_info> GetPrioritisedTransactions() const EXCLUSIVE_LOCKS_REQUIRED(!cs);
+
     /** Get the transaction in the pool that spends the same prevout */
     const CTransaction* GetConflictTx(const COutPoint& prevout) const EXCLUSIVE_LOCKS_REQUIRED(cs);
 
