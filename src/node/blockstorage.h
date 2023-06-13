@@ -152,7 +152,8 @@ public:
      */
     std::unordered_map<std::string, PruneLockInfo> m_prune_locks GUARDED_BY(::cs_main);
 
-    const kernel::BlockManagerOpts m_opts;
+    //const kernel::BlockManagerOpts m_opts;
+    kernel::BlockManagerOpts m_opts;
 
 public:
     using Options = kernel::BlockManagerOpts;

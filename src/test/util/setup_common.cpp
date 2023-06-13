@@ -265,6 +265,11 @@ void ChainTestingSetup::LoadVerifyActivateChainstate()
     csl_args.spent_index = m_node.args->GetBoolArg("-spentindex", particl::DEFAULT_SPENTINDEX);
     csl_args.timestamp_index = m_node.args->GetBoolArg("-timestampindex", particl::DEFAULT_TIMESTAMPINDEX);
     csl_args.balances_index = m_node.args->GetBoolArg("-balancesindex", particl::DEFAULT_BALANCESINDEX);
+
+    chainman.m_blockman.m_opts.addressindex = csl_args.address_index;
+    chainman.m_blockman.m_opts.spentindex = csl_args.spent_index;
+    chainman.m_blockman.m_opts.timestampindex = csl_args.timestamp_index;
+    chainman.m_blockman.m_opts.balancesindex = csl_args.balances_index;
     options.args = csl_args;
 
     auto [status, error] = LoadChainstate(chainman, m_cache_sizes, options);

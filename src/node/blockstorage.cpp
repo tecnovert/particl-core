@@ -992,7 +992,7 @@ void ThreadImport(ChainstateManager& chainman, std::vector<fs::path> vImportFile
             if (!chainstate->ActivateBestChain(state, nullptr)) {
                 LogPrintf("Failed to connect best block (%s)\n", state.ToString());
                 // Particl - Don't exit.  May be missing PoS info for valid blocks.
-                //StartShutdown();
+                //AbortNode(strprintf("Failed to connect best block (%s)", state.ToString()));
                 //return;
             }
         }

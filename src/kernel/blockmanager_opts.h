@@ -25,6 +25,13 @@ struct BlockManagerOpts {
     bool fast_prune{false};
     bool stop_after_block_import{DEFAULT_STOPAFTERBLOCKIMPORT};
     const fs::path blocks_dir;
+    bool checkpeerheight{true};
+    bool smsgscanincoming{false};
+    bool addressindex{false};
+    bool timestampindex{false};
+    bool spentindex{false};
+    bool balancesindex{false};
+    bool rebuildrollingindices{false};
 };
 
 } // namespace kernel

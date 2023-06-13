@@ -955,7 +955,7 @@ std::set<BlockFilterType> g_enabled_filter_types;
     std::terminate();
 };
 
-bool AppInitBasicSetup(const ArgsManager& args)
+bool AppInitBasicSetup(const ArgsManager& args, std::atomic<int>& exit_status)
 {
     // ********************************************************* Step 1: setup
 #ifdef _MSC_VER
@@ -969,7 +969,7 @@ bool AppInitBasicSetup(const ArgsManager& args)
     // Enable heap terminate-on-corruption
     HeapSetInformation(nullptr, HeapEnableTerminationOnCorruption, nullptr, 0);
 #endif
-    if (!InitShutdownState()) {
+    if (!InitShutdownState(exit_status)) {
         return InitError(Untranslated("Initializing wait-for-shutdown state failed."));
     }
 
@@ -1649,6 +1649,13 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
         .chainparams = chainman_opts.chainparams,
         .blocks_dir = args.GetBlocksDirPath(),
     };
+    blockman_opts.checkpeerheight = args.GetBoolArg("-checkpeerheight", true);
+    blockman_opts.smsgscanincoming = args.GetBoolArg("-smsgscanincoming", false);
+    blockman_opts.addressindex = args.GetBoolArg("-addressindex", particl::DEFAULT_ADDRESSINDEX);
+    blockman_opts.timestampindex = args.GetBoolArg("-timestampindex", particl::DEFAULT_TIMESTAMPINDEX);
+    blockman_opts.spentindex = args.GetBoolArg("-spentindex", particl::DEFAULT_SPENTINDEX);
+    blockman_opts.balancesindex = args.GetBoolArg("-balancesindex", particl::DEFAULT_BALANCESINDEX);
+    blockman_opts.rebuildrollingindices = args.GetBoolArg("-rebuildrollingindices", false);
     Assert(ApplyArgsManOptions(args, blockman_opts)); // no error can happen, already checked in AppInitParameterInteraction
 
     // cache size calculations
