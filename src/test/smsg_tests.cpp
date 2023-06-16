@@ -72,7 +72,6 @@ BOOST_AUTO_TEST_CASE(smsg_test)
         InsecureNewKey(keyOwn[i], true);
         auto spk_man = wallet->GetOrCreateLegacyScriptPubKeyMan();
         assert(spk_man);
-        LOCK(spk_man->cs_KeyStore);
         spk_man->AddKey(keyOwn[i]);
     }
 
