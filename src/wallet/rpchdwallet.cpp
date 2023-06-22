@@ -3238,7 +3238,7 @@ static void ParseOutputs(
             }
         }
         if (debit_watchonly) {
-            entry.__pushKV("involvesWatchonlyInput", "true");
+            entry.pushKVEnd("involvesWatchonlyInput", "true");
         }
 
         if (wtx.IsCoinBase()) {
@@ -3369,16 +3369,16 @@ static void ParseRecords(
     CAmount totalAmount = 0;
 
     int confirmations = pwallet->GetDepthInMainChain(rtx);
-    entry.__pushKV("confirmations", confirmations);
+    entry.pushKVEnd("confirmations", confirmations);
     if (confirmations > 0) {
-        entry.__pushKV("blockhash", rtx.blockHash.GetHex());
-        entry.__pushKV("blockindex", rtx.nIndex);
+        entry.pushKVEnd("blockhash", rtx.blockHash.GetHex());
+        entry.pushKVEnd("blockindex", rtx.nIndex);
         PushTime(entry, "blocktime", rtx.nBlockTime);
     } else {
-        entry.__pushKV("trusted", pwallet->IsTrusted(hash, rtx));
+        entry.pushKVEnd("trusted", pwallet->IsTrusted(hash, rtx));
     }
 
-    entry.__pushKV("txid", hash.ToString());
+    entry.pushKVEnd("txid", hash.ToString());
     UniValue conflicts(UniValue::VARR);
     std::set<uint256> setconflicts = pwallet->GetConflicts(hash);
     setconflicts.erase(hash);
@@ -3386,7 +3386,7 @@ static void ParseRecords(
         conflicts.push_back(conflict.GetHex());
     }
     if (conflicts.size() > 0) {
-        entry.__pushKV("walletconflicts", conflicts);
+        entry.pushKVEnd("walletconflicts", conflicts);
     }
     PushTime(entry, "time", rtx.GetTxTime());
 
@@ -3403,11 +3403,11 @@ static void ParseRecords(
         CCmpPubKey ki;
         for (const auto &prevout : rtx.vin) {
             UniValue anon_prevout(UniValue::VOBJ);
-            anon_prevout.__pushKV("txid", prevout.hash.ToString());
-            anon_prevout.__pushKV("n", (int) prevout.n);
+            anon_prevout.pushKVEnd("txid", prevout.hash.ToString());
+            anon_prevout.pushKVEnd("n", (int) prevout.n);
             anon_inputs.push_back(anon_prevout);
         }
-        entry.__pushKV("anon_inputs", anon_inputs);
+        entry.pushKVEnd("anon_inputs", anon_inputs);
     }
 
     int nStd = 0, nBlind = 0, nAnon = 0;
@@ -3461,7 +3461,7 @@ static void ParseRecords(
             addr.Set(dest);
             auto mai = pwallet->m_address_book.find(dest);
             if (mai != pwallet->m_address_book.end() && !mai->second.GetLabel().empty()) {
-                output.__pushKV("account", mai->second.GetLabel());
+                output.pushKVEnd("account", mai->second.GetLabel());
             }
         }
 
@@ -3475,7 +3475,7 @@ static void ParseRecords(
                     uint32_t sidx;
                     memcpy(&sidx, &record.vPath[1], 4);
                     if (pwallet->GetStealthByIndex(sidx, sx)) {
-                        output.__pushKV("stealth_address", sx.Encoded());
+                        output.pushKVEnd("stealth_address", sx.Encoded());
                         addresses.push_back(sx.Encoded());
                     }
                 }
@@ -3484,17 +3484,17 @@ static void ParseRecords(
             if (extracted && dest.index() == DI::_PKHash) {
                 CKeyID idK = ToKeyID(std::get<PKHash>(dest));
                 if (pwallet->GetStealthLinked(idK, sx)) {
-                    output.__pushKV("stealth_address", sx.Encoded());
+                    output.pushKVEnd("stealth_address", sx.Encoded());
                     addresses.push_back(sx.Encoded());
                 }
             }
         }
 
         if (extracted && dest.index() == DI::_CNoDestination) {
-            output.__pushKV("address", "none");
+            output.pushKVEnd("address", "none");
         } else
         if (extracted) {
-            output.__pushKV("address", addr.ToString());
+            output.pushKVEnd("address", addr.ToString());
             addresses.push_back(addr.ToString());
         }
 
@@ -3504,14 +3504,14 @@ static void ParseRecords(
             case OUTPUT_RINGCT: ++nAnon; break;
             default: ++nStd = 0;
         }
-        output.__pushKV("type",
+        output.pushKVEnd("type",
               record.nType == OUTPUT_STANDARD ? "standard"
             : record.nType == OUTPUT_CT       ? "blind"
             : record.nType == OUTPUT_RINGCT   ? "anon"
             : "unknown");
 
         if (!record.sNarration.empty()) {
-            output.__pushKV("narration", record.sNarration);
+            output.pushKVEnd("narration", record.sNarration);
         }
 
         CAmount amount = record.nValue;
@@ -3519,19 +3519,19 @@ static void ParseRecords(
             amount *= -1;
         }
         if (record.nFlags & ORF_CHANGE) {
-            output.__pushKV("is_change", "true");
+            output.pushKVEnd("is_change", "true");
         } else {
             totalAmount += amount;
         }
         amounts.push_back(ToString(amount));
-        output.__pushKV("amount", ValueFromAmount(amount));
-        output.__pushKV("vout", record.n);
+        output.pushKVEnd("amount", ValueFromAmount(amount));
+        output.pushKVEnd("vout", record.n);
 
         if (record.nType == OUTPUT_CT || record.nType == OUTPUT_RINGCT) {
             uint256 blinding_factor;
             if (show_blinding_factors && have_stx &&
                 stx.GetBlind(record.n, blinding_factor.begin())) {
-                output.__pushKV("blindingfactor", blinding_factor.ToString());
+                output.pushKVEnd("blindingfactor", blinding_factor.ToString());
             }
         }
         outputs.push_back(output);
@@ -3550,8 +3550,8 @@ static void ParseRecords(
     }
 
     if (nFrom > 0) {
-        entry.__pushKV("abandoned", rtx.IsAbandoned());
-        entry.__pushKV("fee", ValueFromAmount(-rtx.nFee));
+        entry.pushKVEnd("abandoned", rtx.IsAbandoned());
+        entry.pushKVEnd("fee", ValueFromAmount(-rtx.nFee));
     }
 
     std::string category;
@@ -3567,23 +3567,23 @@ static void ParseRecords(
     if (category_filter != "all" && category_filter != category) {
         return;
     }
-    entry.__pushKV("category", category);
+    entry.pushKVEnd("category", category);
 
     if (rtx.nFlags & ORF_ANON_IN) {
-        entry.__pushKV("type_in", "anon");
+        entry.pushKVEnd("type_in", "anon");
     } else
     if (rtx.nFlags & ORF_BLIND_IN) {
-        entry.__pushKV("type_in", "blind");
+        entry.pushKVEnd("type_in", "blind");
     }
 
     if (nLockedOutputs) {
-        entry.__pushKV("requires_unlock", "true");
+        entry.pushKVEnd("requires_unlock", "true");
     }
     if (nWatchOnly) {
-        entry.__pushKV("involvesWatchonly", "true");
+        entry.pushKVEnd("involvesWatchonly", "true");
     }
 
-    entry.__pushKV("outputs", outputs);
+    entry.pushKVEnd("outputs", outputs);
     if (nOwned && nFrom) {
         // Must check against the owned input value
         CAmount nInput = 0;
@@ -3597,9 +3597,9 @@ static void ParseRecords(
                 nOutput += record.nValue;
             }
         }
-        entry.__pushKV("amount", ValueFromAmount(nOutput - nInput));
+        entry.pushKVEnd("amount", ValueFromAmount(nOutput - nInput));
     } else {
-        entry.__pushKV("amount", ValueFromAmount(totalAmount));
+        entry.pushKVEnd("amount", ValueFromAmount(totalAmount));
     }
     amounts.push_back(ToString(totalAmount));
 
