@@ -7,7 +7,8 @@ import random
 from test_framework.test_particl import ParticlTestFramework
 from test_framework.util import assert_raises_rpc_error
 from test_framework.address import base58_to_byte
-from test_framework.key import SECP256K1, ECPubKey
+from test_framework.key import ECPubKey
+from test_framework.secp256k1 import GE
 from test_framework.messages import COIN, sha256
 
 
@@ -345,10 +346,10 @@ class AnonTest(ParticlTestFramework):
         epk.set(bytes.fromhex(ephem['ephemeral_pubkey']))
 
         self.log.info('Test rewindrangeproof with final nonce')
+
         # ECDH
-        P = SECP256K1.affine(epk.p)
-        M = SECP256K1.affine(SECP256K1.mul([((P[0], P[1], P[2]), int.from_bytes(key_bytes, 'big'))]))
-        eM = bytes([0x02 + (M[1] & 1)]) + M[0].to_bytes(32, 'big')
+        M = int.from_bytes(key_bytes, 'big') * epk.p
+        eM = bytes([0x02 + (int(M.y) & 1)]) + int(M.x).to_bytes(32, 'big')
         hM = sha256(eM)
         hhM = sha256(hM)
 

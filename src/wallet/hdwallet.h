@@ -92,6 +92,7 @@ public:
     bool GetVote(int nHeight, uint32_t &token);
 
     bool LoadTxRecords(CHDWalletDB *pwdb);
+    bool LoadLockedUTXOs(CHDWalletDB *pwdb);
 
     bool IsLocked() const override;
     bool EncryptWallet(const SecureString &strWalletPassphrase) override;

@@ -588,7 +588,7 @@ private:
      *
      * @return Returns true if the peer was punished (probably disconnected)
      */
-    bool MaybePunishNodeForTx(NodeId nodeid, const TxValidationState& state, const std::string& message = "")
+    bool MaybePunishNodeForTx(NodeId nodeid, const TxValidationState& state)
         EXCLUSIVE_LOCKS_REQUIRED(!m_peer_mutex);
 
     /** Maybe disconnect a peer and discourage future connections from its address.
@@ -1788,7 +1788,7 @@ void PeerManagerImpl::DecMisbehaving(NodeId nodeid, int howmuch)
  *
  * @return Returns true if the peer was punished (probably disconnected)
  */
-bool PeerManagerImpl::MaybePunishNodeForTx(NodeId nodeid, const TxValidationState& state, const std::string& message)
+bool PeerManagerImpl::MaybePunishNodeForTx(NodeId nodeid, const TxValidationState& state)
 {
     PeerRef peer{GetPeerRef(nodeid)};
     switch (state.GetResult()) {
@@ -1796,22 +1796,22 @@ bool PeerManagerImpl::MaybePunishNodeForTx(NodeId nodeid, const TxValidationStat
         break;
     // The node is providing invalid data:
     case TxValidationResult::TX_CONSENSUS:
-        if (peer) Misbehaving(*peer, 100, message);
+        if (peer) Misbehaving(*peer, 100, "");
         return true;
     case TxValidationResult::DOS_100:
-        if (peer) Misbehaving(*peer, 100, message);
+        if (peer) Misbehaving(*peer, 100, "");
         return true;
     case TxValidationResult::DOS_50:
-        if (peer) Misbehaving(*peer, 50, message);
+        if (peer) Misbehaving(*peer, 50, "");
         return true;
     case TxValidationResult::DOS_20:
-        if (peer) Misbehaving(*peer, 20, message);
+        if (peer) Misbehaving(*peer, 20, "");
         return true;
     case TxValidationResult::DOS_5:
-        if (peer) Misbehaving(*peer, 5, message);
+        if (peer) Misbehaving(*peer, 5, "");
         return true;
     case TxValidationResult::DOS_1:
-        if (peer) Misbehaving(*peer, 1, message);
+        if (peer) Misbehaving(*peer, 1, "");
         return true;
     // Conflicting (but not necessarily invalid) data or different policy:
     case TxValidationResult::TX_RECENT_CONSENSUS_CHANGE:
@@ -1825,9 +1825,6 @@ bool PeerManagerImpl::MaybePunishNodeForTx(NodeId nodeid, const TxValidationStat
     case TxValidationResult::TX_MEMPOOL_POLICY:
     case TxValidationResult::TX_NO_MEMPOOL:
         break;
-    }
-    if (message != "") {
-        LogPrint(BCLog::NET, "peer=%d: %s\n", nodeid, message);
     }
     return false;
 }
@@ -2064,7 +2061,7 @@ bool PeerManagerImpl::MaybePunishNodeForDuplicates(NodeId nodeid, const BlockVal
         return true;
     }
     return false;
-};
+}
 
 bool PeerManagerImpl::AddNodeHeader(NodeId node_id, const uint256 &hash) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
 {

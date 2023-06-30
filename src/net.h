@@ -1233,7 +1233,6 @@ public:
         std::vector<CNode*> m_nodes_copy;
     };
 
-    friend struct CConnmanTest;
     friend struct ConnmanTestMsg;
 };
 

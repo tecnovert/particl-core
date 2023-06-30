@@ -31,6 +31,10 @@
 
 namespace wallet {
 namespace {
+Span<const std::byte> SpanFromDbt(const SafeDbt& dbt)
+{
+    return {reinterpret_cast<const std::byte*>(dbt.get_data()), dbt.get_size()};
+}
 
 //! Make sure database has a unique fileid within the environment. If it
 //! doesn't, throw an error. BDB caches do not work properly when more than one
@@ -708,7 +712,7 @@ DatabaseCursor::Status BerkeleyCursor::Next(DataStream& ssKey, DataStream& ssVal
         return Status::FAIL;
     }
 
-    Span<const std::byte> raw_key = {AsBytePtr(datKey.get_data()), datKey.get_size()};
+    Span<const std::byte> raw_key = SpanFromDbt(datKey);
     if (!m_key_prefix.empty() && std::mismatch(raw_key.begin(), raw_key.end(), m_key_prefix.begin(), m_key_prefix.end()).second != m_key_prefix.end()) {
         return Status::DONE;
     }
@@ -717,7 +721,7 @@ DatabaseCursor::Status BerkeleyCursor::Next(DataStream& ssKey, DataStream& ssVal
     ssKey.clear();
     ssKey.write(raw_key);
     ssValue.clear();
-    ssValue.write({AsBytePtr(datValue.get_data()), datValue.get_size()});
+    ssValue.write(SpanFromDbt(datValue));
     return Status::MORE;
 }
 
@@ -830,7 +834,7 @@ bool BerkeleyBatch::ReadKey(DataStream&& key, DataStream& value, int nFlags)
     int ret = pdb->get(activeTxn, datKey, datValue, nFlags);
     if (ret == 0 && datValue.get_data() != nullptr) {
         value.clear();
-        value.write({AsBytePtr(datValue.get_data()), datValue.get_size()});
+        value.write(SpanFromDbt(datValue));
         return true;
     }
     return false;

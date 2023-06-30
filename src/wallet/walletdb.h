@@ -44,19 +44,21 @@ struct WalletContext;
 
 static const bool DEFAULT_FLUSHWALLET = true;
 
-/** Error statuses for the wallet database */
-enum class DBErrors
+/** Error statuses for the wallet database.
+ * Values are in order of severity. When multiple errors occur, the most severe (highest value) will be returned.
+ */
+enum class DBErrors : int
 {
-    LOAD_OK,
-    CORRUPT,
-    NONCRITICAL_ERROR,
-    TOO_NEW,
-    EXTERNAL_SIGNER_SUPPORT_REQUIRED,
-    LOAD_FAIL,
-    NEED_REWRITE,
-    NEED_RESCAN,
-    UNKNOWN_DESCRIPTOR,
-    UNEXPECTED_LEGACY_ENTRY
+    LOAD_OK = 0,
+    NEED_RESCAN = 1,
+    NEED_REWRITE = 2,
+    EXTERNAL_SIGNER_SUPPORT_REQUIRED = 3,
+    NONCRITICAL_ERROR = 4,
+    TOO_NEW = 5,
+    UNKNOWN_DESCRIPTOR = 6,
+    LOAD_FAIL = 7,
+    UNEXPECTED_LEGACY_ENTRY = 8,
+    CORRUPT = 9,
 };
 
 namespace DBKeys {
@@ -94,11 +96,15 @@ extern const std::string PART_EXTACC;
 extern const std::string PART_EXTKEY;
 extern const std::string PART_EXTKEYNAMED;
 extern const std::string PART_SXADDRKEYPACK;
+extern const std::string PART_EXTKEYPACK;
 extern const std::string PART_FLAG;
+extern const std::string PART_LOCKEDBLINDOUTPUT;
 extern const std::string PART_LOCKEDUTXO;
 extern const std::string PART_SXADDR;
+extern const std::string PART_SXKEYMETADATA;
 extern const std::string PART_WALLETSETTING;
 extern const std::string PART_LEXTKEYCK;
+extern const std::string PART_STEALTHCHILDKEYPACK;
 
 // Keys in this set pertain only to the legacy wallet (LegacyScriptPubKeyMan) and are removed during migration from legacy to descriptors.
 extern const std::unordered_set<std::string> LEGACY_TYPES;
@@ -320,11 +326,10 @@ public:
 //! Compacts BDB state so that wallet.dat is self-contained (if there are changes)
 void MaybeCompactWalletDB(WalletContext& context);
 
-//! Callback for filtering key types to deserialize in ReadKeyValue
-using KeyFilterFn = std::function<bool(const std::string&)>;
-
-//! Unserialize a given Key-Value pair and load it into the wallet
-bool ReadKeyValue(CWallet* pwallet, DataStream& ssKey, CDataStream& ssValue, std::string& strType, std::string& strErr, const KeyFilterFn& filter_fn = nullptr);
+bool LoadKey(CWallet* pwallet, DataStream& ssKey, DataStream& ssValue, std::string& strErr);
+bool LoadCryptedKey(CWallet* pwallet, DataStream& ssKey, DataStream& ssValue, std::string& strErr);
+bool LoadEncryptionKey(CWallet* pwallet, DataStream& ssKey, DataStream& ssValue, std::string& strErr);
+bool LoadHDChain(CWallet* pwallet, DataStream& ssValue, std::string& strErr);
 
 /** Return object for accessing temporary in-memory BDB database. */
 std::unique_ptr<WalletDatabase> CreateMockWalletDatabaseBDB();

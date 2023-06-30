@@ -734,8 +734,8 @@ bool CHDWallet::LoadVoteTokens(CHDWalletDB *pwdb)
         if (v.nEnd > nBestHeight - 1000) { // 1000 block buffer in case of reorg etc
             vVoteTokens.push_back(v);
             if (LogAcceptCategory(BCLog::HDWALLET, BCLog::Level::Debug)) {
-                if ((v.nToken >> 16) < 1
-                    || (v.nToken & 0xFFFF) < 1) {
+                if ((v.nToken >> 16) < 1 ||
+                    (v.nToken & 0xFFFF) < 1) {
                     WalletLogPrintf("Clearing vote from block %d to %d.\n",
                         v.nStart, v.nEnd);
                 } else {
@@ -765,7 +765,7 @@ bool CHDWallet::GetVote(int nHeight, uint32_t &token)
     }
 
     return false;
-};
+}
 
 bool CHDWallet::LoadTxRecords(CHDWalletDB *pwdb)
 {
@@ -779,9 +779,7 @@ bool CHDWallet::LoadTxRecords(CHDWalletDB *pwdb)
         throw std::runtime_error(strprintf("%s: cannot create DB cursor", __func__).c_str());
     }
 
-    DataStream ssKey{};
-    DataStream ssValue{};
-
+    DataStream ssKey{}, ssValue{};
     std::string strType, sPrefix = "rtx";
     uint256 txhash;
 
@@ -859,13 +857,47 @@ bool CHDWallet::LoadTxRecords(CHDWalletDB *pwdb)
     WalletLogPrintf("mapRecords.size() = %u\n", mapRecords.size());
 
     return true;
-};
+}
+
+bool CHDWallet::LoadLockedUTXOs(CHDWalletDB *pwdb)
+{
+    LogPrint(BCLog::HDWALLET, "Loading locked UTXO records for %s.\n", GetName());
+
+    assert(pwdb);
+    LOCK(cs_wallet);
+
+    Dbc *pcursor;
+    if (!(pcursor = pwdb->GetCursor())) {
+        throw std::runtime_error(strprintf("%s: cannot create DB cursor", __func__).c_str());
+    }
+
+    DataStream ssKey{}, ssValue{};
+    std::string strType, sPrefix = DBKeys::PART_LOCKEDUTXO;
+    COutPoint output;
+
+    unsigned int fFlags = DB_SET_RANGE;
+    ssKey << sPrefix;
+    while (pwdb->ReadAtCursor(pcursor, ssKey, ssValue, fFlags) == 0) {
+        fFlags = DB_NEXT;
+        ssKey >> strType;
+        if (strType != sPrefix) {
+            break;
+        }
+
+        ssKey >> output;
+        LockCoin(output);
+    }
+
+    pcursor->close();
+
+    return true;
+}
 
 bool CHDWallet::IsLocked() const
 {
     LOCK(cs_wallet); // Lock cs_wallet to ensure any CHDWallet::Unlock has completed
     return CWallet::IsLocked();
-};
+}
 
 bool CHDWallet::EncryptWallet(const SecureString &strWalletPassphrase)
 {
@@ -970,7 +1002,7 @@ bool CHDWallet::EncryptWallet(const SecureString &strWalletPassphrase)
     NotifyStatusChanged(this);
 
     return true;
-};
+}
 
 bool CHDWallet::Lock()
 {
@@ -988,7 +1020,7 @@ bool CHDWallet::Lock()
     }
 
     return CWallet::Lock();
-};
+}
 
 bool CHDWallet::Unlock(const SecureString &strWalletPassphrase, bool accept_no_keys)
 {
@@ -7498,13 +7530,13 @@ int CHDWallet::ExtKeyLoadAccountPacks()
     std::vector<CEKASCKeyPack> asckPak;
 
     unsigned int fFlags = DB_SET_RANGE;
-    ssKey << std::string("epak");
+    ssKey << DBKeys::PART_EXTKEYPACK;
     while (wdb.ReadAtCursor(pcursor, ssKey, ssValue, fFlags) == 0) {
         ekPak.clear();
         fFlags = DB_NEXT;
 
         ssKey >> strType;
-        if (strType != "epak") {
+        if (strType != DBKeys::PART_EXTKEYPACK) {
             break;
         }
 
@@ -7575,14 +7607,14 @@ int CHDWallet::ExtKeyLoadAccountPacks()
     }
 
     ssKey.clear();
-    ssKey << std::string("ecpk");
+    ssKey << DBKeys::PART_STEALTHCHILDKEYPACK;
     fFlags = DB_SET_RANGE;
     while (wdb.ReadAtCursor(pcursor, ssKey, ssValue, fFlags) == 0) {
         aksPak.clear();
         fFlags = DB_NEXT;
 
         ssKey >> strType;
-        if (strType != "ecpk") {
+        if (strType != DBKeys::PART_STEALTHCHILDKEYPACK) {
             break;
         }
 
@@ -9200,12 +9232,12 @@ int CHDWallet::LoadMasterKeys()
     DataStream ssKey{}, ssValue{};
     unsigned int fFlags = DB_SET_RANGE;
     std::string strType;
-    ssKey << std::string("mkey");
+    ssKey << DBKeys::MASTER_KEY;
     while (wdb.ReadAtCursor(pcursor, ssKey, ssValue, fFlags) == 0) {
         fFlags = DB_NEXT;
 
         ssKey >> strType;
-        if (strType != "mkey") {
+        if (strType != DBKeys::MASTER_KEY) {
             break;
         }
 
@@ -9414,11 +9446,12 @@ bool CHDWallet::ProcessLockedStealthOutputs()
     size_t nProcessed = 0; // incl any failed attempts
     size_t nExpanded = 0;
     unsigned int fFlags = DB_SET_RANGE;
-    ssKey << std::string("sxkm");
+
+    ssKey << DBKeys::PART_SXKEYMETADATA;
     while (wdb.ReadAtCursor(pcursor, ssKey, ssValue, fFlags) == 0) {
         fFlags = DB_NEXT;
         ssKey >> strType;
-        if (strType != "sxkm") {
+        if (strType != DBKeys::PART_SXKEYMETADATA) {
             break;
         }
 
@@ -9551,11 +9584,11 @@ bool CHDWallet::ProcessLockedBlindedOutputs()
 
     CStoredTransaction stx;
     unsigned int fFlags = DB_SET_RANGE;
-    ssKey << std::string("lao");
+    ssKey << DBKeys::PART_LOCKEDBLINDOUTPUT;
     while (wdb.ReadKeyAtCursor(pcursor, ssKey, fFlags) == 0) {
         fFlags = DB_NEXT;
         ssKey >> strType;
-        if (strType != "lao") {
+        if (strType != DBKeys::PART_LOCKEDBLINDOUTPUT) {
             break;
         }
 
