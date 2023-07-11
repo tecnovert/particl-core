@@ -97,6 +97,15 @@ int main(int argc, char* argv[])
         {
             std::cout << "Warning: " << warning.original << std::endl;
         }
+        void flushError(const std::string& debug_message) override
+        {
+            std::cerr << "Error flushing block data to disk: " << debug_message << std::endl;
+        }
+        void fatalError(const std::string& debug_message, const bilingual_str& user_message) override
+        {
+            std::cerr << "Error: " << debug_message << std::endl;
+            std::cerr << (user_message.empty() ? "A fatal internal error occurred." : user_message.original) << std::endl;
+        }
     };
     auto notifications = std::make_unique<KernelNotifications>();
 
@@ -112,8 +121,9 @@ int main(int argc, char* argv[])
     const node::BlockManager::Options blockman_opts{
         .chainparams = chainman_opts.chainparams,
         .blocks_dir = abs_datadir / "blocks",
+        .notifications = chainman_opts.notifications,
     };
-    ChainstateManager chainman{chainman_opts, blockman_opts};
+    ChainstateManager chainman{kernel_context.interrupt, chainman_opts, blockman_opts};
 
     node::CacheSizes cache_sizes;
     cache_sizes.block_tree_db = 2 << 20;
@@ -298,7 +308,7 @@ epilogue:
     // Without this precise shutdown sequence, there will be a lot of nullptr
     // dereferencing and UB.
     scheduler.stop();
-    if (chainman.m_load_block.joinable()) chainman.m_load_block.join();
+    if (chainman.m_thread_load.joinable()) chainman.m_thread_load.join();
     StopScriptCheckWorkerThreads();
 
     GetMainSignals().FlushBackgroundCallbacks();

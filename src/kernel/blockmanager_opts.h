@@ -5,6 +5,7 @@
 #ifndef BITCOIN_KERNEL_BLOCKMANAGER_OPTS_H
 #define BITCOIN_KERNEL_BLOCKMANAGER_OPTS_H
 
+#include <kernel/notifications_interface.h>
 #include <util/fs.h>
 
 #include <cstdint>
@@ -25,6 +26,9 @@ struct BlockManagerOpts {
     bool fast_prune{false};
     bool stop_after_block_import{DEFAULT_STOPAFTERBLOCKIMPORT};
     const fs::path blocks_dir;
+    Notifications& notifications;
+
+    // Particl
     bool checkpeerheight{true};
     bool smsgscanincoming{false};
     bool addressindex{false};
