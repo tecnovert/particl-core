@@ -334,7 +334,6 @@ bool CBlockTreeDB::ReadAddressUnspentIndex(uint256 addressHash, int type,
     pcursor->Seek(std::make_pair(DB_ADDRESSUNSPENTINDEX, CAddressIndexIteratorKey(type, addressHash)));
 
     while (pcursor->Valid()) {
-        if (ShutdownRequested()) return false;
         std::pair<uint8_t, CAddressUnspentKey> key;
         if (pcursor->GetKey(key) && key.first == DB_ADDRESSUNSPENTINDEX && key.second.hashBytes == addressHash) {
             CAddressUnspentValue nValue;
@@ -378,7 +377,6 @@ bool CBlockTreeDB::ReadAddressIndex(uint256 addressHash, int type,
     }
 
     while (pcursor->Valid()) {
-        if (ShutdownRequested()) return false;
         std::pair<uint8_t, CAddressIndexKey> key;
         if (pcursor->GetKey(key) && key.first == DB_ADDRESSINDEX && key.second.hashBytes == addressHash) {
             if (end > 0 && key.second.blockHeight > end) {
@@ -413,7 +411,6 @@ bool CBlockTreeDB::ReadTimestampIndex(const unsigned int &high, const unsigned i
     pcursor->Seek(std::make_pair(DB_TIMESTAMPINDEX, CTimestampIndexIteratorKey(low)));
 
     while (pcursor->Valid()) {
-        if (ShutdownRequested()) return false;
         std::pair<uint8_t, CTimestampIndexKey> key;
         if (pcursor->GetKey(key) && key.first == DB_TIMESTAMPINDEX && key.second.timestamp < high) {
             hashes.push_back(std::make_pair(key.second.blockHash, key.second.timestamp));
@@ -539,7 +536,6 @@ size_t CBlockTreeDB::CountBlockIndex()
     size_t num_blocks = 0;
     // Load m_block_index
     while (pcursor->Valid()) {
-        if (ShutdownRequested()) return false;
         std::pair<uint8_t, uint256> key;
         if (pcursor->GetKey(key) && key.first == DB_BLOCK_INDEX) {
             num_blocks += 1;
@@ -636,7 +632,6 @@ bool CBlockTreeDB::EraseRCTKeyImagesAfterHeight(int height)
     pcursor->Seek(key);
 
     while (pcursor->Valid()) {
-        if (ShutdownRequested()) return false;
         std::pair<uint8_t, CCmpPubKey> key;
         if (pcursor->GetKey(key) && key.first == DB_RCTKEYIMAGE) {
             CAnonKeyImageInfo ki_data;

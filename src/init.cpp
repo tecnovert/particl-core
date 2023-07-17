@@ -144,6 +144,7 @@ using node::CacheSizes;
 using node::CalculateCacheSizes;
 using node::DEFAULT_PERSIST_MEMPOOL;
 using node::DEFAULT_PRINTPRIORITY;
+using node::DEFAULT_STOPATHEIGHT;
 using node::fReindex;
 using node::KernelNotifications;
 using node::LoadChainstate;
@@ -1607,6 +1608,7 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     // ********************************************************* Step 7: load block chain
 
     node.notifications = std::make_unique<KernelNotifications>(node.exit_status);
+    ReadNotificationArgs(args, *node.notifications);
     fReindex = args.GetBoolArg("-reindex", false);
     particl::fSkipRangeproof = args.GetBoolArg("-skiprangeproofverify", false);
     bool fReindexChainState = args.GetBoolArg("-reindex-chainstate", false);
