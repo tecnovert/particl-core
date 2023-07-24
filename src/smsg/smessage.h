@@ -389,7 +389,7 @@ public:
     uint16_t             folderId;
     CKeyID               addrTo;         // when in owned addr, when sent remote addr
     CKeyID               addrOutbox;     // owned address this copy was encrypted with
-    std::vector<uint8_t> vchMessage;     // message header + encryped payload
+    std::vector<uint8_t> vchMessage;     // message header + encrypted payload
 
     size_t GetSerializeSize(int nType, int nVersion) const
     {

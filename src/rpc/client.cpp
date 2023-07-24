@@ -270,11 +270,13 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "bumpfee", 1, "fee_rate"},
     { "bumpfee", 1, "replaceable"},
     { "bumpfee", 1, "outputs"},
+    { "bumpfee", 1, "reduce_output"},
     { "psbtbumpfee", 1, "options" },
     { "psbtbumpfee", 1, "conf_target"},
     { "psbtbumpfee", 1, "fee_rate"},
     { "psbtbumpfee", 1, "replaceable"},
     { "psbtbumpfee", 1, "outputs"},
+    { "psbtbumpfee", 1, "reduce_output"},
 
     // Particl
     { "importstealthaddress", 3, "num_prefix_bits" },
