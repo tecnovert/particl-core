@@ -105,6 +105,9 @@ UniValue DescribeAddress(const CTxDestination& dest);
 bool GetBool(const UniValue &uv);
 uint32_t GetUInt32(const UniValue &uv);
 
+/** Parse a sighash string representation and raise an RPC error if it is invalid. */
+int ParseSighashString(const UniValue& sighash);
+
 //! Parse a confirm target option and raise an RPC error if it is invalid.
 unsigned int ParseConfirmTarget(const UniValue& value, unsigned int max_target);
 
