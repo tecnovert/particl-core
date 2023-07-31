@@ -74,10 +74,11 @@ NodeClock::time_point NodeClock::now() noexcept
     const std::chrono::seconds mocktime{nMockTime.load(std::memory_order_relaxed)};
 
     if (mockTimeOffset) {
+        auto time_since_epoch = std::chrono::system_clock::now().time_since_epoch();
         const auto ret{
             mocktime.count() ?
-                mocktime :
-                std::chrono::system_clock::now().time_since_epoch() - mocktime};
+                time_since_epoch - mocktime :
+                time_since_epoch };
         assert(ret > 0s);
         return time_point{ret};
     }

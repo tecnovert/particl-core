@@ -384,6 +384,7 @@ public:
 
     //! Set mock time.
     virtual void setMockTime(int64_t time) = 0;
+    virtual void setMockTimeOffset(int64_t time) = 0;
 };
 
 //! Return implementation of Chain interface.

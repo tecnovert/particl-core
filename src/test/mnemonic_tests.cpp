@@ -125,16 +125,10 @@ static void runTests(int nLanguage, UniValue &tests)
 
 BOOST_AUTO_TEST_CASE(mnemonic_test_json)
 {
-    UniValue tests_english = read_json(
-        std::string(json_tests::bip39_vectors_english,
-        json_tests::bip39_vectors_english + sizeof(json_tests::bip39_vectors_english)));
-
+    UniValue tests_english = read_json(json_tests::bip39_vectors_english);
     runTests(mnemonic::WLL_ENGLISH, tests_english);
 
-    UniValue tests_japanese = read_json(
-        std::string(json_tests::bip39_vectors_japanese,
-        json_tests::bip39_vectors_japanese + sizeof(json_tests::bip39_vectors_japanese)));
-
+    UniValue tests_japanese = read_json(json_tests::bip39_vectors_japanese);
     runTests(mnemonic::WLL_JAPANESE, tests_japanese);
 }
 
