@@ -53,6 +53,7 @@ bench_bench_particl_SOURCES = \
   bench/strencodings.cpp \
   bench/util_time.cpp \
   bench/verify_script.cpp \
+  bench/xor.cpp \
   bench/blind.cpp \
   bench/mlsag.cpp
 
