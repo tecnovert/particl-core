@@ -1022,7 +1022,7 @@ static RPCHelpMan smsgsend()
         if (fPaid) {
             if (!fTestFee && fund_paid_msg) {
                 uint256 txid;
-                smsgOut.GetFundingTxid(txid);
+                GetFundingTxid(smsgOut, txid);
                 result.pushKV("txid", txid.ToString());
             }
             result.pushKV("fee", ValueFromAmount(nFee));
@@ -1243,7 +1243,7 @@ static RPCHelpMan smsgfund()
     if (!test_fee) {
         uint256 txid;
         const smsg::SecureMessage &smsg = *v_psmsgs[0];
-        smsg.GetFundingTxid(txid);
+        GetFundingTxid(smsg, txid);
         result.pushKV("txid", txid.ToString());
     }
 
@@ -2708,8 +2708,8 @@ static RPCHelpMan smsgzmqpush()
         smsg::SecMsgStored smsgStored;
         leveldb::Iterator *it = dbInbox.pdb->NewIterator(leveldb::ReadOptions());
         while (dbInbox.NextSmesg(it, smsg::DBK_INBOX, chKey, smsgStored)) {
-            if (unreadonly
-                && !(smsgStored.status & SMSG_MASK_UNREAD)) {
+            if (unreadonly &&
+                !(smsgStored.status & SMSG_MASK_UNREAD)) {
                 continue;
             }
             if (smsgStored.timeReceived < timefrom ||

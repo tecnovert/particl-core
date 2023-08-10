@@ -43,6 +43,7 @@ Notes:
 #include <net.h>
 #include <net_processing.h>
 #include <streams.h>
+#include <dbwrapper.h>
 #include <univalue.h>
 #include <node/context.h>
 #include <node/blockstorage.h>
@@ -207,8 +208,8 @@ void ThreadSecureMsg(smsg::CSMSG *smsg_module)
             for (std::map<int64_t, SecMsgBucket>::iterator it(smsg_module->buckets.begin()); it != smsg_module->buckets.end(); ) {
                 bool fErase = it->first < cutoffTime;
 
-                if (!fErase
-                    && it->first + it->second.nLeastTTL < now) {
+                if (!fErase &&
+                    it->first + it->second.nLeastTTL < now) {
                     it->second.hashBucket(it->first);
 
                     // TODO: periodically prune files
@@ -3510,9 +3511,7 @@ int CSMSG::StoreFundingTx(ChainSyncCache &cache, const CTransaction &tx, const C
 
     // TODO: Get current fee-rate, GetSmsgFeeRate
 
-    if (!PutFundingData(&cache.m_connect_block_batch, tx.GetHash(), pindex->nHeight, db_data)) {
-        return errorN(SMSG_GENERAL_ERROR, "%s - PutFundingData failed.", __func__);
-    }
+    cache.funding_data.emplace_back(tx.GetHash(), pindex->nHeight, db_data);
 
     return SMSG_NO_ERROR;
 }
@@ -3523,8 +3522,8 @@ int CSMSG::CheckFundingTx(const Consensus::Params &consensusParams, const Secure
     const size_t nMsgBytes = SMSG_HDR_LEN + psmsg->nPayload;
     uint256 txid;
     uint160 msgId;
-    if (0 != HashMsg(*psmsg, pPayload, psmsg->nPayload-32, msgId)
-        || !GetFundingTxid(pPayload, psmsg->nPayload, txid)) {
+    if (0 != HashMsg(*psmsg, pPayload, psmsg->nPayload-32, msgId) ||
+        !GetFundingTxid(pPayload, psmsg->nPayload, txid)) {
         LogPrintf("%s: Get msgID or Txn Hash failed.\n", __func__);
         return SMSG_GENERAL_ERROR;
     }
@@ -3653,9 +3652,8 @@ int CSMSG::SetBestBlock(ChainSyncCache &cache, const uint256 &block_hash, int he
         return SMSG_NO_ERROR;
     }
 
-    if (!PutBestBlock(&cache.m_connect_block_batch, block_hash, height)) {
-        return errorN(SMSG_GENERAL_ERROR, "%s - PutBestBlock failed.", __func__);
-    }
+    cache.best_block_hash = block_hash;
+    cache.best_block_height = height;
 
     return SMSG_NO_ERROR;
 }
@@ -3677,7 +3675,18 @@ int CSMSG::WriteCache(ChainSyncCache &cache)
                 return SMSG_GENERAL_ERROR;
             }
         }
-        m_chain_sync_db.CommitBatch(&cache.m_connect_block_batch);
+        leveldb::WriteBatch batch;
+
+        for (const auto &tx_data : cache.funding_data) {
+            if (!PutFundingData(&batch, tx_data.tx_hash, tx_data.tx_height, tx_data.db_data)) {
+                return errorN(SMSG_GENERAL_ERROR, "%s - PutFundingData failed.", __func__);
+            }
+        }
+
+        if (!PutBestBlock(&batch, cache.best_block_hash, cache.best_block_height)) {
+            return errorN(SMSG_GENERAL_ERROR, "%s - PutBestBlock failed.", __func__);
+        }
+        m_chain_sync_db.CommitBatch(&batch);
     }
 
     return SMSG_NO_ERROR;
@@ -4227,7 +4236,7 @@ int CSMSG::Send(CKeyID &addressFrom, CKeyID &addressTo, std::string &message,
         } else {
             if (fPaid) {
                 uint256 txfundId;
-                if (!smsg.GetFundingTxid(txfundId)) {
+                if (!GetFundingTxid(smsg, txfundId)) {
                     return errorN(SMSG_GENERAL_ERROR, "%s: GetFundingTxid failed.\n");
                 }
                 // SecureMsgEncrypt will alloc an extra 32 bytes when smsg version describes paid msg
@@ -4732,6 +4741,13 @@ double GetDifficulty(uint32_t compact)
     }
 
     return dDiff;
+}
+
+void ChainSyncCache::Clear() {
+    m_skip = false;
+    best_block_hash = uint256();
+    best_block_height = -1;
+    funding_data.clear();
 }
 
 } // namespace smsg

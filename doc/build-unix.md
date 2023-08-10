@@ -110,7 +110,7 @@ SQLite is required for the descriptor wallet:
 
     sudo dnf install sqlite-devel
 
-Berkeley DB is required for the legacy wallet:
+Berkeley DB is required for the Particl wallet:
 
     sudo dnf install libdb4-devel libdb4-cxx-devel
 

@@ -38,7 +38,7 @@
 
 // Particl
 #include <util/strencodings.h>
-#include <smsg/smessage.h>
+#include <smsg/securemessage.h>
 
 
 namespace Consensus {

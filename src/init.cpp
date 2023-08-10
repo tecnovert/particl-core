@@ -34,6 +34,7 @@
 #include <interfaces/init.h>
 #include <interfaces/node.h>
 #include <interfaces/wallet.h>
+#include <logging.h>
 #include <mapport.h>
 #include <net.h>
 #include <net_permissions.h>
@@ -1273,7 +1274,7 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
 
     // Warn about relative -datadir path.
     if (args.IsArgSet("-datadir") && !args.GetPathArg("-datadir").is_absolute()) {
-        LogPrintf("Warning: relative datadir option '%s' specified, which will be interpreted relative to the " /* Continued */
+        LogPrintf("Warning: relative datadir option '%s' specified, which will be interpreted relative to the "
                   "current working directory '%s'. This is fragile, because if bitcoin is started in the future "
                   "from a different location, it will be unable to locate the current data files. There could "
                   "also be data loss if bitcoin is started while in a temporary directory.\n",

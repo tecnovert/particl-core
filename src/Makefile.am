@@ -25,7 +25,7 @@ check_PROGRAMS =
 TESTS =
 BENCHMARKS =
 
-BITCOIN_INCLUDES=-I$(builddir) -I$(srcdir)/$(MINISKETCH_INCLUDE_DIR_INT) -I$(srcdir)/secp256k1/include -I$(srcdir)/$(UNIVALUE_INCLUDE_DIR_INT) $(LEVELDB_CPPFLAGS)
+BITCOIN_INCLUDES=-I$(builddir) -I$(srcdir)/$(MINISKETCH_INCLUDE_DIR_INT) -I$(srcdir)/secp256k1/include -I$(srcdir)/$(UNIVALUE_INCLUDE_DIR_INT)
 
 LIBPARTICL_NODE=libparticl_node.a
 LIBPARTICL_COMMON=libparticl_common.a
@@ -302,6 +302,7 @@ BITCOIN_CORE_H = \
   smsg/smessage.h \
   smsg/manager.h \
   smsg/rpcsmessage.h \
+  smsg/securemessage.h \
   support/allocators/secure.h \
   support/allocators/zeroafterfree.h \
   support/cleanse.h \
@@ -416,7 +417,7 @@ obj/build.h: FORCE
 libparticl_util_a-clientversion.$(OBJEXT): obj/build.h
 
 # node #
-libparticl_node_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(BOOST_CPPFLAGS) $(MINIUPNPC_CPPFLAGS) $(NATPMP_CPPFLAGS) $(EVENT_CFLAGS) $(EVENT_PTHREADS_CFLAGS)
+libparticl_node_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(LEVELDB_CPPFLAGS) $(BOOST_CPPFLAGS) $(MINIUPNPC_CPPFLAGS) $(NATPMP_CPPFLAGS) $(EVENT_CFLAGS) $(EVENT_PTHREADS_CFLAGS)
 libparticl_node_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libparticl_node_a_SOURCES = \
   addrdb.cpp \
@@ -576,7 +577,7 @@ endif
 #
 
 # wallet #
-libparticl_wallet_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(BOOST_CPPFLAGS) $(BDB_CPPFLAGS) $(SQLITE_CFLAGS)
+libparticl_wallet_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(BOOST_CPPFLAGS) $(BDB_CPPFLAGS) $(SQLITE_CFLAGS) $(LEVELDB_CPPFLAGS)
 libparticl_wallet_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libparticl_wallet_a_SOURCES = \
   wallet/rpchdwallet.cpp \
@@ -856,9 +857,10 @@ libparticl_util_a_SOURCES = \
   util/tokenpipe.cpp \
   $(BITCOIN_CORE_H)
 #
+#
 
 # smsg #
-libparticl_smsg_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+libparticl_smsg_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(LEVELDB_CPPFLAGS)
 libparticl_smsg_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libparticl_smsg_a_CFLAGS = $(AM_CFLAGS) $(PIE_FLAGS)
 libparticl_smsg_a_SOURCES = \
