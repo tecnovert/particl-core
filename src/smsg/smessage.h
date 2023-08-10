@@ -568,7 +568,6 @@ public:
     std::thread thread_smsg_pow;
 
     bool m_track_funding_txns{false};
-    leveldb::WriteBatch *m_connect_block_batch{nullptr};
     SecMsgDB m_chain_sync_db;
 
     node::NodeContext *m_node = nullptr;
