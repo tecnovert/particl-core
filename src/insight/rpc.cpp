@@ -17,7 +17,7 @@
 #include <key_io.h>
 #include <core_io.h>
 #include <node/context.h>
-#include <script/standard.h>
+#include <script/solver.h>
 #include <shutdown.h>
 #include <pos/kernel.h>
 

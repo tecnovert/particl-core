@@ -13,7 +13,7 @@
 #ifndef BITCOIN_WALLET_TYPES_H
 #define BITCOIN_WALLET_TYPES_H
 
-#include <script/standard.h>
+#include <script/solver.h>
 #include <script/ismine.h>
 
 #include <type_traits>

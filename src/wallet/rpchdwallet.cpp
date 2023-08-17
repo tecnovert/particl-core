@@ -5161,7 +5161,7 @@ static RPCHelpMan listunspentblind()
 
             std::unique_ptr<SigningProvider> provider = pwallet->GetSolvingProvider(*scriptPubKey);
             if (scriptPubKey->IsPayToScriptHash()) {
-                const CScriptID& hash = CScriptID(std::get<ScriptHash>(address));
+                const CScriptID& hash = ToScriptID(std::get<ScriptHash>(address));
                 CScript redeemScript;
                 if (provider->GetCScript(hash, redeemScript))
                     entry.pushKV("redeemScript", HexStr(redeemScript));
@@ -5944,7 +5944,7 @@ static UniValue createsignatureinner(const JSONRPCRequest &request, ChainstateMa
             std::unique_ptr<SigningProvider> provider = pwallet->GetSolvingProvider(scriptPubKey);
             if (ExtractDestination(scriptPubKey, redeemDest)) {
                 if (redeemDest.index() == DI::_ScriptHash) {
-                    const CScriptID& scriptID = CScriptID(std::get<ScriptHash>(redeemDest));
+                    const CScriptID& scriptID = ToScriptID(std::get<ScriptHash>(redeemDest));
                     provider->GetCScript(scriptID, scriptRedeem);
                 } else
                 if (redeemDest.index() == DI::_CScriptID256) {

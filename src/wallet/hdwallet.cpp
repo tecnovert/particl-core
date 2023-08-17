@@ -21,8 +21,9 @@
 #include <util/message.h>
 #include <util/moneystr.h>
 #include <util/translation.h>
+#include <addresstype.h>
 #include <script/script.h>
-#include <script/standard.h>
+#include <script/solver.h>
 #include <script/sign.h>
 #include <policy/fees.h>
 #include <policy/policy.h>

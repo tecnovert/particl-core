@@ -11,7 +11,7 @@
 #include <txmempool.h>
 #include <uint256.h>
 #include <script/script.h>
-#include <script/standard.h>
+#include <script/solver.h>
 #include <key_io.h>
 
 #include <primitives/transaction.h>

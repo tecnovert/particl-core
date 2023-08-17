@@ -11,21 +11,9 @@
 #include <primitives/transaction.h>
 #include <script/keyorigin.h>
 #include <script/signingprovider.h>
-#include <script/standard.h>
+#include <script/solver.h>
 #include <key.h>
 #include <pubkey.h>
-
-
-class CCoinControlEntry
-{
-public:
-    COutPoint op;
-    int nType;
-    int nDepth;
-    CAmount nValue;
-    CScript scriptPubKey;
-    int64_t nTxTime;
-};
 
 class CInputData
 {

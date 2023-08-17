@@ -10,7 +10,6 @@
 #endif
 
 #include <key.h>
-#include <script/standard.h>
 
 #include <qt/walletmodeltransaction.h>
 
@@ -39,7 +38,6 @@ class COutPoint;
 namespace wallet {
 struct COutput;
 } // namespace wallet
-class CCoinControlEntry;
 class CPubKey;
 class uint256;
 class UniValue;

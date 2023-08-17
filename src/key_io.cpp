@@ -6,6 +6,8 @@
 
 #include <base58.h>
 #include <bech32.h>
+#include <script/interpreter.h>
+#include <script/solver.h>
 #include <util/strencodings.h>
 #include <insight/addressindex.h>
 
@@ -479,7 +481,7 @@ public:
     CBitcoinAddressVisitor(CBitcoinAddress* addrIn, bool fBech32_ = false) : addr(addrIn), fBech32(fBech32_) {}
 
     bool operator()(const PKHash& id) const { return addr->Set(ToKeyID(id), fBech32); }
-    bool operator()(const ScriptHash& id) const { return addr->Set(CScriptID(id), fBech32); }
+    bool operator()(const ScriptHash& id) const { return addr->Set(ToScriptID(id), fBech32); }
     bool operator()(const CExtPubKey &ek) const { return addr->Set(ek, fBech32); }
     bool operator()(const CStealthAddress &sxAddr) const { return addr->Set(sxAddr, fBech32); }
     bool operator()(const CKeyID256& id) const { return addr->Set(id, fBech32); }

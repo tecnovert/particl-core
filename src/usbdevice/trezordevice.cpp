@@ -11,6 +11,7 @@
 #include <base58.h>
 #include <usbdevice/usbwrapper.h>
 #include <util/strencodings.h>
+#include <script/solver.h>
 #include <shutdown.h>
 #include <univalue.h>
 
