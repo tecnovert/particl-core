@@ -11,6 +11,7 @@
 #include <clientversion.h>
 #include <common/args.h>
 #include <common/system.h>
+#include <common/globals.h>
 #include <common/url.h>
 #include <compat/compat.h>
 #include <interfaces/init.h>

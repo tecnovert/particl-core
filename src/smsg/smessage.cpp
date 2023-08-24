@@ -1317,7 +1317,7 @@ int CSMSG::ReceiveData(PeerManager *peerLogic, CNode *pfrom, const std::string &
         LogPrintf("%s: %s %s.\n", __func__, pfrom->m_addr_name, strCommand);
     }
 
-    if (m_node->chainman->ActiveChainstate().IsInitialBlockDownload()) { // Wait until chain synced
+    if (m_node->chainman->IsInitialBlockDownload()) { // Wait until chain synced
         if (strCommand == SMSGMsgType::PING) {
             pfrom->smsgData.lastSeen = -1; // Mark node as requiring a response once chain is synced
         }
@@ -1778,7 +1778,7 @@ int CSMSG::ReceiveData(PeerManager *peerLogic, CNode *pfrom, const std::string &
   */
 bool CSMSG::SendData(CNode *pto, bool fSendTrickle)
 {
-    if (m_node->chainman->ActiveChainstate().IsInitialBlockDownload()) { // Wait until chain synced
+    if (m_node->chainman->IsInitialBlockDownload()) { // Wait until chain synced
         return true;
     }
 

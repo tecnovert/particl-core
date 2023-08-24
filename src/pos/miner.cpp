@@ -310,7 +310,7 @@ void ThreadStakeMiner(size_t nThreadID, std::vector<std::shared_ptr<wallet::CWal
             }
         }
 
-        if (check_peer_height && (num_nodes == 0 || chainman->ActiveChainstate().IsInitialBlockDownload())) {
+        if (check_peer_height && (num_nodes == 0 || chainman->IsInitialBlockDownload())) {
             fIsStaking = false;
             fTryToSync = true;
             LogPrint(BCLog::POS, "%s: IsInitialBlockDownload\n", __func__);

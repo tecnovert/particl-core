@@ -207,6 +207,7 @@ BITCOIN_CORE_H = \
   kernel/mempool_limits.h \
   kernel/mempool_options.h \
   kernel/mempool_persist.h \
+  kernel/mempool_removal_reason.h \
   kernel/notifications_interface.h \
   kernel/validation_cache_sizes.h \
   key.h \
@@ -449,6 +450,7 @@ libparticl_node_a_SOURCES = \
   kernel/context.cpp \
   kernel/cs_main.cpp \
   kernel/mempool_persist.cpp \
+  kernel/mempool_removal_reason.cpp \
   mapport.cpp \
   net.cpp \
   net_processing.cpp \
@@ -1120,6 +1122,7 @@ libparticlkernel_la_SOURCES = \
   kernel/context.cpp \
   kernel/cs_main.cpp \
   kernel/mempool_persist.cpp \
+  kernel/mempool_removal_reason.cpp \
   key.cpp \
   anon.cpp \
   blind.cpp \

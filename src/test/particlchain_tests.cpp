@@ -658,7 +658,7 @@ BOOST_AUTO_TEST_CASE(taproot)
     PrecomputedTransactionData txdata;
     bool ret = CheckInputScripts(tx_c, state, inputs, flags_with_taproot, /* cacheSigStore */ false, /* cacheFullScriptStore */ false, txdata, nullptr);
     BOOST_CHECK(!ret);
-    BOOST_CHECK(state.GetRejectReason() == "non-mandatory-script-verify-flag (Script failed an OP_VERIFY operation)");
+    BOOST_CHECK(state.GetRejectReason() == "mandatory-script-verify-flag-failed (Script failed an OP_VERIFY operation)");
 
     // Should pass without SCRIPT_VERIFY_TAPROOT
     bool ret_without_taproot = CheckInputScripts(tx_c, state, inputs, flags, /* cacheSigStore */ false, /* cacheFullScriptStore */ false, txdata, nullptr);
@@ -759,7 +759,7 @@ BOOST_AUTO_TEST_CASE(taproot)
         PrecomputedTransactionData txdata;
         bool ret = CheckInputScripts(tx_c, state, inputs, flags_with_taproot, /* cacheSigStore */ false, /* cacheFullScriptStore */ false, txdata, nullptr);
         BOOST_CHECK(!ret);
-        BOOST_CHECK(state.GetRejectReason() == "non-mandatory-script-verify-flag (Invalid Schnorr signature)");
+        BOOST_CHECK(state.GetRejectReason() == "mandatory-script-verify-flag-failed (Invalid Schnorr signature)");
 
         // Should pass without SCRIPT_VERIFY_TAPROOT
         bool ret_without_taproot = CheckInputScripts(tx_c, state, inputs, flags, /* cacheSigStore */ false, /* cacheFullScriptStore */ false, txdata, nullptr);

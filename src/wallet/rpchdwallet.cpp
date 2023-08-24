@@ -6680,7 +6680,7 @@ static RPCHelpMan debugwallet()
     }
 
     if (exit_ibd) {
-        pwallet->chain().getChainman()->ActiveChainstate().m_cached_finished_ibd = true;
+        pwallet->chain().getChainman()->m_cached_finished_ibd = true;
         return "Exited IBD.";
     }
 
