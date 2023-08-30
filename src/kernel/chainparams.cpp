@@ -637,7 +637,6 @@ public:
         vFixedSeeds = std::vector<uint8_t>(std::begin(chainparams_seed_main), std::end(chainparams_seed_main));
 
         fDefaultConsistencyChecks = false;
-        fRequireStandard = true;
         m_is_test_chain = false;
         m_is_mockable_chain = false;
 
@@ -806,7 +805,6 @@ public:
         vFixedSeeds = std::vector<uint8_t>(std::begin(chainparams_seed_test), std::end(chainparams_seed_test));
 
         fDefaultConsistencyChecks = false;
-        fRequireStandard = false;
         m_is_test_chain = true;
         m_is_mockable_chain = false;
 
@@ -943,7 +941,6 @@ public:
         bech32_hrp = "tb";
 
         fDefaultConsistencyChecks = false;
-        fRequireStandard = true;
         m_is_test_chain = true;
         m_is_mockable_chain = false;
     }
@@ -1069,7 +1066,6 @@ public:
         vSeeds.emplace_back("dummySeed.invalid.");
 
         fDefaultConsistencyChecks = true;
-        fRequireStandard = true;
         m_is_test_chain = true;
         m_is_mockable_chain = true;
 
