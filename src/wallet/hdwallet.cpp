@@ -4868,7 +4868,8 @@ int CHDWallet::AddBlindedInputs(CWalletTx &wtx, CTransactionRecord &rtx,
             }
         }
 
-
+        // Must set ORF_BLIND_IN here as addRecord is called before the tx is added to the mempool
+        rtx.nFlags |= ORF_BLIND_IN;
         rtx.nFee = nFeeRet;
         AddOutputRecordMetaData(rtx, vecSend);
 
@@ -11063,7 +11064,9 @@ bool CHDWallet::AddToRecord(CTransactionRecord &rtxIn, const CTransaction &tx, C
             }
 
             // Lookup 1st input to set type
-            if (GetOutputType(tx.vin[0].prevout) == OUTPUT_CT) {
+            if (chain().isMempoolMarkedBlindIn(txhash) ||
+                pblocktree->HaveBlindedFlag(txhash) ||
+                GetOutputType(tx.vin[0].prevout) == OUTPUT_CT) {  // TODO: Remove GetOutputType check, only used if txindex is enabled
                 rtx.nFlags |= ORF_BLIND_IN;
             }
         }

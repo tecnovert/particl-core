@@ -164,6 +164,7 @@ public:
     bool m_funds_smsg = false;
     bool m_has_anon_output = false;
     bool m_has_anon_input = false;
+    bool m_has_blind_input = false;
     bool m_spends_frozen_blinded = false;
     bool m_clamp_tx_version = false;
     bool m_exploit_fix_1 = false;

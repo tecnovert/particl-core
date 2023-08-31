@@ -207,7 +207,7 @@ class FilterTransactionsTest(ParticlTestFramework):
             'count':    20,
             'skip':     1
         })
-        assert(float(ro[0]['amount']) == -20.0)
+        assert (float(ro[0]['amount']) - float(ro[0]['fee']) == -20.0)
 
         #
         # include_watchonly

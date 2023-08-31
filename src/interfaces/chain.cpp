@@ -281,6 +281,12 @@ public:
         LOCK(m_node.mempool->cs);
         return IsRBFOptIn(tx, *m_node.mempool);
     }
+    bool isMempoolMarkedBlindIn(const uint256& txid) override
+    {
+        if (!m_node.mempool) return false;
+        LOCK(m_node.mempool->cs);
+        return m_node.mempool->haveBlindedFlag(txid);
+    }
     bool hasDescendantsInMempool(const uint256& txid) override
     {
         if (!m_node.mempool) return false;

@@ -45,6 +45,7 @@ static const char DB_RCTOUTPUT = 'A';
 static const char DB_RCTOUTPUT_LINK = 'L';
 static const char DB_RCTKEYIMAGE = 'K';
 static const char DB_SPENTCACHE = 'S';
+static const char DB_HAS_BLINDED_TXIN = 'q';
 */
 
 namespace {
@@ -608,6 +609,27 @@ bool CBlockTreeDB::EraseSpentCache(const COutPoint &outpoint)
 {
     CDBBatch batch(*this);
     batch.Erase(std::make_pair(DB_SPENTCACHE, outpoint));
+    return WriteBatch(batch);
+};
+
+bool CBlockTreeDB::HaveBlindedFlag(const uint256 &txid) const {
+    std::pair<uint8_t, uint256> key = std::make_pair(DB_HAS_BLINDED_TXIN, txid);
+    return Exists(key);
+}
+
+bool CBlockTreeDB::WriteBlindedFlag(const uint256 &txid)
+{
+    std::pair<uint8_t, uint256> key = std::make_pair(DB_HAS_BLINDED_TXIN, txid);
+    CDBBatch batch(*this);
+    batch.Write(key, 1);
+    return WriteBatch(batch);
+};
+
+bool CBlockTreeDB::EraseBlindedFlag(const uint256 &txid)
+{
+    std::pair<uint8_t, uint256> key = std::make_pair(DB_HAS_BLINDED_TXIN, txid);
+    CDBBatch batch(*this);
+    batch.Erase(key);
     return WriteBatch(batch);
 };
 

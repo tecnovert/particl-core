@@ -622,8 +622,9 @@ public:
     indirectmap<COutPoint, const CTransaction*> mapNextTx GUARDED_BY(cs);
     std::map<uint256, CAmount> mapDeltas;
 
+    // Particl
     std::map<CCmpPubKey, uint256> mapKeyImages;
-
+    std::set<uint256> setBlindedFlags GUARDED_BY(cs);
 
     /** Create a new CTxMemPool.
      */
@@ -655,7 +656,11 @@ public:
 
     void addSpentIndex(const CTxMemPoolEntry &entry, const CCoinsViewCache &view);
     bool getSpentIndex(const CSpentIndexKey &key, CSpentIndexValue &value) const;
-    bool removeSpentIndex(const uint256 &txhash);
+    bool removeSpentIndex(const uint256 &txid);
+
+    void addBlindedFlags(const CCoinsViewCache &view);
+    bool haveBlindedFlag(const uint256 &txid);
+    bool eraseBlindedFlag(const uint256 &txid);
 
     void removeRecursive(const CTransaction& tx, MemPoolRemovalReason reason) EXCLUSIVE_LOCKS_REQUIRED(cs);
     void removeForReorg(const CCoinsViewCache* pcoins, unsigned int nMemPoolHeight, int flags) EXCLUSIVE_LOCKS_REQUIRED(cs, cs_main);
