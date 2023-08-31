@@ -7,7 +7,7 @@
     </message>
     <message>
         <source>Create a new address</source>
-        <translation type="unfinished">Criar um novo endereço</translation>
+        <translation type="unfinished">Criar um novo endereço.</translation>
     </message>
     <message>
         <source>&amp;New</source>
@@ -1413,8 +1413,8 @@ Impossível restaurar backup da carteira.</translation>
         <source>%n active connection(s) to Particl network.</source>
         <extracomment>A substring of the tooltip.</extracomment>
         <translation type="unfinished">
-            <numerusform>%n conexão ativa na rede Bitcoin.</numerusform>
-            <numerusform>%nconexões ativas na rede Bitcoin.</numerusform>
+            <numerusform>%n conexão ativa na rede Particl.</numerusform>
+            <numerusform>%nconexões ativas na rede Particl.</numerusform>
         </translation>
     </message>
     <message>

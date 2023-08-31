@@ -79,8 +79,8 @@ QT_TRANSLATE_NOOP("bitcoin-core", ""
 "Error: Transaction %s in wallet cannot be identified to belong to migrated "
 "wallets"),
 QT_TRANSLATE_NOOP("bitcoin-core", ""
-"Error: Unable to produce descriptors for this legacy wallet. Make sure the "
-"wallet is unlocked first"),
+"Error: Unable to produce descriptors for this legacy wallet. Make sure to "
+"provide the wallet's passphrase if it is encrypted."),
 QT_TRANSLATE_NOOP("bitcoin-core", ""
 "Failed to rename invalid peers.dat file. Please move or delete it and try "
 "again."),
@@ -273,6 +273,7 @@ QT_TRANSLATE_NOOP("bitcoin-core", "Error: Keypool ran out, please call keypoolre
 QT_TRANSLATE_NOOP("bitcoin-core", "Error: Missing checksum"),
 QT_TRANSLATE_NOOP("bitcoin-core", "Error: No %s addresses available."),
 QT_TRANSLATE_NOOP("bitcoin-core", "Error: Not all watchonly txs could be deleted"),
+QT_TRANSLATE_NOOP("bitcoin-core", "Error: Not implemented for Particl wallets"),
 QT_TRANSLATE_NOOP("bitcoin-core", "Error: This wallet already uses SQLite"),
 QT_TRANSLATE_NOOP("bitcoin-core", "Error: This wallet is already a descriptor wallet"),
 QT_TRANSLATE_NOOP("bitcoin-core", "Error: Unable to begin reading all records in the database"),

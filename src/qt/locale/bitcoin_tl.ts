@@ -39,7 +39,7 @@
     </message>
     <message>
         <source>&amp;Delete</source>
-        <translation type="unfinished">&amp;Tanggalin</translation>
+        <translation type="unfinished">&amp;Burahin</translation>
     </message>
     <message>
         <source>Choose the address to send coins to</source>
@@ -662,8 +662,8 @@ Signing is only possible with addresses of the type 'legacy'.</source>
         <source>%n active connection(s) to Particl network.</source>
         <extracomment>A substring of the tooltip.</extracomment>
         <translation type="unfinished">
-            <numerusform />
-            <numerusform />
+            <numerusform>%n aktibo na mga ♦connection(s)♦ sa ♦Particl network♦.</numerusform>
+            <numerusform>%n na aktibong mga koneksyon sa ♦Particl network♦</numerusform>
         </translation>
     </message>
     <message>
@@ -1149,7 +1149,7 @@ Signing is only possible with addresses of the type 'legacy'.</source>
     <name>Intro</name>
     <message>
         <source>Particl</source>
-        <translation type="unfinished">♦Particl♦</translation>
+        <translation type="unfinished">♦Bitcoin♦</translation>
     </message>
     <message numerus="yes">
         <source>%n GB of space available</source>

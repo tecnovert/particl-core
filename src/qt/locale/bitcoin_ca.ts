@@ -663,7 +663,7 @@ Només és possible firmar amb adreces del tipus "legacy".</translation>
     </message>
     <message>
         <source>Error: Dumpfile checksum does not match. Computed %s, expected %s</source>
-        <translation type="unfinished">Error: la suma de comprovació del fitxer bolcat no coincideix. S'ha calculat %s, s'esperava
+        <translation type="unfinished">Error: la suma de comprovació del fitxer bolcat no coincideix. S'ha calculat %s, s'esperava 
 %s</translation>
     </message>
     <message>
@@ -1177,8 +1177,8 @@ Només és possible firmar amb adreces del tipus "legacy".</translation>
     <message numerus="yes">
         <source>Processed %n block(s) of transaction history.</source>
         <translation type="unfinished">
-            <numerusform />
-            <numerusform />
+            <numerusform>Processat(s) %n bloc(s) de l'historial de transaccions.</numerusform>
+            <numerusform>Processat(s) %n bloc(s) de l'historial de transaccions.</numerusform>
         </translation>
     </message>
     <message>
@@ -1311,8 +1311,8 @@ Només és possible firmar amb adreces del tipus "legacy".</translation>
         <source>%n active connection(s) to Particl network.</source>
         <extracomment>A substring of the tooltip.</extracomment>
         <translation type="unfinished">
-            <numerusform />
-            <numerusform />
+            <numerusform>%n connexió activa a la xarxa Particl</numerusform>
+            <numerusform>%n connexions actives a la xarxa Particl</numerusform>
         </translation>
     </message>
     <message>
@@ -1798,15 +1798,15 @@ Això és ideal per a carteres de mode només lectura.</translation>
     <message numerus="yes">
         <source>(of %n GB needed)</source>
         <translation type="unfinished">
-            <numerusform />
-            <numerusform />
+            <numerusform>(Un GB necessari)</numerusform>
+            <numerusform>(de %n GB necessàris)</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>(%n GB needed for full chain)</source>
         <translation type="unfinished">
-            <numerusform />
-            <numerusform />
+            <numerusform>(Un GB necessari per a la cadena completa)</numerusform>
+            <numerusform>(Un GB necessari per a la cadena completa)</numerusform>
         </translation>
     </message>
     <message>
@@ -1821,8 +1821,8 @@ Això és ideal per a carteres de mode només lectura.</translation>
         <source>(sufficient to restore backups %n day(s) old)</source>
         <extracomment>Explanatory text on the capability of the current prune target.</extracomment>
         <translation type="unfinished">
-            <numerusform />
-            <numerusform />
+            <numerusform>(suficient per restaurar les còpies de seguretat de%n dia (s))</numerusform>
+            <numerusform>(suficient per a restaurar les còpies de seguretat de %n die(s))</numerusform>
         </translation>
     </message>
     <message>
@@ -4116,8 +4116,8 @@ Nota: atès que la tarifa es calcula per byte, una tarifa de "100 satoshis per k
         <source>No wallet has been loaded.
 Go to File &gt; Open Wallet to load a wallet.
 - OR -</source>
-        <translation type="unfinished">No s'ha carregat cap cartera.
-Ves a Arxiu &gt; Obrir Cartera per a carregar cartera.
+        <translation type="unfinished">No s'ha carregat cap cartera. 
+Ves a Arxiu &gt; Obrir Cartera per a carregar cartera. 
 - O -</translation>
     </message>
     <message>
