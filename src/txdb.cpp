@@ -44,6 +44,7 @@ static constexpr uint8_t DB_RCTOUTPUT = 'A';
 static constexpr uint8_t DB_RCTOUTPUT_LINK = 'L';
 static constexpr uint8_t DB_RCTKEYIMAGE = 'K';
 static constexpr uint8_t DB_SPENTCACHE = 'S';
+static constexpr uint8_t DB_HAS_BLINDED_TXIN = 'q';
 */
 
 // Keys used in previous version that might still be found in the DB:
@@ -674,6 +675,27 @@ bool CBlockTreeDB::ReadSpentCache(const COutPoint &outpoint, SpentCoin &coin)
 bool CBlockTreeDB::EraseSpentCache(const COutPoint &outpoint)
 {
     std::pair<uint8_t, COutPoint> key = std::make_pair(DB_SPENTCACHE, outpoint);
+    CDBBatch batch(*this);
+    batch.Erase(key);
+    return WriteBatch(batch);
+};
+
+bool CBlockTreeDB::HaveBlindedFlag(const uint256 &txid) const {
+    std::pair<uint8_t, uint256> key = std::make_pair(DB_HAS_BLINDED_TXIN, txid);
+    return Exists(key);
+}
+
+bool CBlockTreeDB::WriteBlindedFlag(const uint256 &txid)
+{
+    std::pair<uint8_t, uint256> key = std::make_pair(DB_HAS_BLINDED_TXIN, txid);
+    CDBBatch batch(*this);
+    batch.Write(key, 1);
+    return WriteBatch(batch);
+};
+
+bool CBlockTreeDB::EraseBlindedFlag(const uint256 &txid)
+{
+    std::pair<uint8_t, uint256> key = std::make_pair(DB_HAS_BLINDED_TXIN, txid);
     CDBBatch batch(*this);
     batch.Erase(key);
     return WriteBatch(batch);
