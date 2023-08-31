@@ -34,6 +34,7 @@ const char DB_RCTOUTPUT = 'A';
 const char DB_RCTOUTPUT_LINK = 'L';
 const char DB_RCTKEYIMAGE = 'K';
 const char DB_SPENTCACHE = 'S';
+const char DB_HAS_BLINDED_TXIN = 'q';
 
 
 //! -dbcache default (MiB)
@@ -138,7 +139,9 @@ public:
     bool ReadSpentCache(const COutPoint &outpoint, SpentCoin &coin);
     bool EraseSpentCache(const COutPoint &outpoint);
 
-    //bool WriteRCTOutputBatch(std::vector<std::pair<int64_t, CAnonOutput> > &vao);
+    bool HaveBlindedFlag(const uint256 &txid) const;
+    bool WriteBlindedFlag(const uint256 &txid);
+    bool EraseBlindedFlag(const uint256 &txid);
 };
 
 std::optional<bilingual_str> CheckLegacyTxindex(CBlockTreeDB& block_tree_db);

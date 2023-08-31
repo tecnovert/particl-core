@@ -702,12 +702,12 @@ bool CTxMemPool::getSpentIndex(const CSpentIndexKey &key, CSpentIndexValue &valu
     return false;
 }
 
-bool CTxMemPool::removeSpentIndex(const uint256 &txhash)
+bool CTxMemPool::removeSpentIndex(const uint256 &txid)
 {
     LOCK(cs);
-    mapSpentIndexInserted::iterator it = mapSpentInserted.find(txhash);
+    mapSpentIndexInserted::iterator it = mapSpentInserted.find(txid);
     if (it != mapSpentInserted.end()) {
-        std::vector<CSpentIndexKey> keys = (*it).second;
+        std::vector<CSpentIndexKey> keys = it->second;
         for (std::vector<CSpentIndexKey>::iterator mit = keys.begin(); mit != keys.end(); mit++) {
             mapSpent.erase(*mit);
         }
@@ -715,6 +715,26 @@ bool CTxMemPool::removeSpentIndex(const uint256 &txhash)
     }
 
     return true;
+}
+
+void CTxMemPool::addBlindedFlags(const CCoinsViewCache &view)
+{
+    LOCK(cs);
+    for (const auto &txid : view.txns_with_blinded_inputs) {
+        setBlindedFlags.insert(txid);
+    }
+}
+
+bool CTxMemPool::haveBlindedFlag(const uint256 &txid)
+{
+    LOCK(cs);
+    return setBlindedFlags.count(txid);
+}
+
+bool CTxMemPool::eraseBlindedFlag(const uint256 &txid)
+{
+    LOCK(cs);
+    return setBlindedFlags.erase(txid);
 }
 
 void CTxMemPool::removeUnchecked(txiter it, MemPoolRemovalReason reason)
@@ -761,6 +781,7 @@ void CTxMemPool::removeUnchecked(txiter it, MemPoolRemovalReason reason)
     if (minerPolicyEstimator) {minerPolicyEstimator->removeTx(hash, false);}
     removeAddressIndex(hash);
     removeSpentIndex(hash);
+    eraseBlindedFlag(hash);
 }
 
 // Calculates descendants of entry that are not already in setDescendants, and adds to
@@ -929,6 +950,13 @@ void CTxMemPool::_clear()
     blockSinceLastRollingFeeBump = false;
     rollingMinimumFeeRate = 0;
     ++nTransactionsUpdated;
+
+    mapKeyImages.clear();
+    setBlindedFlags.clear();
+    mapAddress.clear();
+    mapAddressInserted.clear();
+    mapSpent.clear();
+    mapSpentInserted.clear();
 }
 
 void CTxMemPool::clear()

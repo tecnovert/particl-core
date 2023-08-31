@@ -1,4 +1,17 @@
 
+23.2.6
+==============
+
+- transactions with blinded inputs are marked in the TXDB.
+  - Enables the wallet to detect blinded transaction type_in without txindex.
+- rpc:
+  - gettransaction shows total amount for tx records.
+  - gettransaction shows type_in field.
+  - gettransaction for fee for tx records shown once instead of in details.
+  - filtertransactions total amount now includes fee for sent txns.
+    - matches gettransaction for mapwallet transactions.
+
+
 23.1.5
 ==============
 
