@@ -285,7 +285,7 @@ class WalletParticlTest(ParticlTestFramework):
         address1 = nodes[1].getnewaddress()
 
         try:
-            nodes[1].extkeyimportmaster(decodedRoot)
+            nodes[1].extkeyimportmaster(decodedRoot, '', False, '', '', 0, {'replaceaccount': True})
             assert (False), 'Imported same root key twice.'
         except JSONRPCException as e:
             assert ('ExtKeyImportLoose failed, Derived key already exists in wallet' in e.error['message'])
