@@ -298,6 +298,7 @@ public:
     mutable std::map<CCmpPubKey, int64_t> anonOutputLinks;
     mutable std::map<CCmpPubKey, uint256> keyImages;
     mutable std::vector<std::pair<COutPoint, SpentCoin> > spent_cache;
+    mutable std::vector<uint256> txns_with_blinded_inputs;
     mutable smsg::ChainSyncCache smsg_cache;
 
     bool ReadRCTOutputLink(CCmpPubKey &pk, int64_t &index)
@@ -317,6 +318,7 @@ public:
         anonOutputLinks.clear();
         keyImages.clear();
         spent_cache.clear();
+        txns_with_blinded_inputs.clear();
         smsg_cache.Clear();
     };
 

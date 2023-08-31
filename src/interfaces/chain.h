@@ -204,6 +204,9 @@ public:
     //! Check if transaction is in mempool.
     virtual bool isInMempool(const uint256& txid) = 0;
 
+    //! Check if transaction is marked as having blinded inputs in the mempool.
+    virtual bool isMempoolMarkedBlindIn(const uint256& txid) = 0;
+
     //! Check if transaction has descendants in mempool.
     virtual bool hasDescendantsInMempool(const uint256& txid) = 0;
 
@@ -344,6 +347,7 @@ public:
     virtual bool readRCTOutput(int64_t i, CAnonOutput &ao) = 0;
     virtual bool readRCTOutputLink(const CCmpPubKey &pk, int64_t &i) = 0;
     virtual bool readRCTKeyImage(const CCmpPubKey &ki, CAnonKeyImageInfo &ki_data) = 0;
+    virtual bool haveBlindedFlag(const uint256 &txid) = 0;
 };
 
 //! Interface to let node manage chain clients (wallets, or maybe tools for

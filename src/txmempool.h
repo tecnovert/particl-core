@@ -604,7 +604,9 @@ public:
 
     const Limits m_limits;
 
-    std::map<CCmpPubKey, uint256> mapKeyImages;  // Particl
+    // Particl
+    std::map<CCmpPubKey, uint256> mapKeyImages;
+    std::set<uint256> setBlindedFlags GUARDED_BY(cs);
 
     /** Create a new CTxMemPool.
      * Sanity checks will be off by default for performance, because otherwise
@@ -638,7 +640,11 @@ public:
 
     void addSpentIndex(const CTxMemPoolEntry &entry, const CCoinsViewCache &view);
     bool getSpentIndex(const CSpentIndexKey &key, CSpentIndexValue &value) const;
-    bool removeSpentIndex(const uint256 &txhash);
+    bool removeSpentIndex(const uint256 &txid);
+
+    void addBlindedFlags(const CCoinsViewCache &view);
+    bool haveBlindedFlag(const uint256 &txid);
+    bool eraseBlindedFlag(const uint256 &txid);
 
     void removeRecursive(const CTransaction& tx, MemPoolRemovalReason reason) EXCLUSIVE_LOCKS_REQUIRED(cs);
     /** After reorg, filter the entries that would no longer be valid in the next block, and update

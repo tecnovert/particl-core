@@ -1213,6 +1213,7 @@ bool MemPoolAccept::Finalize(const ATMPArgs& args, Workspace& ws)
     if (fSpentIndex) {
         m_pool.addSpentIndex(*entry, m_view);
     }
+    m_pool.addBlindedFlags(m_view);
 
     return true;
 }
@@ -1853,7 +1854,7 @@ bool CheckInputScripts(const CTransaction& tx, TxValidationState &state,
     // correct (ie that the transaction hash which is in tx's prevouts
     // properly commits to the scriptPubKey in the inputs view of that
     // transaction).
-    bool m_has_anon_input = false;
+    bool has_anon_input = false;
     uint256 hashCacheEntry;
     CSHA256 hasher = g_scriptExecutionCacheHasher;
     hasher.Write(tx.GetWitnessHash().begin(), 32).Write((unsigned char*)&flags, sizeof(flags)).Finalize(hashCacheEntry.begin());
@@ -1894,7 +1895,7 @@ bool CheckInputScripts(const CTransaction& tx, TxValidationState &state,
 
     for (unsigned int i = 0; i < tx.vin.size(); i++) {
         if (tx.vin[i].IsAnonInput()) {
-            m_has_anon_input = true;
+            has_anon_input = true;
             continue;
         }
 
@@ -1938,8 +1939,8 @@ bool CheckInputScripts(const CTransaction& tx, TxValidationState &state,
         }
     }
 
-    if (m_has_anon_input && fAnonChecks
-        && !VerifyMLSAG(tx, state)) {
+    if (has_anon_input && fAnonChecks &&
+        !VerifyMLSAG(tx, state)) {
         return false;
     }
 
@@ -3320,6 +3321,11 @@ bool FlushView(CCoinsViewCache *view, BlockValidationState& state, Chainstate &c
                 return error("%s: EraseSpentCache failed.", __func__);
             }
         }
+        for (const auto &txid : view->txns_with_blinded_inputs) {
+            if (!pblocktree->EraseBlindedFlag(txid)) {
+                return error("%s: EraseBlindedFlag failed.", __func__);
+            }
+        }
     } else {
         CDBBatch batch(*pblocktree);
 
@@ -3340,6 +3346,10 @@ bool FlushView(CCoinsViewCache *view, BlockValidationState& state, Chainstate &c
             std::pair<uint8_t, COutPoint> key = std::make_pair(DB_SPENTCACHE, it.first);
             batch.Write(key, it.second);
         }
+        for (const auto &txid : view->txns_with_blinded_inputs) {
+            std::pair<uint8_t, uint256> key = std::make_pair(DB_HAS_BLINDED_TXIN, txid);
+            batch.Write(key, 1);
+        }
         if (state.m_spend_height > (int)MIN_BLOCKS_TO_KEEP) {
             ClearSpentCache(chainstate, batch, state.m_spend_height - (MIN_BLOCKS_TO_KEEP+1));
         }
@@ -3356,6 +3366,7 @@ bool FlushView(CCoinsViewCache *view, BlockValidationState& state, Chainstate &c
     view->anonOutputLinks.clear();
     view->keyImages.clear();
     view->spent_cache.clear();
+    view->txns_with_blinded_inputs.clear();
     view->smsg_cache.Clear();
 
     return true;
