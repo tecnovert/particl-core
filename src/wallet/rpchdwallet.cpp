@@ -2928,6 +2928,7 @@ static void ParseOutputs(
         entry.pushKV("abandoned", wtx.isAbandoned());
     }
 
+    std::string str_type_in = "plain";
     // Staked
     size_t num_watchonly = 0;
     if (!listStaked.empty()) {
@@ -3038,6 +3039,7 @@ static void ParseOutputs(
                 entry.pushKV("category", "immature");
             } else {
                 entry.pushKV("category", "coinbase");
+                str_type_in = "coinbase";
             }
         } else if (!nFee) {
             entry.pushKV("category", "receive");
@@ -3056,6 +3058,7 @@ static void ParseOutputs(
         }
     }
 
+    entry.pushKV("type_in", str_type_in);
     entry.pushKV("outputs", outputs);
     entry.pushKV("amount", ValueFromAmount(amount));
 
@@ -3228,7 +3231,7 @@ static void ParseRecords(
         }
 
         CBitcoinAddress addr;
-        CTxDestination  dest;
+        CTxDestination dest;
         bool extracted = ExtractDestination(record.scriptPubKey, dest);
 
         // get account name
@@ -3294,7 +3297,7 @@ static void ParseRecords(
             amount *= -1;
         }
         if (record.nFlags & ORF_CHANGE) {
-            output.__pushKV("is_change", "true");
+            output.__pushKV("is_change", true);
         } else {
             totalAmount += amount;
         }
@@ -3349,6 +3352,8 @@ static void ParseRecords(
     } else
     if (rtx.nFlags & ORF_BLIND_IN) {
         entry.__pushKV("type_in", "blind");
+    } else {
+        entry.__pushKV("type_in", "plain");
     }
 
     if (nLockedOutputs) {
@@ -3367,13 +3372,16 @@ static void ParseRecords(
         }
         CAmount nOutput = 0;
         for (const auto &record : rtx.vout) {
-            if ((record.nFlags & ORF_OWNED && watchonly_filter & ISMINE_SPENDABLE)
-                || (record.nFlags & ORF_OWN_WATCH && watchonly_filter & ISMINE_WATCH_ONLY)) {
+            if ((record.nFlags & ORF_OWNED && watchonly_filter & ISMINE_SPENDABLE) ||
+                (record.nFlags & ORF_OWN_WATCH && watchonly_filter & ISMINE_WATCH_ONLY)) {
                 nOutput += record.nValue;
             }
         }
         entry.__pushKV("amount", ValueFromAmount(nOutput - nInput));
     } else {
+        if (nFrom) {
+            totalAmount -= rtx.nFee;
+        }
         entry.__pushKV("amount", ValueFromAmount(totalAmount));
     }
     amounts.push_back(std::to_string(ValueFromAmount(totalAmount).get_real()));

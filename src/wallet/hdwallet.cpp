@@ -4787,7 +4787,8 @@ int CHDWallet::AddBlindedInputs(interfaces::Chain::Lock& locked_chain, CWalletTx
             }
         }
 
-
+        // Must set ORF_BLIND_IN here as addRecord is called before the tx is added to the mempool
+        rtx.nFlags |= ORF_BLIND_IN;
         rtx.nFee = nFeeRet;
         AddOutputRecordMetaData(rtx, vecSend);
 
@@ -10812,8 +10813,8 @@ bool CHDWallet::AddToRecord(CTransactionRecord &rtxIn, const CTransaction &tx,
             CTransactionRef txPrev;
             // ::ChainstateActive().CoinsTip().GetCoin(prevout0, coin) requires cs_main
             if (::GetTransaction(prevout0.hash, txPrev, Params().GetConsensus(), hashBlock)) {
-                if (txPrev->vpout.size() > prevout0.n
-                    && txPrev->vpout[prevout0.n]->IsType(OUTPUT_CT)) {
+                if (txPrev->vpout.size() > prevout0.n &&
+                    txPrev->vpout[prevout0.n]->IsType(OUTPUT_CT)) {
                     rtx.nFlags |= ORF_BLIND_IN;
                 }
             }

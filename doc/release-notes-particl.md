@@ -1,3 +1,15 @@
+
+0.19.2.24
+==============
+
+- rpc:
+  - gettransaction shows total amount for tx records.
+  - gettransaction shows type_in field.
+  - gettransaction for fee for tx records shown once instead of in details.
+  - filtertransactions total amount now includes fee for sent txns.
+    - matches gettransaction for mapwallet transactions.
+
+
 0.19.2.23
 ==============
 

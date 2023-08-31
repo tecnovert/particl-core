@@ -3,7 +3,7 @@
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-from test_framework.test_particl import ParticlTestFramework, connect_nodes_bi
+from test_framework.test_particl import ParticlTestFramework, connect_nodes_bi, isclose
 from test_framework.util import assert_raises_rpc_error
 
 import random
@@ -53,8 +53,13 @@ class AnonTest(ParticlTestFramework):
             txnHash = nodes[0].sendblindtoanon(sxAddrTo1_1, 10, '', '', False, 'node0 -> node1 b->a')
             txnHashes.append(txnHash)
 
-        for h in txnHashes:
-            assert(self.wait_for_mempool(nodes[1], h))
+        for i, h in enumerate(txnHashes):
+            assert (self.wait_for_mempool(nodes[1], h))
+            tx0 = nodes[0].gettransaction(h)
+            assert(tx0['type_in'] == ('plain' if i < 2 or (i > 5 and i < 11) else 'blind'))
+            if i != 1:
+                tx1 = nodes[1].gettransaction(h)
+                assert(tx1['type_in'] == ('plain' if i < 2 or (i > 5 and i < 11) else 'blind'))
 
         assert('node0 -> node1 b->a 4' in self.dumpj(nodes[1].listtransactions('*', 100)))
         assert('node0 -> node1 b->a 4' in self.dumpj(nodes[0].listtransactions('*', 100)))
@@ -63,11 +68,17 @@ class AnonTest(ParticlTestFramework):
 
         block1_hash = nodes[1].getblockhash(1)
         ro = nodes[1].getblock(block1_hash)
-        for txnHash in txnHashes:
-            assert(txnHash in ro['tx'])
+        for i, h in enumerate(txnHashes):
+            assert (h in ro['tx'])
+            tx0 = nodes[0].gettransaction(h)
+            assert(tx0['type_in'] == ('plain' if i < 2 or (i > 5 and i < 11) else 'blind'))
+            if i != 1:
+                tx1 = nodes[1].gettransaction(h)
+                assert(tx1['type_in'] == ('plain' if i < 2 or (i > 5 and i < 11) else 'blind'))
 
         txnHash = nodes[1].sendanontoanon(sxAddrTo0_1, 1, '', '', False, 'node1 -> node0 a->a', 5)
         txnHashes = [txnHash,]
+        assert(nodes[1].gettransaction(txnHash)['type_in'] == 'anon')
 
         # Get a change address
         change_addr2 = nodes[2].deriverangekeys(0, 0, 'internal', False, True)[0]
@@ -78,8 +89,16 @@ class AnonTest(ParticlTestFramework):
         txnHash2 = nodes[1].sendtypeto('anon', 'part', [{'address': change_addr2, 'amount': 1, 'narr': 'node1 -> node2 a->p'}, ], '', '', 5)
         txnHashes.append(txnHash2)
 
-        assert(self.wait_for_mempool(nodes[0], txnHash))
+        assert(nodes[1].gettransaction(txnHash2)['type_in'] == 'anon')
+
+        for h in txnHashes:
+            assert (self.wait_for_mempool(nodes[0], h))
+            assert (self.wait_for_mempool(nodes[2], h))
         self.stakeBlocks(1)
+
+        assert(nodes[0].gettransaction(txnHash)['type_in'] == 'anon')
+        assert(nodes[1].gettransaction(txnHash2)['type_in'] == 'anon')
+        assert(nodes[2].gettransaction(txnHash2)['type_in'] == 'anon')
 
         ro = nodes[1].getblock(nodes[1].getblockhash(3))
         for txnHash in txnHashes:
@@ -135,8 +154,15 @@ class AnonTest(ParticlTestFramework):
                 assert(t['amount'] == t['fee'])
             elif t['txid'] == txnHashes[-2]:
                 foundTx += 1
-                assert('anon_inputs' in t)
-                assert(t['amount'] < -9.9 and t['amount'] > -10.0)
+                assert ('anon_inputs' in t)
+                assert (t['amount'] == -10.0)
+
+                output_value = 0
+                for i in range(2):
+                    if 'is_change' in t['outputs'][i] and t['outputs'][i]['is_change']:
+                        continue
+                    output_value += t['outputs'][i]['amount']
+                assert (isclose(output_value + t['fee'], -10.0))
                 n_standard = 0
                 n_anon = 0
                 for to in t['outputs']:
@@ -144,10 +170,10 @@ class AnonTest(ParticlTestFramework):
                         n_standard += 1
                     elif to['type'] == 'anon':
                         n_anon += 1
-                        assert(to['is_change'] == 'true')
-                assert(n_standard == 1)
-                assert(n_anon > 0)
-                assert(t['type_in'] == 'anon')
+                        assert (to['is_change'] is True)
+                assert (n_standard == 1)
+                assert (n_anon > 0)
+                assert (t['type_in'] == 'anon')
             if t['txid'] == txnHashes[-3]:
                 foundTx += 1
                 assert(t['outputs'][0]['type'] == 'anon')
@@ -269,6 +295,20 @@ class AnonTest(ParticlTestFramework):
         for txin in w1_inputs_after:
             if txin['txid'] == use_input['txid'] and txin['vout'] == use_input['vout']:
                 raise ValueError('Output should be spent')
+
+        # Test inputs are correct when detecting transaction in chain
+        nodes[1].createwallet('test_detect_tx_in_chain')
+        w1_5 = nodes[1].get_wallet_rpc('test_detect_tx_in_chain')
+        w1_5.extkeyimportmaster(self.get_genesis_coins_a_mnemonic())
+        ft = w1_5.filtertransactions({'count': 10000})
+        for ftx in ft:
+            gtx = w1_5.gettransaction(ftx['txid'])
+            gtx0 = nodes[0].gettransaction(ftx['txid'])
+
+            assert (ftx['type_in'] == gtx['type_in'])
+            assert (ftx['amount'] == gtx['amount'])
+            assert (gtx0['type_in'] == gtx['type_in'])
+            assert (gtx0['amount'] == gtx['amount'])
 
         self.log.info('Test rollbackrctindex')
         nodes[0].rollbackrctindex()

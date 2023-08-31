@@ -59,7 +59,6 @@ class TraceFrozenOutputsTest(ParticlTestFramework):
         traced = w1_0.debugwallet({'trace_frozen_outputs': True, 'trace_frozen_extra': [{'tx': txid_a2a, 'n': n}]})
 
         found_at_depth = -1
-
         def check_tx(tx, depth):
             if tx['input_type'] == 'plain':
                 return depth
@@ -71,7 +70,7 @@ class TraceFrozenOutputsTest(ParticlTestFramework):
         for tx in traced['transactions']:
             found_at_depth = check_tx(tx, 0)
 
-        assert(found_at_depth >= 1)
+        assert (found_at_depth > 0)
 
 
 if __name__ == '__main__':

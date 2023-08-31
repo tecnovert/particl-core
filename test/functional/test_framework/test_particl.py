@@ -136,8 +136,11 @@ class ParticlTestFramework(BitcoinTestFramework):
         """Tests must override this method to define test logic"""
         raise NotImplementedError
 
+    def get_genesis_coins_a_mnemonic(self):
+        return 'abandon baby cabbage dad eager fabric gadget habit ice kangaroo lab absorb'
+
     def import_genesis_coins_a(self, node):
-        node.extkeyimportmaster('abandon baby cabbage dad eager fabric gadget habit ice kangaroo lab absorb')
+        node.extkeyimportmaster(self.get_genesis_coins_a_mnemonic())
         assert(node.getwalletinfo()['total_balance'] == 100000)
 
     def import_genesis_coins_b(self, node):

@@ -176,7 +176,7 @@ void WalletTxToJSON(interfaces::Chain& chain, interfaces::Chain::Lock& locked_ch
         }
 }
 
-void RecordTxToJSON(interfaces::Chain& chain, interfaces::Chain::Lock& locked_chain, CHDWallet *phdw, const uint256 &hash, const CTransactionRecord& rtx, UniValue &entry)
+void RecordTxToJSON(interfaces::Chain& chain, interfaces::Chain::Lock& locked_chain, CHDWallet *phdw, const uint256 &hash, const CTransactionRecord& rtx, UniValue &entry, isminefilter filter)
 {
     int confirms = phdw->GetDepthInMainChain(locked_chain, rtx.blockHash, rtx.nIndex);
     entry.pushKV("confirmations", confirms);
@@ -213,6 +213,15 @@ void RecordTxToJSON(interfaces::Chain& chain, interfaces::Chain::Lock& locked_ch
             entry.pushKV("comment_to", std::string(item.second.begin(), item.second.end()));
         }
     }
+    entry.pushKV("amount", 0);  // Reserve position
+    if (rtx.nFlags & ORF_ANON_IN) {
+        entry.pushKV("type_in", "anon");
+    } else
+    if (rtx.nFlags & ORF_BLIND_IN) {
+        entry.pushKV("type_in", "blind");
+    } else {
+        entry.pushKV("type_in", "plain");
+    }
 
     /*
     // Add opt-in RBF status
@@ -227,6 +236,44 @@ void RecordTxToJSON(interfaces::Chain& chain, interfaces::Chain::Lock& locked_ch
     }
     entry.push_back(Pair("bip125_replaceable", rbfStatus));
     */
+
+    size_t num_owned{0}, num_from{0};
+    CAmount sum_amounts{0};
+    for (const auto &r : rtx.vout) {
+        if (r.nFlags & ORF_CHANGE) {
+            continue;
+        }
+        if (r.nFlags & ORF_FROM) {
+            num_from++;
+        }
+        CAmount amount = r.nValue;
+        if (r.nFlags & ((filter & ISMINE_WATCH_ONLY) ? ORF_OWN_ANY : ORF_OWNED)) {
+            num_owned++;
+        } else {
+            amount *= -1;
+        }
+        sum_amounts += amount;
+    }
+    if (num_from > 0) {
+        entry.pushKV("fee", ValueFromAmount(-rtx.nFee));
+        sum_amounts -= rtx.nFee;
+    }
+    if (num_owned && num_from) {
+        // Must check against the owned input value
+        CAmount nInput = 0, nOutput = 0;
+        for (const auto &vin : rtx.vin) {
+            nInput += phdw->GetOwnedOutputValue(vin, filter);
+        }
+        for (const auto &r : rtx.vout) {
+            if ((r.nFlags & ORF_OWNED && filter & ISMINE_SPENDABLE) ||
+                (r.nFlags & ORF_OWN_WATCH && filter & ISMINE_WATCH_ONLY)) {
+                nOutput += r.nValue;
+            }
+        }
+        entry.pushKV("amount", ValueFromAmount(nOutput - nInput));
+    } else {
+        entry.pushKV("amount", ValueFromAmount(sum_amounts));
+    }
 }
 
 static void AddSmsgFundingInfo(const CTransaction &tx, UniValue &entry)
@@ -1858,11 +1905,8 @@ static void ListRecord(interfaces::Chain::Lock& locked_chain, CHDWallet *phdw, c
             entry.pushKV("fromself", "true");
         }
 
-        entry.pushKV("amount", ValueFromAmount(r.nValue * ((r.nFlags & ORF_OWN_ANY) ? 1 : -1)));
-
-        if (r.nFlags & ORF_FROM) {
-            entry.pushKV("fee", ValueFromAmount(-rtx.nFee));
-        }
+        CAmount amount = r.nValue * ((r.nFlags & ORF_OWN_ANY) ? 1 : -1);
+        entry.pushKV("amount", ValueFromAmount(amount));
 
         entry.pushKV("vout", r.n);
 
@@ -2316,7 +2360,7 @@ UniValue gettransaction(const JSONRPCRequest& request)
 
             if (mri != phdw->mapRecords.end()) {
                 const CTransactionRecord &rtx = mri->second;
-                RecordTxToJSON(pwallet->chain(), *locked_chain, phdw, mri->first, rtx, entry);
+                RecordTxToJSON(pwallet->chain(), *locked_chain, phdw, mri->first, rtx, entry, filter);
 
                 UniValue details(UniValue::VARR);
                 ListRecord(*locked_chain, phdw, hash, rtx, "*", 0, false, details, filter);
@@ -2351,8 +2395,10 @@ UniValue gettransaction(const JSONRPCRequest& request)
     CAmount nNet = nCredit - nDebit;
     CAmount nFee = (wtx.IsFromMe(filter) ? wtx.tx->GetValueOut() - nDebit : 0);
 
-    entry.pushKV("amount", ValueFromAmount(nNet - nFee));
-    if (wtx.IsFromMe(filter))
+    CAmount nAmount = wtx.IsCoinStake() ? nFee : nNet - nFee;
+    entry.pushKV("amount", ValueFromAmount(nAmount));
+    entry.pushKV("type_in", wtx.IsCoinBase() ? "coinbase" : "plain");
+    if (wtx.IsFromMe(filter) && !wtx.IsCoinStake())
         entry.pushKV("fee", ValueFromAmount(nFee));
 
     WalletTxToJSON(pwallet->chain(), *locked_chain, wtx, entry);
