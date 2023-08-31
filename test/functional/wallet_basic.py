@@ -680,7 +680,7 @@ class WalletTest(BitcoinTestFramework):
                                  "amount":   baz["amount"],
                                  "category": baz["category"],
                                  "vout":     baz["vout"]}
-        expected_fields = frozenset({'amount', 'bip125-replaceable', 'confirmations', 'details', 'fee',
+        expected_fields = frozenset({'amount', 'bip125-replaceable', 'confirmations', 'type_in', 'details', 'fee',
                                      'hex', 'lastprocessedblock', 'time', 'timereceived', 'trusted', 'txid', 'wtxid', 'walletconflicts'})
         verbose_field = "decoded"
         expected_verbose_fields = expected_fields | {verbose_field}

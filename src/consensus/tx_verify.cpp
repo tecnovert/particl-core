@@ -203,6 +203,7 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, TxValidationState& state, 
     // Reset per tx
     state.m_has_anon_output = false;
     state.m_has_anon_input = false;
+    state.m_has_blind_input = false;
     state.m_spends_frozen_blinded = false;
     state.m_setHaveKI.clear();  // Pass keyimages through state to add to db
     bool spends_tainted_blinded = false;  // If true limit max plain output
@@ -320,6 +321,7 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, TxValidationState& state, 
                 nStandard++;
             } else
             if (coin.nType == OUTPUT_CT) {
+                state.m_has_blind_input = true;
                 vpCommitsIn.push_back(&coin.commitment);
                 nCt++;
 
@@ -529,6 +531,10 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, TxValidationState& state, 
         if (rv != 1) {
             return state.Invalid(TxValidationResult::TX_CONSENSUS, "bad-commitment-sum");
         }
+    }
+
+    if (state.m_has_blind_input) {
+        inputs.txns_with_blinded_inputs.push_back(tx.GetHash());
     }
 
     return true;

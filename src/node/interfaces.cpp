@@ -653,6 +653,12 @@ public:
         LOCK(m_node.mempool->cs);
         return IsRBFOptIn(tx, *m_node.mempool);
     }
+    bool isMempoolMarkedBlindIn(const uint256& txid) override
+    {
+        if (!m_node.mempool) return false;
+        LOCK(m_node.mempool->cs);
+        return m_node.mempool->haveBlindedFlag(txid);
+    }
     bool isInMempool(const uint256& txid) override
     {
         if (!m_node.mempool) return false;
@@ -876,6 +882,11 @@ public:
     {
         LOCK(::cs_main);
         return m_node.chainman->m_blockman.m_block_tree_db->ReadRCTKeyImage(ki, ki_data);
+    }
+    bool haveBlindedFlag(const uint256 &txid) override
+    {
+        LOCK(::cs_main);
+        return m_node.chainman->m_blockman.m_block_tree_db->HaveBlindedFlag(txid);
     }
 };
 } // namespace
