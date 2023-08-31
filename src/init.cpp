@@ -571,6 +571,7 @@ void SetupServerArgs(ArgsManager& argsman)
     argsman.AddArg("-banscore=<n>", strprintf("Threshold for disconnecting misbehaving peers (default: %u)", DISCOURAGEMENT_THRESHOLD), ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
 
     hidden_args.emplace_back("-btcmode");
+    hidden_args.emplace_back("-btcmode_mainnet");
     hidden_args.emplace_back("-debugdevice");  // Disable to allow usbdevices in regtest mode
     // end Particl specific
 
@@ -952,8 +953,12 @@ bool AppInitParameterInteraction(const ArgsManager& args)
     fParticlMode = !args.GetBoolArg("-btcmode", false); // qa tests
     if (!fParticlMode) {
         WITNESS_SCALE_FACTOR = WITNESS_SCALE_FACTOR_BTC;
-        if (args.GetChainName() == CBaseChainParams::REGTEST) {
-            ResetParams(CBaseChainParams::REGTEST, fParticlMode);
+        if (args.GetChainName() == CBaseChainParams::REGTEST ||
+            args.GetChainName() == CBaseChainParams::TESTNET) {
+            ResetParams(args.GetChainName(), fParticlMode);
+        } else
+        if (args.GetBoolArg("-btcmode_mainnet", false)) {
+            ResetParams(args.GetChainName(), fParticlMode);
         }
     } else {
         MIN_BLOCKS_TO_KEEP = 1024;
