@@ -18,6 +18,7 @@
   - gettransaction for fee for tx records shown once instead of in details.
   - filtertransactions total amount now includes fee for sent txns.
     - matches gettransaction for mapwallet transactions.
+  - extkeyimportmaster will fail to import to a wallet with an active account without setting the replaceaccount parameter.
 
 
 24.0.1

@@ -1649,6 +1649,7 @@ static UniValue extkeyimportinternal(const JSONRPCRequest &request, bool fGenesi
     std::string sError;
     int64_t nScanFrom = 1;
     int create_extkeys = 0;
+    bool replace_account = false;
 
     if (request.params.size() > 1) {
         sPassphrase = request.params[1].get_str();
@@ -1680,6 +1681,7 @@ static UniValue extkeyimportinternal(const JSONRPCRequest &request, bool fGenesi
                 {"lookaheadsize", UniValueType(UniValue::VNUM)},
                 {"stealthv1lookaheadsize", UniValueType(UniValue::VNUM)},
                 {"stealthv2lookaheadsize", UniValueType(UniValue::VNUM)},
+                {"replaceaccount", UniValueType(UniValue::VBOOL)},
             },
             true, true);
 
@@ -1711,6 +1713,10 @@ static UniValue extkeyimportinternal(const JSONRPCRequest &request, bool fGenesi
             }
             pwallet->m_rescan_stealth_v2_lookahead = override_stealthv2lookaheadsize;
         }
+        if (options.exists("replaceaccount")) {
+            replace_account = options["replaceaccount"].get_bool();
+        }
+
     }
     if (request.params.size() > 7) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Unknown parameter '%s'", request.params[6].get_str()));
@@ -1764,6 +1770,11 @@ static UniValue extkeyimportinternal(const JSONRPCRequest &request, bool fGenesi
 
     {
         LOCK(pwallet->cs_wallet);
+
+        if (!replace_account && !pwallet->idDefaultAccount.IsNull()) {
+            throw JSONRPCError(RPC_WALLET_ERROR, "This wallet already has an active account, pass replace_account option to ignore.");
+        }
+
         CHDWalletDB wdb(pwallet->GetDatabase());
         if (!wdb.TxnBegin()) {
             throw JSONRPCError(RPC_MISC_ERROR, "TxnBegin failed.");
@@ -1845,8 +1856,8 @@ static UniValue extkeyimportinternal(const JSONRPCRequest &request, bool fGenesi
     // Check for coldstaking outputs without coldstakingaddress set
     if (pwallet->CountColdstakeOutputs() > 0) {
         UniValue jsonSettings;
-        if (!pwallet->GetSetting("changeaddress", jsonSettings)
-            || !jsonSettings["coldstakingaddress"].isStr()) {
+        if (!pwallet->GetSetting("changeaddress", jsonSettings) ||
+            !jsonSettings["coldstakingaddress"].isStr()) {
             warnings.push_back("Wallet has coldstaking outputs. Please remember to set a coldstakingaddress.");
         }
     }
@@ -1891,6 +1902,7 @@ static RPCHelpMan extkeyimportmaster()
                             {"lookaheadsize", RPCArg::Type::NUM, RPCArg::Default{(int)DEFAULT_LOOKAHEAD_SIZE}, "Override the defaultlookaheadsize parameter."},
                             {"stealthv1lookaheadsize", RPCArg::Type::NUM, RPCArg::Default{(int)DEFAULT_STEALTH_LOOKAHEAD_SIZE}, "Override the stealthv1lookaheadsize parameter."},
                             {"stealthv2lookaheadsize", RPCArg::Type::NUM, RPCArg::Default{(int)DEFAULT_STEALTH_LOOKAHEAD_SIZE}, "Override the stealthv2lookaheadsize parameter."},
+                            {"replaceaccount", RPCArg::Type::BOOL, RPCArg::Default{false}, "Prevent importing to a wallet with an existing account if false."},
                         },
                     },
                 },
@@ -1935,6 +1947,7 @@ static RPCHelpMan extkeygenesisimport()
                             {"lookaheadsize", RPCArg::Type::NUM, RPCArg::Default{(int)DEFAULT_LOOKAHEAD_SIZE}, "Override the defaultlookaheadsize parameter."},
                             {"stealthv1lookaheadsize", RPCArg::Type::NUM, RPCArg::Default{(int)DEFAULT_STEALTH_LOOKAHEAD_SIZE}, "Override the stealthv1lookaheadsize parameter."},
                             {"stealthv2lookaheadsize", RPCArg::Type::NUM, RPCArg::Default{(int)DEFAULT_STEALTH_LOOKAHEAD_SIZE}, "Override the stealthv2lookaheadsize parameter."},
+                            {"replaceaccount", RPCArg::Type::BOOL, RPCArg::Default{false}, "Prevent importing to a wallet with an existing account if false."},
                         },
                     },
                 },
