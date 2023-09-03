@@ -1,4 +1,4 @@
-<TS version="2.1" language="ga">
+<TS version="2.1" language="ga_IE">
 <context>
     <name>AddressBookPage</name>
     <message>

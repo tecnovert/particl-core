@@ -691,7 +691,7 @@ bool CTxMemPool::removeSpentIndex(const uint256 &txid)
 
 void CTxMemPool::addBlindedFlags(const CCoinsViewCache &view)
 {
-    Add LOCK(cs);
+    LOCK(cs);
     for (const auto &txid : view.txns_with_blinded_inputs) {
         setBlindedFlags.insert(txid);
     }
@@ -699,13 +699,13 @@ void CTxMemPool::addBlindedFlags(const CCoinsViewCache &view)
 
 bool CTxMemPool::haveBlindedFlag(const uint256 &txid)
 {
-    Add LOCK(cs);
+    LOCK(cs);
     return setBlindedFlags.count(txid);
 }
 
 bool CTxMemPool::eraseBlindedFlag(const uint256 &txid)
 {
-    Add LOCK(cs);
+    LOCK(cs);
     return setBlindedFlags.erase(txid);
 }
 

@@ -182,6 +182,7 @@ const CLogCategoryDesc LogCategories[] =
     {BCLog::BLOCKSTORAGE, "blockstorage"},
     {BCLog::TXRECONCILIATION, "txreconciliation"},
     {BCLog::SCAN, "scan"},
+    {BCLog::TXPACKAGES, "txpackages"},
 
     {BCLog::SMSG, "smsg"},
     {BCLog::POS, "pos"},
@@ -291,6 +292,8 @@ std::string LogCategoryToStr(BCLog::LogFlags category)
         return "txreconciliation";
     case BCLog::LogFlags::SCAN:
         return "scan";
+    case BCLog::LogFlags::TXPACKAGES:
+        return "txpackages";
     case BCLog::LogFlags::ALL:
         return "all";
 

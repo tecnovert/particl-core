@@ -1,4 +1,4 @@
-<TS version="2.1" language="az">
+<TS version="2.1" language="az@latin">
 <context>
     <name>AddressBookPage</name>
     <message>
@@ -1623,6 +1623,37 @@ Daxil olma, yalnız 'qanuni' tipli ünvanlar ilə mümkündür.</translation>
     <message>
         <source>Cancel</source>
         <translation type="unfinished">Ləğv et</translation>
+    </message>
+</context>
+<context>
+    <name>bitcoin-core</name>
+    <message>
+        <source>Warning: Private keys detected in wallet {%s} with disabled private keys</source>
+        <translation type="unfinished">Xəbərdarlıq: Gizli açarlar, sıradan çıxarılmış gizli açarlar ilə {%s} pulqabısında aşkarlandı.</translation>
+    </message>
+    <message>
+        <source>Cannot write to data directory '%s'; check permissions.</source>
+        <translation type="unfinished">'%s' verilənlər kateqoriyasına yazıla bilmir; icazələri yoxlayın.</translation>
+    </message>
+    <message>
+        <source>Done loading</source>
+        <translation type="unfinished">Yükləmə tamamlandı</translation>
+    </message>
+    <message>
+        <source>Insufficient funds</source>
+        <translation type="unfinished">Yetərsiz balans</translation>
+    </message>
+    <message>
+        <source>The source code is available from %s.</source>
+        <translation type="unfinished">Mənbə kodu %s-dən əldə edilə bilər.</translation>
+    </message>
+    <message>
+        <source>Settings file could not be read</source>
+        <translation type="unfinished">Ayarlar faylı oxuna bilmədi</translation>
+    </message>
+    <message>
+        <source>Settings file could not be written</source>
+        <translation type="unfinished">Ayarlar faylı yazıla bilmədi</translation>
     </message>
 </context>
 </TS>
