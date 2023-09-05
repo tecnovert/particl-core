@@ -816,6 +816,7 @@ static std::vector<RPCResult> TransactionDescriptionString()
            {RPCResult::Type::STR, "timereceived_local", /*optional=*/true, "Human readable timereceived with local offset."},
            {RPCResult::Type::STR, "timereceived_utc", /*optional=*/true, "Human readable timereceived in UTC."},
            {RPCResult::Type::STR, "comment", /*optional=*/true, "If a comment is associated with the transaction, only present if not empty."},
+           {RPCResult::Type::STR, "comment_to", /*optional=*/true, "If a comment_to is associated with the transaction, only present if not empty."},
            {RPCResult::Type::STR, "narration", /*optional=*/true, "If a narration is embedded in the transaction, only present if not empty."},
            {RPCResult::Type::BOOL, "fromself", /*optional=*/true, "True if this wallet owned an input of the transaction."},
            {RPCResult::Type::STR, "bip125-replaceable", /*optional=*/true, "(\"yes|no|unknown\") Whether this transaction signals BIP125 replaceability or has an unconfirmed ancestor signaling BIP125 replaceability.\n"

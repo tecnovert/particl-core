@@ -57,25 +57,54 @@ class AnonTest(ParticlTestFramework):
         for i, h in enumerate(txnHashes):
             assert (self.wait_for_mempool(nodes[1], h))
             tx0 = nodes[0].gettransaction(h)
-            assert(tx0['type_in'] == ('plain' if i < 2 or (i > 5 and i < 11) else 'blind'))
+            expect_type_in = 'plain' if i < 2 or (i > 5 and i < 11) else 'blind'
+            # getrawtransaction should work for transactions in the mempool, txundo data is not available yet
+            rtx0 = nodes[0].getrawtransaction(h, 2)
+            assert ('prevout' not in rtx0['vin'][0])
+            assert(tx0['type_in'] == expect_type_in)
             if i != 1:
                 tx1 = nodes[1].gettransaction(h)
-                assert(tx1['type_in'] == ('plain' if i < 2 or (i > 5 and i < 11) else 'blind'))
+                assert(tx1['type_in'] == expect_type_in)
+
+                rtx1 = nodes[1].getrawtransaction(h, 2)
+                assert ('prevout' not in rtx1['vin'][0])
 
         assert ('node0 -> node1 b->a 4' in self.dumpj(nodes[1].listtransactions('*', 100)))
         assert ('node0 -> node1 b->a 4' in self.dumpj(nodes[0].listtransactions('*', 100)))
 
         self.stakeBlocks(2)
 
+        # getrawtransaction should fail for blocks in the chain without txindex enabled
+        try:
+            rtx = nodes[0].getrawtransaction(txnHashes[-1], 2)
+        except Exception as e:
+            assert ('No such mempool transaction' in str(e))
+        else:
+            assert False
+
+        # Make sure the correct prevout is returned
         block1_hash = nodes[1].getblockhash(1)
-        ro = nodes[1].getblock(block1_hash)
+        rtx = nodes[0].getrawtransaction(txnHashes[-1], 2, block1_hash)
+        assert (rtx['vin'][0]['prevout']['type'] == 'blind')
+        value_commitment = rtx['vin'][0]['prevout']['valueCommitment']
+        prevout_txid = rtx['vin'][0]['txid']
+        prevout_n = rtx['vin'][0]['vout']
+        rtx_prev = nodes[0].getrawtransaction(prevout_txid, 2, block1_hash)
+        assert (value_commitment == rtx_prev['vout'][prevout_n]['valueCommitment'])
+
+        block1 = nodes[1].getblock(block1_hash)
         for i, h in enumerate(txnHashes):
-            assert (h in ro['tx'])
+            assert (h in block1['tx'])
             tx0 = nodes[0].gettransaction(h)
-            assert(tx0['type_in'] == ('plain' if i < 2 or (i > 5 and i < 11) else 'blind'))
+            expect_type_in = 'plain' if i < 2 or (i > 5 and i < 11) else 'blind'
+            rtx0 = nodes[0].getrawtransaction(h, 2, tx0['blockhash'])
+            assert (rtx0['vin'][0]['prevout']['type'] == expect_type_in)
+            assert(tx0['type_in'] == expect_type_in)
             if i != 1:
                 tx1 = nodes[1].gettransaction(h)
-                assert(tx1['type_in'] == ('plain' if i < 2 or (i > 5 and i < 11) else 'blind'))
+                assert(tx1['type_in'] == expect_type_in)
+                rtx1 = nodes[1].getrawtransaction(h, 2, tx1['blockhash'])
+                assert (rtx1['vin'][0]['prevout']['type'] == expect_type_in)
 
         txnHash = nodes[1].sendtypeto('anon', 'anon', [{'address': sxAddrTo0_1, 'amount': 1, 'narr': 'node1 -> node0 a->a'}, ], '', '', 5)
         txnHashes = [txnHash,]
