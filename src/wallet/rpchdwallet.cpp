@@ -6288,8 +6288,8 @@ static void placeTracedPrevout(const TracedOutput &txo, bool trace_frozen_dump_p
         rv.pushKV("anon_index", txo.m_anon_index);
     }
     rv.pushKV("spent", txo.m_is_spent);
-    if (txo.m_is_spent && txo.m_type == OUTPUT_RINGCT
-        && txo.m_anon_spend_key.IsValid() && trace_frozen_dump_privkeys) {
+    if (txo.m_is_spent && txo.m_type == OUTPUT_RINGCT &&
+        txo.m_anon_spend_key.IsValid() && trace_frozen_dump_privkeys) {
         rv.pushKV("anon_spend_key", EncodeSecret(txo.m_anon_spend_key));
     }
     if (!txo.m_spentby.IsNull()) {

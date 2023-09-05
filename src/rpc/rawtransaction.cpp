@@ -163,8 +163,14 @@ static void TxToUnivExpanded(const CTransaction& tx, const uint256& block_hash, 
                 UniValue p(UniValue::VOBJ);
                 p.pushKV("generated", bool(prev_coin.fCoinBase));
                 p.pushKV("height", uint64_t(prev_coin.nHeight));
-                p.pushKV("value", ValueFromAmount(prev_txout.nValue));
+                if (prev_coin.nType == OUTPUT_STANDARD) {
+                    p.pushKV("value", ValueFromAmount(prev_txout.nValue));
+                } else
+                if (prev_coin.nType == OUTPUT_CT) {
+                    p.pushKV("valueCommitment", HexStr(Span<const unsigned char>(prev_coin.commitment.data, 33)));
+                }
                 p.pushKV("scriptPubKey", o_script_pub_key);
+                p.pushKV("type", GetOutputTypeName(prev_coin.nType));
                 in.pushKV("prevout", p);
             }
         }
@@ -526,8 +532,10 @@ static RPCHelpMan getrawtransaction()
                                     {
                                         {RPCResult::Type::BOOL, "generated", "Coinbase or not"},
                                         {RPCResult::Type::NUM, "height", "The height of the prevout"},
-                                        {RPCResult::Type::STR_AMOUNT, "value", "The value in " + CURRENCY_UNIT},
+                                        {RPCResult::Type::STR_AMOUNT, "value", /*optional=*/true, "The value in " + CURRENCY_UNIT},
                                         {RPCResult::Type::OBJ, "scriptPubKey", /*optional=*/true, "", ScriptPubKeyDoc()},
+                                        {RPCResult::Type::STR, "type", /*optional=*/true, "anon/blind/plain."},
+                                        {RPCResult::Type::STR_HEX, "valueCommitment", /*optional=*/true, "value commitment for blinded output"},
                                     }},
                                 }},
                             }},
@@ -633,8 +641,13 @@ static RPCHelpMan getrawtransaction()
     CTxUndo* undoTX {nullptr};
     auto it = std::find_if(block.vtx.begin(), block.vtx.end(), [tx](CTransactionRef t){ return *t == *tx; });
     if (it != block.vtx.end()) {
+        size_t shift = 1;
+        if (blockindex->IsParticlVersion() && blockindex->nHeight > int(chainman.GetParams().GetLastImportHeight())) {
+            // Particl blocks above the last import height have no coinbase tx.
+            shift = 0;
+        }
         // -1 as blockundo does not have coinbase tx
-        undoTX = &blockUndo.vtxundo.at(it - block.vtx.begin() - 1);
+        undoTX = &blockUndo.vtxundo.at(it - block.vtx.begin() - shift);
     }
     TxToJSON(*tx, hash_block, result, chainman.ActiveChainstate(), undoTX, TxVerbosity::SHOW_DETAILS_AND_PREVOUT, &chainman, node.mempool.get(), verbosity);
     return result;
