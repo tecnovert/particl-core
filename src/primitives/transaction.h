@@ -64,6 +64,20 @@ enum DataOutputTypes
     DO_MASK                 = 11,
 };
 
+inline const char* GetOutputTypeName(uint8_t type)
+{
+    switch (type) {
+        case OUTPUT_STANDARD:
+            return "plain";
+        case OUTPUT_RINGCT:
+            return "anon";
+        case OUTPUT_CT:
+            return "blind";
+        default:
+            return "unknown";
+    }
+}
+
 bool ExtractCoinStakeInt64(const std::vector<uint8_t> &vData, DataOutputTypes get_type, CAmount &out);
 bool ExtractCoinStakeUint32(const std::vector<uint8_t> &vData, DataOutputTypes get_type, uint32_t &out);
 
