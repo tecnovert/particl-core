@@ -317,6 +317,11 @@ public:
         return GetBlockTime();
     }
 
+    bool IsParticlVersion() const
+    {
+        return nVersion == PARTICL_BLOCK_VERSION;
+    }
+
     bool IsProofOfStake() const
     {
         return (nFlags & BLOCK_PROOF_OF_STAKE);

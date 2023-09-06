@@ -16,6 +16,7 @@ Next Major Version
   - filtertransactions total amount now includes fee for sent txns.
     - matches gettransaction for mapwallet transactions.
   - extkeyimportmaster will fail to import to a wallet with an active account without setting the replaceaccount parameter.
+  - debugwallet can detect and repair missing blind input flags.
 
 
 24.0.1
