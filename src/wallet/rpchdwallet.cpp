@@ -51,6 +51,7 @@
 
 using node::ReadBlockFromDisk;
 using node::UndoReadFromDisk;
+using node::IsBlockPruned;
 
 namespace wallet {
 extern void WalletTxToJSON(const CWallet& wallet, const CWalletTx& wtx, UniValue& entry, bool fFilterMode=false);
@@ -6586,17 +6587,16 @@ static bool GetTxInputTypeFromBlockUndo(CHDWallet *const pwallet, uint8_t &type_
 
     CBlockUndo blockUndo;
     CBlock block;
-    const bool is_block_pruned{WITH_LOCK(cs_main, return pchainman->m_blockman.IsBlockPruned(blockindex))};
-    if (is_block_pruned) {
+    if (IsBlockPruned(blockindex)) {
         str_error = "Block is pruned";
         return false;
     }
-    if (!(UndoReadFromDisk(blockUndo, blockindex) && ReadBlockFromDisk(block, blockindex, pchainman->GetParams().GetConsensus()))) {
+    if (!(UndoReadFromDisk(blockUndo, blockindex) && ReadBlockFromDisk(block, blockindex, Params().GetConsensus()))) {
         str_error = "Block undo data not found";
         return false;
     }
 
-    int last_import_height{int(pchainman->GetParams().GetLastImportHeight())};
+    int last_import_height{int(Params().GetLastImportHeight())};
     CTxUndo *undoTX {nullptr};
     for (std::vector<CTransactionRef>::const_iterator it(block.vtx.begin()); it != block.vtx.end(); ++it) {
         if (txid != (*it)->GetHash()) {
