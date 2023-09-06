@@ -47,6 +47,7 @@
 #include <shutdown.h>
 #include <txmempool.h>
 #include <common/args.h>
+#include <undo.h>
 
 #include <univalue.h>
 
@@ -6579,6 +6580,68 @@ static void traceFrozenOutputs(WalletContext& context, UniValue &rv, CAmount min
     }
 }
 
+static bool GetTxInputTypeFromBlockUndo(CHDWallet *const pwallet, uint8_t &type_out, const uint256 &txid, const CTransactionRecord &rtx, std::string &str_error) {
+    LOCK(cs_main);
+    type_out = OUTPUT_NULL;
+    ChainstateManager *pchainman{nullptr};
+    if (pwallet->HaveChain()) {
+        pchainman = pwallet->chain().getChainman();
+    }
+    if (!pchainman) {
+        str_error = "Chainstate manager not found";
+        return false;
+    }
+
+    if (rtx.blockHash.IsNull()) {
+        str_error = "Blockhash is not set - in mempool?";
+        return false;
+    }
+
+    const CBlockIndex *blockindex = pchainman->m_blockman.LookupBlockIndex(rtx.blockHash);
+    if (!blockindex) {
+        str_error = "Blockhash not found in block index";
+        return false;
+    }
+
+    CBlockUndo blockUndo;
+    CBlock block;
+    const bool is_block_pruned{WITH_LOCK(cs_main, return pchainman->m_blockman.IsBlockPruned(blockindex))};
+    if (is_block_pruned) {
+        str_error = "Block is pruned";
+        return false;
+    }
+    if (!(pchainman->m_blockman.UndoReadFromDisk(blockUndo, *blockindex) && pchainman->m_blockman.ReadBlockFromDisk(block, *blockindex))) {
+        str_error = "Block undo data not found";
+        return false;
+    }
+
+    int last_import_height{int(pchainman->GetParams().GetLastImportHeight())};
+    CTxUndo *undoTX {nullptr};
+    for (std::vector<CTransactionRef>::const_iterator it(block.vtx.begin()); it != block.vtx.end(); ++it) {
+        if (txid != (*it)->GetHash()) {
+            continue;
+        }
+        size_t shift = 1;
+        if (blockindex->IsParticlVersion() && blockindex->nHeight > last_import_height) {
+            // Particl blocks above the last import height have no coinbase tx.
+            shift = 0;
+        }
+        undoTX = &blockUndo.vtxundo.at(it - block.vtx.begin() - shift);
+        for (const auto &prev_coin : undoTX->vprevout) {
+            if (type_out == OUTPUT_NULL) {
+                type_out = prev_coin.nType;
+            }
+            if (type_out != prev_coin.nType) {
+                str_error = "Mixed input types";
+                return false;
+            }
+        }
+        return true;
+    }
+    str_error = "undoTX not found";
+    return false;
+}
+
 static RPCHelpMan debugwallet()
 {
     return RPCHelpMan{"debugwallet",
@@ -6590,8 +6653,8 @@ static RPCHelpMan debugwallet()
                             {"list_frozen_outputs", RPCArg::Type::BOOL, RPCArg::Default{false}, "List frozen anon and blinded outputs."},
                             {"spend_frozen_output", RPCArg::Type::BOOL, RPCArg::Default{false}, "Withdraw one frozen output to plain balance."},
                             {"trace_frozen_outputs", RPCArg::Type::BOOL, RPCArg::Default{false}, "Attempt to trace frozen blinded outputs back to plain inputs.\n"
-                                                                                                "Will search all loaded wallets.\n"
-                                                                                                "All loaded wallets must be unlocked."},
+                                                                                                 "Will search all loaded wallets.\n"
+                                                                                                 "All loaded wallets must be unlocked."},
                             {"trace_frozen_extra", RPCArg::Type::ARR, RPCArg::Default{UniValue::VARR}, "A json array of extra outputs to trace, use with trace_frozen_outputs.",
                                 {
                                     {"", RPCArg::Type::OBJ, RPCArg::Default{UniValue::VOBJ}, "",
@@ -6607,7 +6670,7 @@ static RPCHelpMan debugwallet()
                             {"attempt_repair", RPCArg::Type::BOOL, RPCArg::Default{""}, "Attempt to repair if possible."},
                             {"clear_stakes_seen", RPCArg::Type::BOOL, RPCArg::Default{false}, "Clear seen stakes - for use in regtest networks."},
                             {"downgrade_wallets", RPCArg::Type::BOOL, RPCArg::Default{false}, "Downgrade all loaded wallets for older releases then shutdown.\n"
-                                                                                             "All loaded wallets must be unlocked."},
+                                                                                              "All loaded wallets must be unlocked."},
                             {"exit_ibd", RPCArg::Type::BOOL, RPCArg::Default{false}, "Exit initial block download state."},
                         },
                     },
@@ -7079,11 +7142,12 @@ static RPCHelpMan debugwallet()
                 }
                 errors.push_back(tmp);
             };
-            pwallet->WalletLogPrintf("Checking mapRecord plain values, blinding factors and anon spends.\n");
+            pwallet->WalletLogPrintf("Checking mapRecord plain values, blinding factors, anon spends and input types.\n");
             CHDWalletDB wdb(pwallet->GetDatabase());
-            for (const auto &ri : pwallet->mapRecords) {
+
+            for (auto &ri : pwallet->mapRecords) {
                 const uint256 &txhash = ri.first;
-                const CTransactionRecord &rtx = ri.second;
+                CTransactionRecord &rtx = ri.second;
 
                 if (!pwallet->IsTrusted(txhash, rtx)) {
                     continue;
@@ -7138,6 +7202,44 @@ static RPCHelpMan debugwallet()
                             add_error("Spent in wallet but not chain.", txhash, r.n);
                             errors.get(errors.size() - 1).pushKV("spent_by", spent_by.ToString());
                         }
+                    }
+                }
+                if (!(rtx.nFlags & ORF_ANON_IN)) {
+                    uint8_t input_type{0};
+                    std::string str_error;
+
+                    if (!GetTxInputTypeFromBlockUndo(pwallet, input_type, txhash, rtx, str_error)) {
+                        UniValue tmp(UniValue::VOBJ);
+                        tmp.pushKV("type", "Unable to lookup tx input type.");
+                        tmp.pushKV("error", str_error);
+                        tmp.pushKV("txid", txhash.ToString());
+                        warnings.push_back(tmp);
+                    } else
+                    if (input_type == OUTPUT_STANDARD && (rtx.nFlags & ORF_BLIND_IN)) {
+                        UniValue tmp(UniValue::VOBJ);
+                        tmp.pushKV("type", "Input marked as CT, actually plain.");
+                        tmp.pushKV("txid", txhash.ToString());
+                        errors.push_back(tmp);
+                    } else
+                    if (input_type == OUTPUT_CT && !(rtx.nFlags & ORF_BLIND_IN)) {
+                        UniValue tmp(UniValue::VOBJ);
+                        tmp.pushKV("type", "Input marked as plain, actually CT.");
+                        tmp.pushKV("txid", txhash.ToString());
+                        if (attempt_repair) {
+                            tmp.pushKV("attempt_fix", attempt_repair);
+                            rtx.nFlags |= ORF_BLIND_IN;
+                            if (!wdb.WriteTxRecord(txhash, rtx)) {
+                                tmp.pushKV("error", "WriteTxRecord failed.");
+                            }
+                        }
+                        errors.push_back(tmp);
+                    } else
+                    if (input_type != OUTPUT_STANDARD && input_type != OUTPUT_CT) {
+                        UniValue tmp(UniValue::VOBJ);
+                        tmp.pushKV("type", "Unexpected input type.");
+                        tmp.pushKV("input_type", GetOutputTypeName(input_type));
+                        tmp.pushKV("txid", txhash.ToString());
+                        errors.push_back(tmp);
                     }
                 }
             }
