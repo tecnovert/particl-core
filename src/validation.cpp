@@ -3355,7 +3355,7 @@ static void ClearSpentCache(Chainstate &chainstate, CDBBatch &batch, int height)
         const CTransaction &tx = *(block.vtx[i]);
         for (const auto &txin : tx.vin) {
             if (!txin.IsAnonInput()) {
-                std::pair<uint8_t, COutPoint> key = std::make_pair(DB_SPENTCACHE, txin.prevout);
+                std::pair<uint8_t, COutPoint> key = std::make_pair(kernel::DB_SPENTCACHE, txin.prevout);
                 batch.Erase(key);
             }
         }
@@ -3423,23 +3423,23 @@ bool FlushView(CCoinsViewCache *view, BlockValidationState& state, Chainstate &c
 
         for (const auto &it : view->keyImages) {
             CAnonKeyImageInfo data(it.second, state.m_spend_height);
-            std::pair<uint8_t, CCmpPubKey> key = std::make_pair(DB_RCTKEYIMAGE, it.first);
+            std::pair<uint8_t, CCmpPubKey> key = std::make_pair(kernel::DB_RCTKEYIMAGE, it.first);
             batch.Write(key, data);
         }
         for (const auto &it : view->anonOutputs) {
-            std::pair<uint8_t, int64_t> key = std::make_pair(DB_RCTOUTPUT, it.first);
+            std::pair<uint8_t, int64_t> key = std::make_pair(kernel::DB_RCTOUTPUT, it.first);
             batch.Write(key, it.second);
         }
         for (const auto &it : view->anonOutputLinks) {
-            std::pair<uint8_t, CCmpPubKey> key = std::make_pair(DB_RCTOUTPUT_LINK, it.first);
+            std::pair<uint8_t, CCmpPubKey> key = std::make_pair(kernel::DB_RCTOUTPUT_LINK, it.first);
             batch.Write(key, it.second);
         }
         for (const auto &it : view->spent_cache) {
-            std::pair<uint8_t, COutPoint> key = std::make_pair(DB_SPENTCACHE, it.first);
+            std::pair<uint8_t, COutPoint> key = std::make_pair(kernel::DB_SPENTCACHE, it.first);
             batch.Write(key, it.second);
         }
         for (const auto &txid : view->txns_with_blinded_inputs) {
-            std::pair<uint8_t, uint256> key = std::make_pair(DB_HAS_BLINDED_TXIN, txid);
+            std::pair<uint8_t, uint256> key = std::make_pair(kernel::DB_HAS_BLINDED_TXIN, txid);
             batch.Write(key, 1);
         }
         if (state.m_spend_height > (int)MIN_BLOCKS_TO_KEEP) {

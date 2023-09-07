@@ -11,43 +11,15 @@
 #include <kernel/cs_main.h>
 #include <sync.h>
 #include <util/fs.h>
-#include <util/result.h>
 
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <memory>
 #include <optional>
-#include <string>
-#include <utility>
 #include <vector>
 
-
-// Particl
-#include <insight/addressindex.h>
-#include <insight/spentindex.h>
-#include <insight/timestampindex.h>
-#include <insight/balanceindex.h>
-#include <rctindex.h>
-#include <primitives/block.h>
-
-class CBlockFileInfo;
-class CBlockIndex;
 class COutPoint;
 class uint256;
-namespace Consensus {
-struct Params;
-};
-namespace util {
-class SignalInterrupt;
-} // namespace util
-
-const char DB_RCTOUTPUT = 'A';
-const char DB_RCTOUTPUT_LINK = 'L';
-const char DB_RCTKEYIMAGE = 'K';
-const char DB_SPENTCACHE = 'S';
-const char DB_HAS_BLINDED_TXIN = 'q';
-
 
 //! -dbcache default (MiB)
 static const int64_t nDefaultDbCache = 450;
@@ -104,63 +76,5 @@ public:
     //! @returns filesystem path to on-disk storage or std::nullopt if in memory.
     std::optional<fs::path> StoragePath() { return m_db->StoragePath(); }
 };
-
-/** Access to the block database (blocks/index/) */
-class CBlockTreeDB : public CDBWrapper
-{
-public:
-    using CDBWrapper::CDBWrapper;
-    bool WriteBatchSync(const std::vector<std::pair<int, const CBlockFileInfo*> >& fileInfo, int nLastFile, const std::vector<const CBlockIndex*>& blockinfo);
-    bool ReadBlockFileInfo(int nFile, CBlockFileInfo &info);
-    bool ReadLastBlockFile(int &nFile);
-    bool WriteReindexing(bool fReindexing);
-    void ReadReindexing(bool &fReindexing);
-
-    bool ReadSpentIndex(const CSpentIndexKey &key, CSpentIndexValue &value);
-    bool UpdateSpentIndex(const std::vector<std::pair<CSpentIndexKey, CSpentIndexValue> >&vect);
-    bool UpdateAddressUnspentIndex(const std::vector<std::pair<CAddressUnspentKey, CAddressUnspentValue > >&vect);
-    bool ReadAddressUnspentIndex(uint256 addressHash, int type,
-                                 std::vector<std::pair<CAddressUnspentKey, CAddressUnspentValue> > &vect);
-    bool WriteAddressIndex(const std::vector<std::pair<CAddressIndexKey, CAmount> > &vect);
-    bool EraseAddressIndex(const std::vector<std::pair<CAddressIndexKey, CAmount> > &vect);
-    bool ReadAddressIndex(uint256 addressHash, int type,
-                          std::vector<std::pair<CAddressIndexKey, CAmount> > &addressIndex,
-                          int start = 0, int end = 0);
-    bool WriteTimestampIndex(const CTimestampIndexKey &timestampIndex);
-    bool ReadTimestampIndex(const unsigned int &high, const unsigned int &low, std::vector<std::pair<uint256, unsigned int> > &vect) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
-    bool WriteTimestampBlockIndex(const CTimestampBlockIndexKey &blockhashIndex, const CTimestampBlockIndexValue &logicalts);
-    bool ReadTimestampBlockIndex(const uint256 &hash, unsigned int &logicalTS);
-
-    bool WriteBlockBalancesIndex(const uint256 &key, const BlockBalances &value);
-    bool ReadBlockBalancesIndex(const uint256 &key, BlockBalances &value);
-
-    bool WriteFlag(const std::string &name, bool fValue);
-    bool ReadFlag(const std::string &name, bool &fValue);
-    bool LoadBlockIndexGuts(const Consensus::Params& consensusParams, std::function<CBlockIndex*(const uint256&)> insertBlockIndex, const util::SignalInterrupt& interrupt)
-        EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
-    size_t CountBlockIndex();
-
-
-    bool ReadRCTOutput(int64_t i, CAnonOutput &ao);
-    bool WriteRCTOutput(int64_t i, const CAnonOutput &ao);
-    bool EraseRCTOutput(int64_t i);
-
-    bool ReadRCTOutputLink(const CCmpPubKey &pk, int64_t &i);
-    bool WriteRCTOutputLink(const CCmpPubKey &pk, int64_t i);
-    bool EraseRCTOutputLink(const CCmpPubKey &pk);
-
-    bool ReadRCTKeyImage(const CCmpPubKey &ki, CAnonKeyImageInfo &data);
-    bool EraseRCTKeyImage(const CCmpPubKey &ki);
-    bool EraseRCTKeyImagesAfterHeight(int height);
-
-    bool ReadSpentCache(const COutPoint &outpoint, SpentCoin &coin);
-    bool EraseSpentCache(const COutPoint &outpoint);
-
-    bool HaveBlindedFlag(const uint256 &txid) const;
-    bool WriteBlindedFlag(const uint256 &txid);
-    bool EraseBlindedFlag(const uint256 &txid);
-};
-
-[[nodiscard]] util::Result<void> CheckLegacyTxindex(CBlockTreeDB& block_tree_db);
 
 #endif // BITCOIN_TXDB_H

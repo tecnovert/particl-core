@@ -185,6 +185,7 @@ SECP256K1_INLINE static int secp256k1_clz64_var(uint64_t x) {
 # endif
     return ret;
 }
+
 #if defined(__BIGGEST_ALIGNMENT__)
 #define ALIGNMENT __BIGGEST_ALIGNMENT__
 #else

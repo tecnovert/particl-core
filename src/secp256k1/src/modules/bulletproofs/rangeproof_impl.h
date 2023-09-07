@@ -190,8 +190,8 @@ static int secp256k1_bulletproof_rangeproof_verify_impl(secp256k1_scratch *scrat
     VERIFY_CHECK(!secp256k1_ge_is_infinity(&value_gen[0]));
     for (i = 1; i < n_proofs; i++) {
         VERIFY_CHECK(!secp256k1_ge_is_infinity(&value_gen[i]));
-        if (!secp256k1_fe_equal_var(&value_gen[i].x, &value_gen[i - 1].x) ||
-            !secp256k1_fe_equal_var(&value_gen[i].y, &value_gen[i - 1].y)) {
+        if (!secp256k1_fe_equal(&value_gen[i].x, &value_gen[i - 1].x) ||
+            !secp256k1_fe_equal(&value_gen[i].y, &value_gen[i - 1].y)) {
             same_generators = 0;
         }
     }

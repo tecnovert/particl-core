@@ -7,6 +7,7 @@
 #include <chain.h>
 #include <clientversion.h>
 #include <consensus/validation.h>
+#include <dbwrapper.h>
 #include <flatfile.h>
 #include <hash.h>
 #include <kernel/chainparams.h>
@@ -15,10 +16,12 @@
 #include <reverse_iterator.h>
 #include <signet.h>
 #include <streams.h>
+#include <sync.h>
 #include <undo.h>
 #include <util/batchpriority.h>
 #include <util/fs.h>
 #include <util/signalinterrupt.h>
+#include <util/translation.h>
 #include <validation.h>
 
 #include <map>
@@ -28,6 +31,486 @@ extern bool fAddressIndex;
 extern bool fSpentIndex;
 extern bool fTimestampIndex;
 extern bool fBalancesIndex;
+
+
+#include <validation.h>
+#include <insight/insight.h>
+#include <chainparams.h>
+#include <coins.h>
+
+#include <stdint.h>
+
+namespace kernel {
+static constexpr uint8_t DB_BLOCK_FILES{'f'};
+static constexpr uint8_t DB_BLOCK_INDEX{'b'};
+static constexpr uint8_t DB_FLAG{'F'};
+static constexpr uint8_t DB_REINDEX_FLAG{'R'};
+static constexpr uint8_t DB_LAST_BLOCK{'l'};
+
+static constexpr uint8_t DB_ADDRESSINDEX{'a'};
+static constexpr uint8_t DB_ADDRESSUNSPENTINDEX{'u'};
+static constexpr uint8_t DB_TIMESTAMPINDEX{'s'};
+static constexpr uint8_t DB_BLOCKHASHINDEX{'z'};
+static constexpr uint8_t DB_SPENTINDEX{'p'};
+static constexpr uint8_t DB_BALANCESINDEX{'i'};
+
+// Keys used in previous version that might still be found in the DB:
+// BlockTreeDB::DB_TXINDEX_BLOCK{'T'};
+// BlockTreeDB::DB_TXINDEX{'t'}
+// BlockTreeDB::ReadFlag("txindex")
+
+/* txindex
+static constexpr uint8_t DB_BEST_BLOCK{'B'};
+static constexpr uint8_t DB_HEAD_BLOCKS{'H'};
+*/
+
+/* blockstorage.h
+static constexpr uint8_t DB_RCTOUTPUT = 'A';
+static constexpr uint8_t DB_RCTOUTPUT_LINK = 'L';
+static constexpr uint8_t DB_RCTKEYIMAGE = 'K';
+static constexpr uint8_t DB_SPENTCACHE = 'S';
+static constexpr uint8_t DB_HAS_BLINDED_TXIN = 'q';
+*/
+
+bool BlockTreeDB::ReadBlockFileInfo(int nFile, CBlockFileInfo& info)
+{
+    return Read(std::make_pair(DB_BLOCK_FILES, nFile), info);
+}
+
+bool BlockTreeDB::WriteReindexing(bool fReindexing)
+{
+    if (fReindexing) {
+        return Write(DB_REINDEX_FLAG, uint8_t{'1'});
+    } else {
+        return Erase(DB_REINDEX_FLAG);
+    }
+}
+
+void BlockTreeDB::ReadReindexing(bool& fReindexing)
+{
+    fReindexing = Exists(DB_REINDEX_FLAG);
+}
+
+bool BlockTreeDB::ReadLastBlockFile(int& nFile)
+{
+    return Read(DB_LAST_BLOCK, nFile);
+}
+
+bool BlockTreeDB::WriteBatchSync(const std::vector<std::pair<int, const CBlockFileInfo*>>& fileInfo, int nLastFile, const std::vector<const CBlockIndex*>& blockinfo)
+{
+    CDBBatch batch(*this);
+    for (const auto& [file, info] : fileInfo) {
+        batch.Write(std::make_pair(DB_BLOCK_FILES, file), *info);
+    }
+    batch.Write(DB_LAST_BLOCK, nLastFile);
+    for (const CBlockIndex* bi : blockinfo) {
+        batch.Write(std::make_pair(DB_BLOCK_INDEX, bi->GetBlockHash()), CDiskBlockIndex{bi});
+    }
+    return WriteBatch(batch, true);
+}
+
+bool BlockTreeDB::WriteFlag(const std::string& name, bool fValue)
+{
+    return Write(std::make_pair(DB_FLAG, name), fValue ? uint8_t{'1'} : uint8_t{'0'});
+}
+
+bool BlockTreeDB::ReadFlag(const std::string& name, bool& fValue)
+{
+    uint8_t ch;
+    if (!Read(std::make_pair(DB_FLAG, name), ch)) {
+        return false;
+    }
+    fValue = ch == uint8_t{'1'};
+    return true;
+}
+
+bool BlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, std::function<CBlockIndex*(const uint256&)> insertBlockIndex, const util::SignalInterrupt& interrupt)
+{
+    AssertLockHeld(::cs_main);
+    std::unique_ptr<CDBIterator> pcursor(NewIterator());
+    pcursor->Seek(std::make_pair(DB_BLOCK_INDEX, uint256()));
+
+    // Load m_block_index
+    while (pcursor->Valid()) {
+        if (interrupt) return false;
+        std::pair<uint8_t, uint256> key;
+        if (pcursor->GetKey(key) && key.first == DB_BLOCK_INDEX) {
+            CDiskBlockIndex diskindex;
+            if (pcursor->GetValue(diskindex)) {
+                // Construct block index object
+                CBlockIndex* pindexNew = insertBlockIndex(diskindex.ConstructBlockHash());
+                pindexNew->pprev          = insertBlockIndex(diskindex.hashPrev);
+                pindexNew->nHeight        = diskindex.nHeight;
+                pindexNew->nFile          = diskindex.nFile;
+                pindexNew->nDataPos       = diskindex.nDataPos;
+                pindexNew->nUndoPos       = diskindex.nUndoPos;
+                pindexNew->nVersion       = diskindex.nVersion;
+                pindexNew->hashMerkleRoot = diskindex.hashMerkleRoot;
+                pindexNew->nTime          = diskindex.nTime;
+                pindexNew->nBits          = diskindex.nBits;
+                pindexNew->nNonce         = diskindex.nNonce;
+                pindexNew->nStatus        = diskindex.nStatus;
+                pindexNew->nTx            = diskindex.nTx;
+
+                pindexNew->hashWitnessMerkleRoot    = diskindex.hashWitnessMerkleRoot;
+                pindexNew->nFlags                   = diskindex.nFlags & (uint32_t)~BLOCK_DELAYED;
+                pindexNew->bnStakeModifier          = diskindex.bnStakeModifier;
+                pindexNew->prevoutStake             = diskindex.prevoutStake;
+                //pindexNew->hashProof                = diskindex.hashProof;
+
+                pindexNew->nMoneySupply             = diskindex.nMoneySupply;
+                pindexNew->nAnonOutputs             = diskindex.nAnonOutputs;
+
+                if (pindexNew->nHeight == 0
+                    && pindexNew->GetBlockHash() != Params().GetConsensus().hashGenesisBlock)
+                    return error("LoadBlockIndex(): Genesis block hash incorrect: %s", pindexNew->ToString());
+
+                if (fParticlMode) {
+                    // only CheckProofOfWork for genesis blocks
+                    if (diskindex.hashPrev.IsNull() && !CheckProofOfWork(pindexNew->GetBlockHash(),
+                        pindexNew->nBits, Params().GetConsensus(), 0, Params().GetLastImportHeight()))
+                        return error("%s: CheckProofOfWork failed: %s", __func__, pindexNew->ToString());
+                } else
+                if (!CheckProofOfWork(pindexNew->GetBlockHash(), pindexNew->nBits, consensusParams)) {
+                    return error("%s: CheckProofOfWork failed: %s", __func__, pindexNew->ToString());
+                }
+
+                pcursor->Next();
+            } else {
+                return error("%s: failed to read value", __func__);
+            }
+        } else {
+            break;
+        }
+    }
+
+    return true;
+}
+
+// Particl / Insight / Indices
+bool BlockTreeDB::ReadSpentIndex(const CSpentIndexKey &key, CSpentIndexValue &value) {
+    return Read(std::make_pair(DB_SPENTINDEX, key), value);
+}
+
+bool BlockTreeDB::UpdateSpentIndex(const std::vector<std::pair<CSpentIndexKey, CSpentIndexValue> >&vect) {
+    CDBBatch batch(*this);
+    for (std::vector<std::pair<CSpentIndexKey,CSpentIndexValue> >::const_iterator it=vect.begin(); it!=vect.end(); it++) {
+        if (it->second.IsNull()) {
+            batch.Erase(std::make_pair(DB_SPENTINDEX, it->first));
+        } else {
+            batch.Write(std::make_pair(DB_SPENTINDEX, it->first), it->second);
+        }
+    }
+    return WriteBatch(batch);
+}
+
+bool BlockTreeDB::UpdateAddressUnspentIndex(const std::vector<std::pair<CAddressUnspentKey, CAddressUnspentValue > >&vect) {
+    CDBBatch batch(*this);
+    for (std::vector<std::pair<CAddressUnspentKey, CAddressUnspentValue> >::const_iterator it=vect.begin(); it!=vect.end(); it++) {
+        if (it->second.IsNull()) {
+            batch.Erase(std::make_pair(DB_ADDRESSUNSPENTINDEX, it->first));
+        } else {
+            batch.Write(std::make_pair(DB_ADDRESSUNSPENTINDEX, it->first), it->second);
+        }
+    }
+    return WriteBatch(batch);
+}
+
+bool BlockTreeDB::ReadAddressUnspentIndex(uint256 addressHash, int type,
+                                           std::vector<std::pair<CAddressUnspentKey, CAddressUnspentValue> > &unspentOutputs) {
+    const std::unique_ptr<CDBIterator> pcursor(NewIterator());
+
+    pcursor->Seek(std::make_pair(DB_ADDRESSUNSPENTINDEX, CAddressIndexIteratorKey(type, addressHash)));
+
+    while (pcursor->Valid()) {
+        std::pair<uint8_t, CAddressUnspentKey> key;
+        if (pcursor->GetKey(key) && key.first == DB_ADDRESSUNSPENTINDEX && key.second.hashBytes == addressHash) {
+            CAddressUnspentValue nValue;
+            if (pcursor->GetValue(nValue)) {
+                unspentOutputs.push_back(std::make_pair(key.second, nValue));
+                pcursor->Next();
+            } else {
+                return error("failed to get address unspent value");
+            }
+        } else {
+            break;
+        }
+    }
+
+    return true;
+}
+
+bool BlockTreeDB::WriteAddressIndex(const std::vector<std::pair<CAddressIndexKey, CAmount > >&vect) {
+    CDBBatch batch(*this);
+    for (std::vector<std::pair<CAddressIndexKey, CAmount> >::const_iterator it=vect.begin(); it!=vect.end(); it++)
+        batch.Write(std::make_pair(DB_ADDRESSINDEX, it->first), it->second);
+    return WriteBatch(batch);
+}
+
+bool BlockTreeDB::EraseAddressIndex(const std::vector<std::pair<CAddressIndexKey, CAmount > >&vect) {
+    CDBBatch batch(*this);
+    for (std::vector<std::pair<CAddressIndexKey, CAmount> >::const_iterator it=vect.begin(); it!=vect.end(); it++)
+        batch.Erase(std::make_pair(DB_ADDRESSINDEX, it->first));
+    return WriteBatch(batch);
+}
+
+bool BlockTreeDB::ReadAddressIndex(uint256 addressHash, int type,
+                                    std::vector<std::pair<CAddressIndexKey, CAmount> > &addressIndex,
+                                    int start, int end) {
+    const std::unique_ptr<CDBIterator> pcursor(NewIterator());
+
+    if (start > 0 && end > 0) {
+        pcursor->Seek(std::make_pair(DB_ADDRESSINDEX, CAddressIndexIteratorHeightKey(type, addressHash, start)));
+    } else {
+        pcursor->Seek(std::make_pair(DB_ADDRESSINDEX, CAddressIndexIteratorKey(type, addressHash)));
+    }
+
+    while (pcursor->Valid()) {
+        std::pair<uint8_t, CAddressIndexKey> key;
+        if (pcursor->GetKey(key) && key.first == DB_ADDRESSINDEX && key.second.hashBytes == addressHash) {
+            if (end > 0 && key.second.blockHeight > end) {
+                break;
+            }
+            CAmount nValue;
+            if (pcursor->GetValue(nValue)) {
+                addressIndex.push_back(std::make_pair(key.second, nValue));
+                pcursor->Next();
+            } else {
+                return error("failed to get address index value");
+            }
+        } else {
+            break;
+        }
+    }
+
+    return true;
+}
+
+bool BlockTreeDB::WriteTimestampIndex(const CTimestampIndexKey &timestampIndex)
+{
+    CDBBatch batch(*this);
+    batch.Write(std::make_pair(DB_TIMESTAMPINDEX, timestampIndex), 0);
+    return WriteBatch(batch);
+}
+
+bool BlockTreeDB::ReadTimestampIndex(const unsigned int &high, const unsigned int &low, std::vector<std::pair<uint256, unsigned int> > &hashes)
+{
+    const std::unique_ptr<CDBIterator> pcursor(NewIterator());
+
+    pcursor->Seek(std::make_pair(DB_TIMESTAMPINDEX, CTimestampIndexIteratorKey(low)));
+
+    while (pcursor->Valid()) {
+        std::pair<uint8_t, CTimestampIndexKey> key;
+        if (pcursor->GetKey(key) && key.first == DB_TIMESTAMPINDEX && key.second.timestamp < high) {
+            hashes.push_back(std::make_pair(key.second.blockHash, key.second.timestamp));
+            pcursor->Next();
+        } else {
+            break;
+        }
+    }
+
+    return true;
+}
+
+bool BlockTreeDB::WriteTimestampBlockIndex(const CTimestampBlockIndexKey &blockhashIndex, const CTimestampBlockIndexValue &logicalts) {
+    CDBBatch batch(*this);
+    batch.Write(std::make_pair(DB_BLOCKHASHINDEX, blockhashIndex), logicalts);
+    return WriteBatch(batch);
+}
+
+bool BlockTreeDB::ReadTimestampBlockIndex(const uint256 &hash, unsigned int &ltimestamp) {
+
+    CTimestampBlockIndexValue lts;
+    if (!Read(std::make_pair(DB_BLOCKHASHINDEX, hash), lts)) {
+        return false;
+    }
+
+    ltimestamp = lts.ltimestamp;
+    return true;
+}
+
+bool BlockTreeDB::WriteBlockBalancesIndex(const uint256 &key, const BlockBalances &value)
+{
+    CDBBatch batch(*this);
+    batch.Write(std::make_pair(DB_BALANCESINDEX, key), value);
+    return WriteBatch(batch);
+}
+
+bool BlockTreeDB::ReadBlockBalancesIndex(const uint256 &key, BlockBalances &value)
+{
+    return Read(std::make_pair(DB_BALANCESINDEX, key), value);
+}
+
+// Particl
+size_t BlockTreeDB::CountBlockIndex()
+{
+    std::unique_ptr<CDBIterator> pcursor(NewIterator());
+
+    pcursor->Seek(std::make_pair(DB_BLOCK_INDEX, uint256()));
+
+    size_t num_blocks = 0;
+    // Load m_block_index
+    while (pcursor->Valid()) {
+        std::pair<uint8_t, uint256> key;
+        if (pcursor->GetKey(key) && key.first == DB_BLOCK_INDEX) {
+            num_blocks += 1;
+            pcursor->Next();
+        } else {
+            break;
+        }
+    }
+
+    return num_blocks;
+}
+
+bool BlockTreeDB::ReadRCTOutput(int64_t i, CAnonOutput &ao)
+{
+    std::pair<uint8_t, int64_t> key = std::make_pair(DB_RCTOUTPUT, i);
+    return Read(key, ao);
+}
+
+bool BlockTreeDB::WriteRCTOutput(int64_t i, const CAnonOutput &ao)
+{
+    std::pair<uint8_t, int64_t> key = std::make_pair(DB_RCTOUTPUT, i);
+    CDBBatch batch(*this);
+    batch.Write(key, ao);
+    return WriteBatch(batch);
+}
+
+bool BlockTreeDB::EraseRCTOutput(int64_t i)
+{
+    std::pair<uint8_t, int64_t> key = std::make_pair(DB_RCTOUTPUT, i);
+    CDBBatch batch(*this);
+    batch.Erase(key);
+    return WriteBatch(batch);
+}
+
+
+bool BlockTreeDB::ReadRCTOutputLink(const CCmpPubKey &pk, int64_t &i)
+{
+    std::pair<uint8_t, CCmpPubKey> key = std::make_pair(DB_RCTOUTPUT_LINK, pk);
+    return Read(key, i);
+}
+
+bool BlockTreeDB::WriteRCTOutputLink(const CCmpPubKey &pk, int64_t i)
+{
+    std::pair<uint8_t, CCmpPubKey> key = std::make_pair(DB_RCTOUTPUT_LINK, pk);
+    CDBBatch batch(*this);
+    batch.Write(key, i);
+    return WriteBatch(batch);
+}
+
+bool BlockTreeDB::EraseRCTOutputLink(const CCmpPubKey &pk)
+{
+    std::pair<uint8_t, CCmpPubKey> key = std::make_pair(DB_RCTOUTPUT_LINK, pk);
+    CDBBatch batch(*this);
+    batch.Erase(key);
+    return WriteBatch(batch);
+}
+
+bool BlockTreeDB::ReadRCTKeyImage(const CCmpPubKey &ki, CAnonKeyImageInfo &data)
+{
+    std::pair<uint8_t, CCmpPubKey> key = std::make_pair(DB_RCTKEYIMAGE, ki);
+    // Versions before 0.19.2.15 store only the txid
+    CDataStream ssValue(SER_DISK, CLIENT_VERSION);
+    if (!ReadStream(key, ssValue)) {
+        return false;
+    }
+    try {
+        if (ssValue.size() < 36) {
+            ssValue >> data.txid;
+            data.height = -1; // unset
+        } else {
+            ssValue >> data;
+        }
+    } catch (const std::exception&) {
+        return false;
+    }
+    return true;
+}
+
+bool BlockTreeDB::EraseRCTKeyImage(const CCmpPubKey &ki)
+{
+    std::pair<uint8_t, CCmpPubKey> key = std::make_pair(DB_RCTKEYIMAGE, ki);
+    CDBBatch batch(*this);
+    batch.Erase(key);
+    return WriteBatch(batch);
+}
+
+bool BlockTreeDB::EraseRCTKeyImagesAfterHeight(int height)
+{
+    std::pair<uint8_t, CCmpPubKey> key = std::make_pair(DB_RCTKEYIMAGE, CCmpPubKey());
+
+    CDBBatch batch(*this);
+    size_t total = 0, removing = 0;
+    std::unique_ptr<CDBIterator> pcursor(NewIterator());
+    pcursor->Seek(key);
+
+    while (pcursor->Valid()) {
+        std::pair<uint8_t, CCmpPubKey> key;
+        if (pcursor->GetKey(key) && key.first == DB_RCTKEYIMAGE) {
+            CAnonKeyImageInfo ki_data;
+            total++;
+            if (pcursor->GetValueSize() >= 36) {
+                if (pcursor->GetValue(ki_data)) {
+                    if (height < ki_data.height) {
+                        removing++;
+                        std::pair<uint8_t, CCmpPubKey> erase_key = std::make_pair(DB_RCTKEYIMAGE, key.second);
+                        batch.Erase(erase_key);
+                    }
+                } else {
+                    return error("%s: failed to read value", __func__);
+                }
+            }
+            pcursor->Next();
+        } else {
+            break;
+        }
+    }
+
+    LogPrintf("Removing %d key images after height %d, total %d.\n", removing, height, total);
+    if (removing < 1) {
+        return true;
+    }
+    return WriteBatch(batch);
+}
+
+bool BlockTreeDB::ReadSpentCache(const COutPoint &outpoint, SpentCoin &coin)
+{
+    std::pair<uint8_t, COutPoint> key = std::make_pair(DB_SPENTCACHE, outpoint);
+    return Read(key, coin);
+}
+
+bool BlockTreeDB::EraseSpentCache(const COutPoint &outpoint)
+{
+    std::pair<uint8_t, COutPoint> key = std::make_pair(DB_SPENTCACHE, outpoint);
+    CDBBatch batch(*this);
+    batch.Erase(key);
+    return WriteBatch(batch);
+}
+
+bool BlockTreeDB::HaveBlindedFlag(const uint256 &txid) const {
+    std::pair<uint8_t, uint256> key = std::make_pair(DB_HAS_BLINDED_TXIN, txid);
+    return Exists(key);
+}
+
+bool BlockTreeDB::WriteBlindedFlag(const uint256 &txid)
+{
+    std::pair<uint8_t, uint256> key = std::make_pair(DB_HAS_BLINDED_TXIN, txid);
+    CDBBatch batch(*this);
+    batch.Write(key, 1);
+    return WriteBatch(batch);
+}
+
+bool BlockTreeDB::EraseBlindedFlag(const uint256 &txid)
+{
+    std::pair<uint8_t, uint256> key = std::make_pair(DB_HAS_BLINDED_TXIN, txid);
+    CDBBatch batch(*this);
+    batch.Erase(key);
+    return WriteBatch(batch);
+}
+
+} // namespace kernel
 
 namespace node {
 std::atomic_bool fReindex(false);

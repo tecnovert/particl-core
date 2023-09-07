@@ -88,8 +88,7 @@ class CBlockGetHeader : public CBlockHeader
         std::vector<CTransactionRef> vtx;
         SERIALIZE_METHODS(CBlockGetHeader, obj)
         {
-            READWRITEAS(CBlockHeader, obj);
-            READWRITE(obj.vtx);
+            READWRITE(AsBase<CBlockHeader>(obj), obj.vtx);
         }
 };
 
@@ -128,8 +127,7 @@ public:
 
     SERIALIZE_METHODS(CBlock, obj)
     {
-        READWRITEAS(CBlockHeader, obj);
-        READWRITE(obj.vtx);
+        READWRITE(AsBase<CBlockHeader>(obj), obj.vtx);
         if (obj.nVersion == PARTICL_BLOCK_VERSION) {
             READWRITE(obj.vchBlockSig);
         }
