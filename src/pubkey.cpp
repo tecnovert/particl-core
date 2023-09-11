@@ -377,6 +377,12 @@ bool CPubKey::Derive(CPubKey& pubkeyChild, unsigned char ccChild[32], unsigned i
     return true;
 }
 
+EllSwiftPubKey::EllSwiftPubKey(Span<const std::byte> ellswift) noexcept
+{
+    assert(ellswift.size() == SIZE);
+    std::copy(ellswift.begin(), ellswift.end(), m_pubkey.begin());
+}
+
 CPubKey EllSwiftPubKey::Decode() const
 {
     secp256k1_pubkey pubkey;

@@ -6,7 +6,6 @@
 #define BITCOIN_DBWRAPPER_H
 
 #include <attributes.h>
-#include <clientversion.h>
 #include <serialize.h>
 #include <span.h>
 #include <streams.h>
@@ -172,7 +171,7 @@ public:
 
     template<typename V> bool GetValue(V& value) {
         try {
-            CDataStream ssValue{GetValueImpl(), SER_DISK, CLIENT_VERSION};
+            DataStream ssValue{GetValueImpl()};
             ssValue.Xor(dbwrapper_private::GetObfuscateKey(parent));
             ssValue >> value;
         } catch (const std::exception&) {
@@ -241,7 +240,7 @@ public:
             return false;
         }
         try {
-            CDataStream ssValue{MakeByteSpan(*strValue), SER_DISK, CLIENT_VERSION};
+            DataStream ssValue{MakeByteSpan(*strValue)};
             ssValue.Xor(obfuscate_key);
             ssValue >> value;
         } catch (const std::exception&) {
@@ -251,9 +250,9 @@ public:
     }
 
     template <typename K>
-    bool ReadStream(const K& key, CDataStream& ssValue) const
+    bool ReadStream(const K& key, DataStream& ssValue) const
     {
-        CDataStream ssKey(SER_DISK, CLIENT_VERSION);
+        DataStream ssKey;
         ssKey.reserve(DBWRAPPER_PREALLOC_KEY_SIZE);
         ssKey << key;
         std::optional<std::string> strValue{ReadImpl(ssKey)};
@@ -261,7 +260,7 @@ public:
             return false;
         }
         try {
-            ssValue.Init(strValue->data(), strValue->data() + strValue->size(), SER_DISK, CLIENT_VERSION);
+            ssValue.Init(strValue->data(), strValue->data() + strValue->size());
             ssValue.Xor(obfuscate_key);
         } catch (const std::exception&) {
             return false;
@@ -331,7 +330,7 @@ public:
     template<typename K>
     void CompactRange(const K& key_begin, const K& key_end) const
     {
-        CDataStream ssKey1(SER_DISK, CLIENT_VERSION), ssKey2(SER_DISK, CLIENT_VERSION);
+        DataStream ssKey1{}, ssKey2{};
         ssKey1.reserve(DBWRAPPER_PREALLOC_KEY_SIZE);
         ssKey2.reserve(DBWRAPPER_PREALLOC_KEY_SIZE);
         ssKey1 << key_begin;

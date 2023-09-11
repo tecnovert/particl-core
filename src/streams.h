@@ -222,6 +222,12 @@ public:
     explicit DataStream(Span<const uint8_t> sp) : DataStream{AsBytes(sp)} {}
     explicit DataStream(Span<const value_type> sp) : vch(sp.data(), sp.data() + sp.size()) {}
 
+    void Init(const char* pbegin, const char* pend)
+    {
+        Span sp = AsBytes(Span{pbegin, pend});
+        vch = vector_type(sp.data(), sp.data() + sp.size());
+    }
+
     std::string str() const
     {
         return std::string{UCharCast(data()), UCharCast(data() + size())};
