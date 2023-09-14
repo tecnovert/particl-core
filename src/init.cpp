@@ -1209,11 +1209,6 @@ bool AppInitParameterInteraction(const ArgsManager& args)
         return InitError(_("No proxy server specified. Use -proxy=<ip> or -proxy=<ip:port>."));
     }
 
-    if (chainparams.IsTestChain() || chainparams.IsMockableChain()) { // TODO: Remove
-        gArgs.SoftSetBoolArg("-acceptanontxn", true);
-        gArgs.SoftSetBoolArg("-acceptblindtxn", true);
-    }
-
     smsgModule.ParseArgs(args);
 
 #if defined(USE_SYSCALL_SANDBOX)
