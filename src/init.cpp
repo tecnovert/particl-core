@@ -1168,11 +1168,6 @@ bool AppInitParameterInteraction(const ArgsManager& args)
     if (args.GetIntArg("-rpcserialversion", DEFAULT_RPC_SERIALIZE_VERSION) > 1)
         return InitError(Untranslated("Unknown rpcserialversion requested."));
 
-    if (chainparams.IsTestChain() || chainparams.IsMockableChain()) { // TODO: Remove
-        gArgs.SoftSetBoolArg("-acceptanontxn", true);
-        gArgs.SoftSetBoolArg("-acceptblindtxn", true);
-    }
-
     smsgModule.ParseArgs(args);
 
     if (args.GetIntArg("-rpcserialversion", DEFAULT_RPC_SERIALIZE_VERSION) == 0 && !IsDeprecatedRPCEnabled("serialversion")) {

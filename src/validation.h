@@ -113,8 +113,8 @@ inline int64_t FutureDrift(int64_t nTime) { return nTime + 15; } // FutureDriftV
 
 static constexpr unsigned int DEFAULT_BLOCKTREE_DB_MAX_OPEN_FILES = 1000;
 static constexpr bool DEFAULT_BLOCKTREE_DB_COMPRESSION = false; // set to true for insight
-static constexpr bool DEFAULT_ACCEPT_ANON_TX = false;
-static constexpr bool DEFAULT_ACCEPT_BLIND_TX = false;
+static constexpr bool DEFAULT_ACCEPT_ANON_TX = true;
+static constexpr bool DEFAULT_ACCEPT_BLIND_TX = true;
 
 /** Return the median number of connected nodes */
 int GetNumPeers();

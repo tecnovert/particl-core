@@ -468,16 +468,14 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, TxValidationState& state, 
     }
 
     if ((nCt > 0 || nRingCTOutputs > 0) && nRingCTInputs == 0) {
-        bool default_accept_anon = state.m_exploit_fix_2 ? true : particl::DEFAULT_ACCEPT_ANON_TX;
-        bool default_accept_blind = state.m_exploit_fix_2 ? true : particl::DEFAULT_ACCEPT_BLIND_TX;
         if (state.m_exploit_fix_1 &&
             nRingCTOutputs > 0 &&
-            !gArgs.GetBoolArg("-acceptanontxn", default_accept_anon)) {
+            !gArgs.GetBoolArg("-acceptanontxn", particl::DEFAULT_ACCEPT_ANON_TX)) {
             return state.Invalid(TxValidationResult::TX_CONSENSUS, "bad-txns-anon-disabled");
         }
         if (state.m_exploit_fix_1 &&
             nCt > 0 &&
-            !gArgs.GetBoolArg("-acceptblindtxn", default_accept_blind)) {
+            !gArgs.GetBoolArg("-acceptblindtxn", particl::DEFAULT_ACCEPT_BLIND_TX)) {
             return state.Invalid(TxValidationResult::TX_CONSENSUS, "bad-txns-blind-disabled");
         }
         if (!state.m_exploit_fix_1 && nCt == 0) {
