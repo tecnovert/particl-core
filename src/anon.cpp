@@ -25,9 +25,8 @@ bool VerifyMLSAG(const CTransaction &tx, CValidationState &state)
 {
     const Consensus::Params &consensus = Params().GetConsensus();
 
-    bool default_accept_anon = state.m_exploit_fix_2 ? true : DEFAULT_ACCEPT_ANON_TX; // TODO: Remove after fork, set DEFAULT_ACCEPT_ANON_TX to true
     if (state.m_exploit_fix_1 &&
-        !gArgs.GetBoolArg("-acceptanontxn", default_accept_anon)) {
+        !gArgs.GetBoolArg("-acceptanontxn", DEFAULT_ACCEPT_ANON_TX)) {
         return state.Invalid(ValidationInvalidReason::CONSENSUS, false, REJECT_INVALID, "bad-txns-anon-disabled");
     }
 

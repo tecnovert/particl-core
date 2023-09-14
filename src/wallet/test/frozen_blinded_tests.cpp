@@ -145,15 +145,15 @@ BOOST_AUTO_TEST_CASE(frozen_blinded_test)
         std::this_thread::sleep_for(std::chrono::milliseconds(250));
     }
 
-    BOOST_REQUIRE(gArgs.GetBoolArg("-acceptanontxn", false));
+    BOOST_REQUIRE(gArgs.GetBoolArg("-acceptanontxn", true));
 
     // Exploit should fail
     AddTxn(pwallet, stealth_address, OUTPUT_STANDARD, OUTPUT_RINGCT, 10 * COIN, 9000000 * COIN, "bad-commitment-sum (code 16)");
 
-    gArgs.ClearForced("-acceptanontxn");
-    gArgs.ClearForced("-acceptblindtxn");
-    BOOST_REQUIRE(!gArgs.GetBoolArg("-acceptanontxn", false));
-    BOOST_REQUIRE(!gArgs.GetBoolArg("-acceptblindtxn", false));
+    gArgs.SoftSetBoolArg("-acceptanontxn", false);
+    gArgs.SoftSetBoolArg("-acceptblindtxn", false);
+    BOOST_REQUIRE(!gArgs.GetBoolArg("-acceptanontxn", true));
+    BOOST_REQUIRE(!gArgs.GetBoolArg("-acceptblindtxn", true));
 
     // CT and RCT should fail
     AddTxn(pwallet, stealth_address, OUTPUT_STANDARD, OUTPUT_RINGCT, 10 * COIN, 9000000 * COIN, "bad-txns-anon-disabled (code 16)");
@@ -187,6 +187,8 @@ BOOST_AUTO_TEST_CASE(frozen_blinded_test)
     RegtestParams().GetConsensus_nc().exploit_fix_2_time = tip->nTime + 1;
     RegtestParams().GetConsensus_nc().exploit_fix_2_height = tip->nHeight + 1;
     CAmount moneysupply_before_fork = tip->nMoneySupply;
+    gArgs.ClearForced("-acceptanontxn");
+    gArgs.ClearForced("-acceptblindtxn");
 
     while (GetTime() < tip->nTime + 1) {
         std::this_thread::sleep_for(std::chrono::milliseconds(250));
