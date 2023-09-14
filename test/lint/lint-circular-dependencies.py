@@ -24,10 +24,10 @@ EXPECTED_CIRCULAR_DEPENDENCIES = (
     "kernel/mempool_persist -> validation -> kernel/mempool_persist",
 
     # Particl
+    "addresstype -> key/extkey -> key_io -> addresstype",
     "anon -> txmempool -> anon",
     "anon -> validation -> anon",
     "consensus/tx_verify -> validation -> consensus/tx_verify",
-    "insight/insight -> txdb -> insight/insight",
     "insight/insight -> txmempool -> insight/insight",
     "insight/insight -> validation -> insight/insight",
     "key/extkey -> key_io -> key/extkey",
@@ -39,7 +39,6 @@ EXPECTED_CIRCULAR_DEPENDENCIES = (
     "node/context -> smsg/manager -> smsg/smessage -> node/context",
     "smsg/manager -> smsg/smessage -> validation -> smsg/manager",
     "node/context -> smsg/manager -> smsg/smessage -> wallet/hdwallet -> pos/kernel -> node/transaction -> node/context",
-    "txdb -> validation -> txdb",
     "usbdevice/debugdevice -> usbdevice/usbdevice -> usbdevice/debugdevice",
     "usbdevice/ledgerdevice -> usbdevice/usbdevice -> usbdevice/ledgerdevice",
     "usbdevice/trezordevice -> usbdevice/usbdevice -> usbdevice/trezordevice",
@@ -48,8 +47,6 @@ EXPECTED_CIRCULAR_DEPENDENCIES = (
     "wallet/hdwallet -> wallet/wallet -> wallet/hdwallet",
     "wallet/hdwallet -> wallet/receive -> wallet/hdwallet",
     "wallet/hdwallet -> wallet/spend -> wallet/hdwallet",
-    "key/extkey -> key_io -> script/solver -> key/extkey",
-    "key/stealth -> key_io -> script/solver -> key/stealth",
     "smsg/smessage -> wallet/hdwallet -> smsg/smessage",
     "net_processing -> smsg/smessage -> wallet/hdwallet -> pos/kernel -> node/transaction -> net_processing",
     "net_processing -> smsg/smessage -> node/context -> net_processing",
@@ -59,7 +56,6 @@ EXPECTED_CIRCULAR_DEPENDENCIES = (
     "index/base -> node/context -> smsg/manager -> smsg/smessage -> wallet/hdwallet -> pos/kernel -> node/transaction -> index/txindex -> index/base",
     "index/txindex -> validation -> index/txindex",
     "anon -> txmempool -> policy/fees -> anon",
-    "kernel/chainstatemanager_opts -> txdb -> validation -> kernel/chainstatemanager_opts",
 )
 
 CODE_DIR = "src"

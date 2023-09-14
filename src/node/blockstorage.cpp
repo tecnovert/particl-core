@@ -35,7 +35,6 @@ extern bool fTimestampIndex;
 extern bool fBalancesIndex;
 
 
-#include <validation.h>
 #include <insight/insight.h>
 #include <chainparams.h>
 #include <coins.h>

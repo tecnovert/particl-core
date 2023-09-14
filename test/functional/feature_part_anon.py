@@ -8,7 +8,6 @@ from test_framework.test_particl import ParticlTestFramework, isclose
 from test_framework.util import assert_raises_rpc_error
 from test_framework.address import base58_to_byte
 from test_framework.key import ECPubKey
-from test_framework.secp256k1 import GE
 from test_framework.messages import COIN, sha256
 
 
@@ -62,10 +61,10 @@ class AnonTest(ParticlTestFramework):
             # getrawtransaction should work for transactions in the mempool, txundo data is not available yet
             rtx0 = nodes[0].getrawtransaction(h, 2)
             assert ('prevout' not in rtx0['vin'][0])
-            assert(tx0['type_in'] == expect_type_in)
+            assert (tx0['type_in'] == expect_type_in)
             if i != 1:
                 tx1 = nodes[1].gettransaction(h)
-                assert(tx1['type_in'] == expect_type_in)
+                assert (tx1['type_in'] == expect_type_in)
 
                 rtx1 = nodes[1].getrawtransaction(h, 2)
                 assert ('prevout' not in rtx1['vin'][0])
@@ -100,16 +99,16 @@ class AnonTest(ParticlTestFramework):
             expect_type_in = 'plain' if i < 2 or (i > 5 and i < 11) else 'blind'
             rtx0 = nodes[0].getrawtransaction(h, 2, tx0['blockhash'])
             assert (rtx0['vin'][0]['prevout']['type'] == expect_type_in)
-            assert(tx0['type_in'] == expect_type_in)
+            assert (tx0['type_in'] == expect_type_in)
             if i != 1:
                 tx1 = nodes[1].gettransaction(h)
-                assert(tx1['type_in'] == expect_type_in)
+                assert (tx1['type_in'] == expect_type_in)
                 rtx1 = nodes[1].getrawtransaction(h, 2, tx1['blockhash'])
                 assert (rtx1['vin'][0]['prevout']['type'] == expect_type_in)
 
         txnHash = nodes[1].sendtypeto('anon', 'anon', [{'address': sxAddrTo0_1, 'amount': 1, 'narr': 'node1 -> node0 a->a'}, ], '', '', 5)
         txnHashes = [txnHash,]
-        assert(nodes[1].gettransaction(txnHash)['type_in'] == 'anon')
+        assert (nodes[1].gettransaction(txnHash)['type_in'] == 'anon')
 
         # Get a change address
         change_addr2 = nodes[2].deriverangekeys(0, 0, 'internal', False, True)[0]
@@ -120,16 +119,16 @@ class AnonTest(ParticlTestFramework):
         txnHash2 = nodes[1].sendtypeto('anon', 'part', [{'address': change_addr2, 'amount': 1, 'narr': 'node1 -> node2 a->p'}, ], '', '', 5)
         txnHashes.append(txnHash2)
 
-        assert(nodes[1].gettransaction(txnHash2)['type_in'] == 'anon')
+        assert (nodes[1].gettransaction(txnHash2)['type_in'] == 'anon')
 
         for h in txnHashes:
             assert (self.wait_for_mempool(nodes[0], h))
             assert (self.wait_for_mempool(nodes[2], h))
         self.stakeBlocks(1)
 
-        assert(nodes[0].gettransaction(txnHash)['type_in'] == 'anon')
-        assert(nodes[1].gettransaction(txnHash2)['type_in'] == 'anon')
-        assert(nodes[2].gettransaction(txnHash2)['type_in'] == 'anon')
+        assert (nodes[0].gettransaction(txnHash)['type_in'] == 'anon')
+        assert (nodes[1].gettransaction(txnHash2)['type_in'] == 'anon')
+        assert (nodes[2].gettransaction(txnHash2)['type_in'] == 'anon')
 
         ro = nodes[1].getblock(nodes[1].getblockhash(3))
         for txnHash in txnHashes:

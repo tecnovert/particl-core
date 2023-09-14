@@ -3,6 +3,7 @@
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+import re
 import time
 import json
 import decimal
@@ -11,6 +12,7 @@ import subprocess
 from .test_framework import BitcoinTestFramework
 from .util import assert_equal, coverage
 from .address import byte_to_base58
+from .authproxy import JSONRPCException
 
 
 def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):

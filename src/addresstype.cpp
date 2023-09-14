@@ -3,8 +3,6 @@
 // file COPYING or https://www.opensource.org/licenses/mit-license.php.
 
 #include <addresstype.h>
-#include <script/script.h>
-#include <script/solver.h>
 #include <script/interpreter.h>
 
 #include <crypto/sha256.h>
