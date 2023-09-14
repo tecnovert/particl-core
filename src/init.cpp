@@ -1162,11 +1162,6 @@ bool AppInitParameterInteraction(const ArgsManager& args, bool use_syscall_sandb
     if (args.GetIntArg("-rpcserialversion", DEFAULT_RPC_SERIALIZE_VERSION) > 1)
         return InitError(Untranslated("Unknown rpcserialversion requested."));
 
-    if (chainparams.IsTestChain() || chainparams.IsMockableChain()) { // TODO: Remove
-        gArgs.SoftSetBoolArg("-acceptanontxn", true);
-        gArgs.SoftSetBoolArg("-acceptblindtxn", true);
-    }
-
     smsgModule.ParseArgs(args);
 
     if (args.GetBoolArg("-reindex-chainstate", false)) {
