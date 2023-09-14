@@ -136,8 +136,8 @@ static constexpr bool DEFAULT_BALANCESINDEX = false;
 static constexpr unsigned int DEFAULT_DB_MAX_OPEN_FILES = 1000;
 static constexpr bool DEFAULT_DB_COMPRESSION = false; // set to true for insight
 static constexpr bool DEFAULT_AUTOMATIC_BANS = true;
-static constexpr bool DEFAULT_ACCEPT_ANON_TX = false;
-static constexpr bool DEFAULT_ACCEPT_BLIND_TX = false;
+static constexpr bool DEFAULT_ACCEPT_ANON_TX = true;
+static constexpr bool DEFAULT_ACCEPT_BLIND_TX = true;
 
 /** Return the median number of connected nodes */
 int GetNumPeers();

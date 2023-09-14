@@ -1178,11 +1178,6 @@ bool AppInitParameterInteraction(const ArgsManager& args, bool use_syscall_sandb
 
     nMaxTipAge = args.GetIntArg("-maxtipage", DEFAULT_MAX_TIP_AGE);
 
-    if (chainparams.IsTestChain() || chainparams.IsMockableChain()) { // TODO: Remove
-        gArgs.SoftSetBoolArg("-acceptanontxn", true);
-        gArgs.SoftSetBoolArg("-acceptblindtxn", true);
-    }
-
     smsgModule.ParseArgs(args);
 
     if (args.GetBoolArg("-reindex-chainstate", false)) {
