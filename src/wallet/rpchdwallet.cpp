@@ -9649,10 +9649,10 @@ static bool PruneBlockFile(ChainstateManager &chainman, FILE *fp, bool test_only
     if (!fpt) {
         return error("%s: Couldn't open temp file.\n", __func__);
     }
-    CAutoFile fileout(fpt, SER_DISK, CLIENT_VERSION);
+    CAutoFile fileout(fpt, CLIENT_VERSION);
 
     const CChainParams &chainparams = Params();
-    CBufferedFile blkdat(fp, 2*MAX_BLOCK_SERIALIZED_SIZE, MAX_BLOCK_SERIALIZED_SIZE+8, SER_DISK, CLIENT_VERSION);
+    BufferedFile blkdat{fp, 2 * MAX_BLOCK_SERIALIZED_SIZE, MAX_BLOCK_SERIALIZED_SIZE + 8, CLIENT_VERSION};
     uint64_t nRewind = blkdat.GetPos();
 
     while (!blkdat.eof()) {
@@ -9664,12 +9664,13 @@ static bool PruneBlockFile(ChainstateManager &chainman, FILE *fp, bool test_only
         unsigned int nSize = 0;
         try {
             // locate a header
-            unsigned char buf[CMessageHeader::MESSAGE_START_SIZE];
+            MessageStartChars buf;
             blkdat.FindByte(std::byte(chainparams.MessageStart()[0]));
-            nRewind = blkdat.GetPos()+1;
+            nRewind = blkdat.GetPos() + 1;
             blkdat >> buf;
-            if (memcmp(buf, chainparams.MessageStart(), CMessageHeader::MESSAGE_START_SIZE))
+            if (buf != chainparams.MessageStart()) {
                 continue;
+            }
             // read size
             blkdat >> nSize;
             if (nSize < 80 || nSize > MAX_BLOCK_SERIALIZED_SIZE)
