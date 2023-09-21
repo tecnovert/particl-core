@@ -81,7 +81,7 @@ src/qt/particl-qt.includes
 
 *.log
 *.trs
-*.dmg
+*.zip
 
 *.json.h
 *.raw.h

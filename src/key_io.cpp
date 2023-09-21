@@ -87,17 +87,20 @@ public:
 
     std::string operator()(const WitnessUnknown& id) const
     {
-        if (id.version < 1 || id.version > 16 || id.length < 2 || id.length > 40) {
+        const std::vector<unsigned char>& program = id.GetWitnessProgram();
+        if (id.GetWitnessVersion() < 1 || id.GetWitnessVersion() > 16 || program.size() < 2 || program.size() > 40) {
             return {};
         }
-        std::vector<unsigned char> data = {(unsigned char)id.version};
-        data.reserve(1 + (id.length * 8 + 4) / 5);
-        ConvertBits<8, 5, true>([&](unsigned char c) { data.push_back(c); }, id.program, id.program + id.length);
+        std::vector<unsigned char> data = {(unsigned char)id.GetWitnessVersion()};
+        data.reserve(1 + (program.size() * 8 + 4) / 5);
+        ConvertBits<8, 5, true>([&](unsigned char c) { data.push_back(c); }, program.begin(), program.end());
         return bech32::Encode(bech32::Encoding::BECH32M, m_params.Bech32HRP(), data);
     }
 
     std::string operator()(const CNoDestination& no) const { return {}; }
+    std::string operator()(const PubKeyDestination& pk) const { return {}; }
 
+    // Particl
     std::string operator()(const CExtPubKey &ek) const { return CBitcoinAddress(ek, m_bech32).ToString(); }
     std::string operator()(const CStealthAddress &sxAddr) const { return CBitcoinAddress(sxAddr, m_bech32).ToString(); }
     std::string operator()(const CKeyID256& id) const { return CBitcoinAddress(id, m_bech32).ToString(); }
@@ -230,11 +233,7 @@ CTxDestination DecodeDestination(const std::string& str, const CChainParams& par
                 return CNoDestination();
             }
 
-            WitnessUnknown unk;
-            unk.version = version;
-            std::copy(data.begin(), data.end(), unk.program);
-            unk.length = data.size();
-            return unk;
+            return WitnessUnknown{version, data};
         } else {
             error_str = strprintf("Invalid padding in Bech32 data section");
             return CNoDestination();
@@ -481,6 +480,7 @@ private:
 public:
     CBitcoinAddressVisitor(CBitcoinAddress* addrIn, bool fBech32_ = false) : addr(addrIn), fBech32(fBech32_) {}
 
+    bool operator()(const PubKeyDestination& pk) const { return false; }
     bool operator()(const PKHash& id) const { return addr->Set(ToKeyID(id), fBech32); }
     bool operator()(const ScriptHash& id) const { return addr->Set(ToScriptID(id), fBech32); }
     bool operator()(const CExtPubKey &ek) const { return addr->Set(ek, fBech32); }

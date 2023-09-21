@@ -404,16 +404,8 @@ BOOST_AUTO_TEST_CASE(multisig_Solver1)
         BOOST_CHECK(Solver(s, solutions) != TxoutType::NONSTANDARD);
         BOOST_CHECK(solutions.size() == 1);
         CTxDestination addr;
-        BOOST_CHECK(ExtractDestination(s, addr));
-        BOOST_CHECK(addr == keyaddr[0]);
-        {
-            LOCK(keystore.cs_wallet);
-            BOOST_CHECK(keystore.IsMine(s));
-        }
-        {
-            LOCK(emptykeystore.cs_wallet);
-            BOOST_CHECK(!emptykeystore.IsMine(s));
-        }
+        // 2023-09-21 - PubKeyDestination is invalid
+        BOOST_CHECK(!ExtractDestination(s, addr));
     }
     {
         std::vector<valtype> solutions;

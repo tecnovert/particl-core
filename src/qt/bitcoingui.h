@@ -168,6 +168,9 @@ private:
     QAction* m_wallet_selector_label_action = nullptr;
     QAction* m_wallet_selector_action = nullptr;
     QAction* m_mask_values_action{nullptr};
+    QAction* m_migrate_wallet_action{nullptr};
+    QMenu* m_migrate_wallet_menu{nullptr};
+
     QAction *coldstakingAction = nullptr;
     QAction *mnemonicAction = nullptr;
 

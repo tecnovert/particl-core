@@ -8996,7 +8996,8 @@ bool CHDWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CTrans
         tr.fSubtractFeeFromAmount = rec.fSubtractFeeFromAmount;
 
         tr.fScriptSet = true;
-        tr.scriptPubKey = rec.scriptPubKey;
+
+        tr.scriptPubKey = GetScriptForDestination(rec.dest);
         //tr.address = rec.address;
         //tr.sNarration = rec.sNarr;
 
