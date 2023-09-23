@@ -51,6 +51,29 @@ Next Major Version
   - Convert mnemonics to and from entropy and word form.
 
 
+23.2.7
+==============
+
+- Fixed segfault with getblock verbosity > 2
+
+
+23.2.6
+==============
+
+- Transactions with blinded inputs are marked in the TXDB.
+  - Enables the wallet to detect blinded transaction type_in without txindex.
+- rpc:
+  - gettransaction shows total amount for tx records.
+  - gettransaction shows type_in field.
+  - gettransaction for fee for tx records shown once instead of in details.
+  - filtertransactions total amount now includes fee for sent txns.
+    - Matches gettransaction for mapwallet transactions.
+  - extkeyimportmaster will fail to import to a wallet with an active account without setting the replaceaccount parameter.
+  - debugwallet can detect and repair missing blind input flags.
+- New checkpoints.
+- Merged BTC 23.2
+
+
 23.1.5
 ==============
 
