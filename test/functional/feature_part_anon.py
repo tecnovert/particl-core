@@ -93,10 +93,13 @@ class AnonTest(ParticlTestFramework):
         assert (value_commitment == rtx_prev['vout'][prevout_n]['valueCommitment'])
 
         block1 = nodes[1].getblock(block1_hash)
+        verbose_block = nodes[1].getblock(block1_hash, 3)
         for i, h in enumerate(txnHashes):
             assert (h in block1['tx'])
             tx0 = nodes[0].gettransaction(h)
             expect_type_in = 'plain' if i < 2 or (i > 5 and i < 11) else 'blind'
+            block_pos = block1['tx'].index(h)
+            assert (verbose_block['tx'][block_pos]['vin'][0]['type'] == expect_type_in)
             rtx0 = nodes[0].getrawtransaction(h, 2, tx0['blockhash'])
             assert (rtx0['vin'][0]['prevout']['type'] == expect_type_in)
             assert(tx0['type_in'] == expect_type_in)
