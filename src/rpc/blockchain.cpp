@@ -198,6 +198,15 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* tip, const CBlockIn
                 const CTransactionRef& tx = block.vtx.at(i);
                 // coinbase transaction (i.e. i == 0) doesn't have undo data
                 const CTxUndo* txundo = (have_undo && i > 0) ? &blockUndo.vtxundo.at(i - 1) : nullptr;
+
+                // Particl blocks above the last import height have no coinbase tx.
+                if (have_undo) {
+                    int last_import_height{int(Params().GetLastImportHeight())};
+                    if (blockindex->IsParticlVersion() && blockindex->nHeight > last_import_height) {
+                        txundo = &blockUndo.vtxundo.at(i);
+                    }
+                }
+
                 UniValue objTx(UniValue::VOBJ);
                 TxToUniv(*tx, uint256(), objTx, true, RPCSerializationFlags(), txundo, verbosity);
                 txs.push_back(objTx);
@@ -2363,7 +2372,7 @@ static RPCHelpMan getblockstats()
 
         if (loop_inputs) {
             CAmount tx_total_in = 0;
-            const auto& txundo = blockUndo.vtxundo.at(fParticlMode ? i : i - 1); // Particl includes coinbase/coinstake in undo data
+            const auto& txundo = blockUndo.vtxundo.at(fParticlMode ? i : i - 1); // Particl includes coinstake in undo data
             for (const Coin& coin: txundo.vprevout) {
                 const CTxOut& prevoutput = coin.out;
 

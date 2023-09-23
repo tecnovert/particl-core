@@ -1,4 +1,10 @@
 
+23.2.7
+==============
+
+- Fixed segfault with getblock verbosity > 2
+
+
 23.2.6
 ==============
 
