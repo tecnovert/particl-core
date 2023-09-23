@@ -68,14 +68,19 @@ class AnonTest(ParticlTestFramework):
         self.stakeBlocks(2)
 
         block1_hash = nodes[1].getblockhash(1)
-        ro = nodes[1].getblock(block1_hash)
+        block = nodes[1].getblock(block1_hash)
+        verbose_block = nodes[1].getblock(block1_hash, 3)
         for i, h in enumerate(txnHashes):
-            assert (h in ro['tx'])
+            assert (h in block['tx'])
             tx0 = nodes[0].gettransaction(h)
-            assert(tx0['type_in'] == ('plain' if i < 2 or (i > 5 and i < 11) else 'blind'))
+            expect_type = ('plain' if i < 2 or (i > 5 and i < 11) else 'blind')
+
+            block_pos = block['tx'].index(h)
+            assert (verbose_block['tx'][block_pos]['vin'][0]['type'] == expect_type)
+            assert (tx0['type_in'] == expect_type)
             if i != 1:
                 tx1 = nodes[1].gettransaction(h)
-                assert(tx1['type_in'] == ('plain' if i < 2 or (i > 5 and i < 11) else 'blind'))
+                assert (tx1['type_in'] == expect_type)
 
         txnHash = nodes[1].sendtypeto('anon', 'anon', [{'address': sxAddrTo0_1, 'amount': 1, 'narr': 'node1 -> node0 a->a'}, ], '', '', 5)
         txnHashes = [txnHash,]

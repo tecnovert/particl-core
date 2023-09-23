@@ -51,7 +51,6 @@
 
 using node::ReadBlockFromDisk;
 using node::UndoReadFromDisk;
-using node::IsBlockPruned;
 
 namespace wallet {
 extern void WalletTxToJSON(const CWallet& wallet, const CWalletTx& wtx, UniValue& entry, bool fFilterMode=false);
@@ -6584,7 +6583,7 @@ static bool GetTxInputTypeFromBlockUndo(CHDWallet *const pwallet, uint8_t &type_
 
     CBlockUndo blockUndo;
     CBlock block;
-    if (IsBlockPruned(blockindex)) {
+    if (pchainman->m_blockman.IsBlockPruned(blockindex)) {
         str_error = "Block is pruned";
         return false;
     }

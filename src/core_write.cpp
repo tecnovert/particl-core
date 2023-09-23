@@ -317,7 +317,7 @@ void TxToUniv(const CTransaction& tx, const uint256& block_hash, UniValue& entry
             }
             in.pushKV("txinwitness", txinwitness);
         }
-        if (have_undo) {
+        if (have_undo && !txin.IsAnonInput()) {
             const Coin& prev_coin = txundo->vprevout[i];
             const CTxOut& prev_txout = prev_coin.out;
 
@@ -333,6 +333,7 @@ void TxToUniv(const CTransaction& tx, const uint256& block_hash, UniValue& entry
                 p.pushKV("value", ValueFromAmount(prev_txout.nValue));
                 p.pushKV("scriptPubKey", o_script_pub_key);
                 in.pushKV("prevout", p);
+                in.pushKV("type", prev_coin.nType == OUTPUT_CT ? "blind" : "plain");
             }
         }
         in.pushKV("sequence", (int64_t)txin.nSequence);
