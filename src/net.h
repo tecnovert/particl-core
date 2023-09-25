@@ -160,7 +160,6 @@ enum
     LOCAL_MAX
 };
 
-bool IsPeerAddrLocalGood(CNode *pnode);
 /** Returns a local address that we should advertise to this peer. */
 std::optional<CService> GetLocalAddrForPeer(CNode& node);
 
@@ -179,7 +178,6 @@ bool AddLocal(const CNetAddr& addr, int nScore = LOCAL_NONE);
 void RemoveLocal(const CService& addr);
 bool SeenLocal(const CService& addr);
 bool IsLocal(const CService& addr);
-bool GetLocal(CService& addr, const CNode& peer);
 CService GetLocalAddress(const CNode& peer);
 CService MaybeFlipIPv6toCJDNS(const CService& service);
 
@@ -843,6 +841,9 @@ public:
      * @return network the peer connected through.
      */
     Network ConnectedThroughNetwork() const;
+
+    /** Whether this peer connected through a privacy network. */
+    [[nodiscard]] bool IsConnectedThroughPrivacyNet() const;
 
     // We selected peer as (compact blocks) high-bandwidth peer (BIP152)
     std::atomic<bool> m_bip152_highbandwidth_to{false};
@@ -1592,12 +1593,6 @@ public:
 
     friend struct ConnmanTestMsg;
 };
-
-/** Dump binary message to file, with timestamp */
-void CaptureMessageToFile(const CAddress& addr,
-                          const std::string& msg_type,
-                          Span<const unsigned char> data,
-                          bool is_incoming);
 
 /** Defaults to `CaptureMessageToFile()`, but can be overridden by unit tests. */
 extern std::function<void(const CAddress& addr,
