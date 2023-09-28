@@ -9638,7 +9638,7 @@ static RPCHelpMan verifyrawtransaction()
     };
 };
 
-static bool PruneBlockFile(ChainstateManager &chainman, FILE *fp, bool test_only, size_t &num_blocks_in_file, size_t &num_blocks_removed) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
+static bool PruneBlockFile(ChainstateManager &chainman, CAutoFile& file_in, bool test_only, size_t &num_blocks_in_file, size_t &num_blocks_removed) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
 {
     fs::path tmp_filepath = gArgs.GetBlocksDirPath() / "tmp.dat";
 
@@ -9649,7 +9649,7 @@ static bool PruneBlockFile(ChainstateManager &chainman, FILE *fp, bool test_only
     CAutoFile fileout(fpt, CLIENT_VERSION);
 
     const CChainParams &chainparams = Params();
-    BufferedFile blkdat{fp, 2 * MAX_BLOCK_SERIALIZED_SIZE, MAX_BLOCK_SERIALIZED_SIZE + 8, CLIENT_VERSION};
+    BufferedFile blkdat{file_in, 2 * MAX_BLOCK_SERIALIZED_SIZE, MAX_BLOCK_SERIALIZED_SIZE + 8};
     uint64_t nRewind = blkdat.GetPos();
 
     while (!blkdat.eof()) {
@@ -9779,16 +9779,19 @@ static RPCHelpMan pruneorphanedblocks()
     {
         LOCK(cs_main);
         int nFile = 0;
-        FILE *fp;
         for (;;) {
             FlatFilePos pos(nFile, 0);
             fs::path blk_filepath = chainman.m_blockman.GetBlockPosFilename(pos);
-            if (!fs::exists(blk_filepath) ||
-                !(fp = chainman.m_blockman.OpenBlockFile(pos, true)))
+            if (!fs::exists(blk_filepath)) {
                 break;
+            }
+            CAutoFile file{chainman.m_blockman.OpenBlockFile(pos, true)};
+            if (file.IsNull()) {
+                break; // This error is logged in OpenBlockFile
+            }
             LogPrintf("Pruning block file blk%05u.dat...\n", (unsigned int)nFile);
             size_t num_blocks_in_file = 0, num_blocks_removed = 0;
-            PruneBlockFile(chainman, fp, test_only, num_blocks_in_file, num_blocks_removed);
+            PruneBlockFile(chainman, file, test_only, num_blocks_in_file, num_blocks_removed);
 
             if (!test_only) {
                 fs::path tmp_filepath = gArgs.GetBlocksDirPath() / "tmp.dat";

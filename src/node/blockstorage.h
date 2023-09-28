@@ -48,6 +48,7 @@ constexpr uint8_t DB_HAS_BLINDED_TXIN = 'q';
 
 
 class BlockValidationState;
+class CAutoFile;
 class CBlock;
 class CBlockFileInfo;
 class CBlockUndo;
@@ -190,7 +191,7 @@ public:
     FlatFileSeq BlockFileSeq() const;
     FlatFileSeq UndoFileSeq() const;
 
-    FILE* OpenUndoFile(const FlatFilePos& pos, bool fReadOnly = false) const;
+    CAutoFile OpenUndoFile(const FlatFilePos& pos, bool fReadOnly = false) const;
 
     bool WriteBlockToDisk(const CBlock& block, FlatFilePos& pos) const;
     bool UndoWriteToDisk(const CBlockUndo& blockundo, FlatFilePos& pos, const uint256& hashBlock) const;
@@ -343,7 +344,7 @@ public:
     void UpdatePruneLock(const std::string& name, const PruneLockInfo& lock_info) EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 
     /** Open a block file (blk?????.dat) */
-    FILE* OpenBlockFile(const FlatFilePos& pos, bool fReadOnly = false) const;
+    CAutoFile OpenBlockFile(const FlatFilePos& pos, bool fReadOnly = false) const;
 
     /** Translation to a filesystem path */
     fs::path GetBlockPosFilename(const FlatFilePos& pos) const;
