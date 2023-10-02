@@ -215,7 +215,7 @@ public:
         memcpy(vchFingerprint, pk.vchFingerprint, sizeof(vchFingerprint));
         nChild = pk.nChild;
         memcpy(chaincode, pk.chaincode, sizeof(chaincode));
-        key.Clear();
+        key.ClearKeyData();
         pubkey = pk.pubkey;
     };
 
@@ -295,7 +295,7 @@ public:
             s.read(AsWritableBytes(Span{(char*)tmp+1, 32}));
             key.Set((uint8_t*)tmp+1, 1);
         } else {
-            key.Clear();
+            key.ClearKeyData();
         }
         pubkey.Unserialize(s);
     }
@@ -517,8 +517,9 @@ public:
     void Unserialize(Stream &s)
     {
         s >> idStealthKey;
+        sShared.MakeKeyData();
         s.read(AsWritableBytes(Span{(char*)sShared.begin(), EC_SECRET_SIZE}));
-        sShared.SetFlags(true, true);
+        sShared.SetFlags(true);
         std::string obsolete_label;
         s >> obsolete_label;
     }

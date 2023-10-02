@@ -92,9 +92,9 @@ uint256 ComputeStakeModifierV2(const CBlockIndex *pindexPrev, const uint256 &ker
     if (!pindexPrev)
         return uint256();  // genesis block's modifier is 0
 
-    CDataStream ss(SER_GETHASH, 0);
+    CHashWriter ss(0);
     ss << kernel << pindexPrev->bnStakeModifier;
-    return Hash(ss);
+    return ss.GetHash();
 }
 
 /**
@@ -152,10 +152,10 @@ bool CheckStakeKernelHash(const CBlockIndex *pindexPrev,
     int nStakeModifierHeight = pindexPrev->nHeight;
     int64_t nStakeModifierTime = pindexPrev->nTime;
 
-    CDataStream ss(SER_GETHASH, 0);
+    CHashWriter ss(0);
     ss << bnStakeModifier;
     ss << nBlockFromTime << prevout.hash << prevout.n << nTime;
-    hashProofOfStake = Hash(ss);
+    hashProofOfStake = ss.GetHash();
 
     if (fPrintProofOfStake) {
         LogPrintf("%s: using modifier=%s at height=%d timestamp=%s\n",
@@ -211,10 +211,10 @@ bool GetKernelInfo(const node::BlockManager& blockman, const CBlockIndex *blocki
     uint32_t nBlockFromTime = blockKernel.nTime;
     uint32_t nTime = blockindex->nTime;
 
-    CDataStream ss(SER_GETHASH, 0);
+    CHashWriter ss(0);
     ss << blockindex->pprev->bnStakeModifier;
     ss << nBlockFromTime << prevout.hash << prevout.n << nTime;
-    hash = Hash(ss);
+    hash = ss.GetHash();
 
     return true;
 };

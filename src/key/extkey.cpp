@@ -319,7 +319,7 @@ bool CExtKey::Derive(CExtKey &out, unsigned int nChild) const
     memcpy(&out.vchFingerprint[0], &id, 4);
     out.nChild = nChild;
     return key.Derive(out.key, out.chaincode, nChild, chaincode);
-};
+}
 
 void CExtKey::SetSeed(const unsigned char *seed, unsigned int nSeedLen)
 {
@@ -421,7 +421,7 @@ void CExtKeyPair::EncodeV(unsigned char code[74]) const
     code[41] = 0;
     assert(key.size() == 32);
     memcpy(code+42, key.begin(), 32);
-};
+}
 
 void CExtKeyPair::DecodeV(const unsigned char code[74])
 {
@@ -455,7 +455,7 @@ void CExtKeyPair::DecodeP(const unsigned char code[74])
     nChild = (code[5] << 24) | (code[6] << 16) | (code[7] << 8) | code[8];
     memcpy(chaincode, code+9, 32);
     pubkey.Set(code+41, code+74);
-    key.Clear();
+    key.ClearKeyData();
     if ((nDepth == 0 && (nChild != 0 || ReadLE32(vchFingerprint) != 0)) || !pubkey.IsFullyValid()) pubkey = CPubKey();
 };
 
@@ -542,7 +542,7 @@ CExtKeyPair CExtKeyPair::Neutered() const
     memcpy(&ret.vchFingerprint[0], &vchFingerprint[0], 4);
     ret.nChild = nChild;
     ret.pubkey = pubkey;
-    ret.key.Clear();
+    ret.key.ClearKeyData();
     memcpy(&ret.chaincode[0], &chaincode[0], 32);
     return ret;
 }

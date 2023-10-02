@@ -164,7 +164,7 @@ BOOST_AUTO_TEST_CASE(key_pubkey_compression)
     BOOST_CHECK(pk1.IsValid());
     BOOST_CHECK(!pk1.IsCompressed());
 
-    key1.SetFlags(true, true);
+    key1.SetFlags(true);
     CPubKey pk1C = key1.GetPubKey();
     BOOST_CHECK(pk1C.IsValid());
     BOOST_CHECK(pk1C.IsCompressed());

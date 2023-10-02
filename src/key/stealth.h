@@ -113,8 +113,9 @@ public:
         s >> fHaveScanSecret;
 
         if (fHaveScanSecret) {
+            scan_secret.MakeKeyData();
             s.read(AsWritableBytes(Span{(char*)scan_secret.begin(), EC_SECRET_SIZE}));
-            scan_secret.SetFlags(true, true);
+            scan_secret.SetFlags(true);
 
             // Only derive spend_secret_id if also have the scan secret.
             if (spend_pubkey.size() == EC_COMPRESSED_SIZE) { // TODO: won't work for multiple spend pubkeys

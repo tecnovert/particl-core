@@ -5636,6 +5636,7 @@ int CHDWallet::AddAnonInputs(CWalletTx &wtx, CTransactionRecord &rtx,
                             vpAllBlinds.push_back(vSplitCommitBlindingKeys[k].begin());
                         }
 
+                        vSplitCommitBlindingKeys[l].MakeKeyData();
                         if (!secp256k1_pedersen_blind_sum(secp256k1_ctx_blind,
                             vSplitCommitBlindingKeys[l].begin_nc(), &vpAllBlinds[0],
                             vpAllBlinds.size(), vpOutBlinds.size())) {
@@ -6820,7 +6821,7 @@ int CHDWallet::ExtKeyEncrypt(CStoredExtKey *sek, const CKeyingMaterial &vMKey, b
     // thus key can be left intact here
     if (fLockKey) {
         sek->fLocked = 1;
-        sek->kp.key.Clear();
+        sek->kp.key.ClearKeyData();
     } else {
         sek->fLocked = 0;
     }
@@ -6833,7 +6834,7 @@ int CHDWallet::ExtKeyEncrypt(CStoredExtKey *sek, const CKeyingMaterial &vMKey, b
         sek_in_memory->vchCryptedSecret = vchCryptedSecret;
         sek_in_memory->fLocked = sek->fLocked;
         if (fLockKey) {
-            sek_in_memory->kp.key.Clear();
+            sek_in_memory->kp.key.ClearKeyData();
         }
     }
 
@@ -6934,7 +6935,7 @@ int CHDWallet::ExtKeyLock()
     LogPrint(BCLog::HDWALLET, "ExtKeyLock.\n");
 
     if (pEKMaster) {
-        pEKMaster->kp.key.Clear();
+        pEKMaster->kp.key.ClearKeyData();
         pEKMaster->fLocked = 1;
     }
 
@@ -6943,7 +6944,7 @@ int CHDWallet::ExtKeyLock()
         if (!(sek->IsEncrypted())) {
             continue;
         }
-        sek->kp.key.Clear();
+        sek->kp.key.ClearKeyData();
         sek->fLocked = 1;
     }
 
@@ -10987,11 +10988,15 @@ int CHDWallet::OwnAnonOut(CHDWalletDB *pwdb, const uint256 &txhash, const CTxOut
     COutPoint op(txhash, rout.n);
     CCmpPubKey ki;
 
-    if (0 != secp256k1_get_keyimage(ki.ncbegin(), pout->pk.begin(), key.begin())) {
-        WalletLogPrintf("Error: %s - secp256k1_get_keyimage failed.\n", __func__);
-    } else
-    if (!pwdb->WriteAnonKeyImage(ki, op)) {
-        WalletLogPrintf("Error: %s - WriteAnonKeyImage failed.\n", __func__);
+    if (!key.IsValid()) {
+        // Unknown key, expected for watchonly outputs
+    } else {
+        if (0 != secp256k1_get_keyimage(ki.ncbegin(), pout->pk.begin(), key.begin())) {
+            WalletLogPrintf("Error: %s - secp256k1_get_keyimage failed.\n", __func__);
+        } else
+        if (!pwdb->WriteAnonKeyImage(ki, op)) {
+            WalletLogPrintf("Error: %s - WriteAnonKeyImage failed.\n", __func__);
+        }
     }
 
     rout.nValue = amountOut;

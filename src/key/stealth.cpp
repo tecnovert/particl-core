@@ -175,7 +175,9 @@ int StealthShared(const CKey &secret, const ec_point &pubkey, CKey &sharedSOut)
     }
 
     // H(eQ)
+    sharedSOut.MakeKeyData();
     if (!secp256k1_ecdh(secp256k1_ctx_stealth, sharedSOut.begin_nc(), &Q, secret.begin(), nullptr, nullptr)) {
+        sharedSOut.ClearKeyData();
         return errorN(1, "%s: secp256k1_ctx_stealth failed.", __func__);
     }
 
@@ -213,8 +215,8 @@ int StealthSecret(const CKey &secret, const ec_point &pubkey, const ec_point &pk
     test 0 and infinity?
     */
 
-    if (pubkey.size() != EC_COMPRESSED_SIZE
-        || pkSpend.size() != EC_COMPRESSED_SIZE) {
+    if (pubkey.size() != EC_COMPRESSED_SIZE ||
+        pkSpend.size() != EC_COMPRESSED_SIZE) {
         return errorN(1, "%s: sanity checks failed.", __func__);
     }
 
@@ -227,27 +229,31 @@ int StealthSecret(const CKey &secret, const ec_point &pubkey, const ec_point &pk
     }
 
     // H(eQ)
+    sharedSOut.MakeKeyData();
     if (!secp256k1_ecdh(secp256k1_ctx_stealth, sharedSOut.begin_nc(), &Q, secret.begin(), nullptr, nullptr)) {
+        sharedSOut.ClearKeyData();
         return errorN(1, "%s: secp256k1_ctx_stealth failed.", __func__);
     }
 
     // C = sharedSOut * G
     // R' = R + C
     if (!secp256k1_ec_pubkey_tweak_add(secp256k1_ctx_stealth, &R, sharedSOut.begin())) {
+        sharedSOut.ClearKeyData();
         return errorN(1, "%s: secp256k1_ec_pubkey_tweak_add failed.", __func__); // Start again with a new ephemeral key
     }
 
     try {
         pkOut.resize(EC_COMPRESSED_SIZE);
     } catch (std::exception &e) {
+        sharedSOut.ClearKeyData();
         return errorN(8, "%s: pkOut.resize %u threw: %s.", __func__, EC_COMPRESSED_SIZE);
-    };
+    }
 
     size_t len = 33;
     secp256k1_ec_pubkey_serialize(secp256k1_ctx_stealth, &pkOut[0], &len, &R, SECP256K1_EC_COMPRESSED); // Returns: 1 always.
 
     return 0;
-};
+}
 
 
 int StealthSecretSpend(const CKey &scanSecret, const ec_point &ephemPubkey, const CKey &spendSecret, CKey &secretOut)
