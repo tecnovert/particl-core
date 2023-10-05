@@ -502,6 +502,8 @@ void AddressTableModel::emitDataChanged(int idx)
     Q_EMIT dataChanged(index(idx, 0, QModelIndex()), index(idx, columns.length()-1, QModelIndex()));
 }
 
+QString AddressTableModel::GetWalletDisplayName() const { return walletModel->getDisplayName(); };
+
 void AddressTableModel::verifyOnHardwareDevice(QString path)
 {
     if (isHardwareLinked()) {
@@ -520,4 +522,4 @@ void AddressTableModel::verifyOnHardwareDevice(QString path)
 bool AddressTableModel::isHardwareLinked()
 {
     return walletModel && walletModel->isHardwareLinkedWallet();
-};
+}

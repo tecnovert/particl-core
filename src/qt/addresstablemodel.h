@@ -101,6 +101,8 @@ public:
     void verifyOnHardwareDevice(QString address);
     bool isHardwareLinked();
 
+    QString GetWalletDisplayName() const;
+
 private:
     WalletModel* const walletModel;
     AddressTablePriv *priv = nullptr;
