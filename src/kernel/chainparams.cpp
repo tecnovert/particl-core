@@ -570,8 +570,8 @@ public:
         pchMessageStart[3] = 0xb4;
         nDefaultPort = 51738;
         nPruneAfterHeight = 100000;
-        m_assumed_blockchain_size = 2;
-        m_assumed_chain_state_size = 2;
+        m_assumed_blockchain_size = 4;
+        m_assumed_chain_state_size = 3;
 
         nBIP44ID = (int)WithHardenedBit(44);
         assert(nBIP44ID == (int)0x8000002C);
@@ -865,15 +865,15 @@ public:
             vSeeds.emplace_back("178.128.221.177");
             vSeeds.emplace_back("v7ajjeirttkbnt32wpy3c6w3emwnfr3fkla7hpxcfokr3ysd3kqtzmqd.onion:38333");
 
-            consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000000000000000001899d8142b0");
-            consensus.defaultAssumeValid = uint256S("0x0000004429ef154f7e00b4f6b46bfbe2d2678ecd351d95bbfca437ab9a5b84ec"); // 138000
+            consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000000000000000001ad46be4862");
+            consensus.defaultAssumeValid = uint256S("0x0000013d778ba3f914530f11f6b69869c9fab54acff85acd7b8201d111f19b7f"); // 150000
             m_assumed_blockchain_size = 1;
             m_assumed_chain_state_size = 0;
             chainTxData = ChainTxData{
-                // Data from RPC: getchaintxstats 4096 0000004429ef154f7e00b4f6b46bfbe2d2678ecd351d95bbfca437ab9a5b84ec
-                .nTime    = 1681127428,
-                .nTxCount = 2226359,
-                .dTxRate  = 0.006424463050600656,
+                // Data from RPC: getchaintxstats 4096 0000013d778ba3f914530f11f6b69869c9fab54acff85acd7b8201d111f19b7f
+                .nTime    = 1688366339,
+                .nTxCount = 2262750,
+                .dTxRate  = 0.003414084572046456,
             };
         } else {
             bin = *options.challenge;

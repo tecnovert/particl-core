@@ -51,7 +51,7 @@ class WalletParticlTest(ParticlTestFramework):
 
     def particl_wallet_process(self, *args):
         binary = self.config["environment"]["BUILDDIR"] + '/src/particl-wallet' + self.config["environment"]["EXEEXT"]
-        args = ['-datadir={}'.format(self.nodes[0].datadir), '-regtest'] + list(args)
+        args = ['-datadir={}'.format(self.nodes[0].datadir_path), '-regtest'] + list(args)
         return subprocess.Popen([binary] + args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
 
     def assert_tool_output(self, output, *args):
