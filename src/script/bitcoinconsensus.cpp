@@ -72,14 +72,34 @@ static bool verify_flags(unsigned int flags)
 
 static int verify_script(const unsigned char *scriptPubKey, unsigned int scriptPubKeyLen, std::vector<uint8_t> amount,
                                     const unsigned char *txTo        , unsigned int txToLen,
+                                    const UTXO *spentOutputs, unsigned int spentOutputsLen,
                                     unsigned int nIn, unsigned int flags, bitcoinconsensus_error* err)
 {
     if (!verify_flags(flags)) {
         return set_error(err, bitcoinconsensus_ERR_INVALID_FLAGS);
     }
+
+    if (flags & bitcoinconsensus_SCRIPT_FLAGS_VERIFY_TAPROOT && spentOutputs == nullptr) {
+        return set_error(err, bitcoinconsensus_ERR_SPENT_OUTPUTS_REQUIRED);
+    }
+
     try {
         TxInputStream stream(PROTOCOL_VERSION, txTo, txToLen);
         CTransaction tx(deserialize, stream);
+
+        std::vector<CTxOut> spent_outputs;
+        if (spentOutputs != nullptr) {
+            if (spentOutputsLen != tx.vin.size()) {
+                return set_error(err, bitcoinconsensus_ERR_SPENT_OUTPUTS_MISMATCH);
+            }
+            for (size_t i = 0; i < spentOutputsLen; i++) {
+                CScript spk = CScript(spentOutputs[i].scriptPubKey, spentOutputs[i].scriptPubKey + spentOutputs[i].scriptPubKeySize);
+                const CAmount& value = spentOutputs[i].value;
+                CTxOut tx_out = CTxOut(value, spk);
+                spent_outputs.push_back(tx_out);
+            }
+        }
+
         if (nIn >= tx.vin.size())
             return set_error(err, bitcoinconsensus_ERR_TX_INDEX);
         if (GetSerializeSize(tx, PROTOCOL_VERSION) != txToLen)
@@ -88,10 +108,25 @@ static int verify_script(const unsigned char *scriptPubKey, unsigned int scriptP
         // Regardless of the verification result, the tx did not error.
         set_error(err, bitcoinconsensus_ERR_OK);
         PrecomputedTransactionData txdata(tx);
+
+        if (spentOutputs != nullptr && flags & bitcoinconsensus_SCRIPT_FLAGS_VERIFY_TAPROOT) {
+            txdata.Init(tx, std::move(spent_outputs));
+        }
+
         return VerifyScript(tx.vin[nIn].scriptSig, CScript(scriptPubKey, scriptPubKey + scriptPubKeyLen), &tx.vin[nIn].scriptWitness, flags, TransactionSignatureChecker(&tx, nIn, amount, txdata, MissingDataBehavior::FAIL), nullptr);
     } catch (const std::exception&) {
         return set_error(err, bitcoinconsensus_ERR_TX_DESERIALIZE); // Error deserializing
     }
+}
+
+int bitcoinconsensus_verify_script_with_spent_outputs(const unsigned char *scriptPubKey, unsigned int scriptPubKeyLen, int64_t amount,
+                                    const unsigned char *txTo        , unsigned int txToLen,
+                                    const UTXO *spentOutputs, unsigned int spentOutputsLen,
+                                    unsigned int nIn, unsigned int flags, bitcoinconsensus_error* err)
+{
+    std::vector<uint8_t> am(8);
+    part::SetAmount(am, amount);
+    return ::verify_script(scriptPubKey, scriptPubKeyLen, am, txTo, txToLen, spentOutputs, spentOutputsLen, nIn, flags, err);
 }
 
 int bitcoinconsensus_verify_script_with_amount(const unsigned char *scriptPubKey, unsigned int scriptPubKeyLen, int64_t amount,
@@ -100,7 +135,9 @@ int bitcoinconsensus_verify_script_with_amount(const unsigned char *scriptPubKey
 {
     std::vector<uint8_t> am(8);
     part::SetAmount(am, amount);
-    return ::verify_script(scriptPubKey, scriptPubKeyLen, am, txTo, txToLen, nIn, flags, err);
+    UTXO *spentOutputs = nullptr;
+    unsigned int spentOutputsLen = 0;
+    return ::verify_script(scriptPubKey, scriptPubKeyLen, am, txTo, txToLen, spentOutputs, spentOutputsLen, nIn, flags, err);
 }
 
 
@@ -112,9 +149,11 @@ int bitcoinconsensus_verify_script(const unsigned char *scriptPubKey, unsigned i
         return set_error(err, bitcoinconsensus_ERR_AMOUNT_REQUIRED);
     }
 
-    //CAmount am(0); [aml]
+    //CAmount am(0);
     std::vector<uint8_t> am;
-    return ::verify_script(scriptPubKey, scriptPubKeyLen, am, txTo, txToLen, nIn, flags, err);
+    UTXO *spentOutputs = nullptr;
+    unsigned int spentOutputsLen = 0;
+    return ::verify_script(scriptPubKey, scriptPubKeyLen, am, txTo, txToLen, spentOutputs, spentOutputsLen, nIn, flags, err);
 }
 
 unsigned int bitcoinconsensus_version()

@@ -1268,6 +1268,17 @@ inline std::vector<uint8_t> VectorFromAmount(int64_t amount)
     return v;
 }
 
+inline int64_t amountFromVector(const std::vector<uint8_t> &v)
+{
+    if (v.size() != 8) {
+        return -1;
+    }
+    int64_t amount;
+    memcpy(&amount, v.data(), 8);
+    amount = (int64_t) htole64((uint64_t)amount);
+    return amount;
+}
+
 } // namespace part
 
 #endif // BITCOIN_SERIALIZE_H

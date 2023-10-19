@@ -2875,7 +2875,7 @@ bool Chainstate::ConnectBlock(const CBlock& block, BlockValidationState& state, 
             }
             control.Add(std::move(vChecks));
 
-            blockundo.vtxundo.push_back(CTxUndo());
+            blockundo.vtxundo.emplace_back();
             UpdateCoins(tx, view, blockundo.vtxundo.back(), pindex->nHeight);
         } else
         {
