@@ -51,7 +51,6 @@ constexpr uint8_t DB_HAS_BLINDED_TXIN = 'q';
 class BlockValidationState;
 class CAutoFile;
 class CBlock;
-class CBlockFileInfo;
 class CBlockUndo;
 class CChainParams;
 class Chainstate;

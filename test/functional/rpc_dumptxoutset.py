@@ -46,7 +46,7 @@ class DumptxoutsetTest(BitcoinTestFramework):
             'b1bacb602eacf5fbc9a7c2ef6eeb0d229c04e98bdf0c2ea5929012cd0eae3830')
 
         assert_equal(
-            out['txoutset_hash'], '02588f3e85a36e70bfbb680c0a7b3fef05bc55ad33aa7d74be551460d07df03a')
+            out['txoutset_hash'], 'f555cf3b47fe9de700a347835586deda3fc494e76af49f7eb1e6b781e3f6aec9')
         assert_equal(out['nchaintx'], 101)
 
         # Specifying a path to an existing or invalid file will fail.
