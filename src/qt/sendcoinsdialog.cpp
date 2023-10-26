@@ -427,7 +427,7 @@ bool SendCoinsDialog::PrepareSendText(QString& question_string, QString& informa
         // generate amount string with wallet name in case of multiwallet
         QString amount = BitcoinUnits::formatHtmlWithUnit(model->getOptionsModel()->getDisplayUnit(), nValue);
         if (model->isMultiwallet()) {
-            amount.append(tr(" from wallet '%1'").arg(GUIUtil::HtmlEscape(model->getWalletName())));
+            amount = tr("%1 from wallet '%2'").arg(amount, GUIUtil::HtmlEscape(model->getWalletName()));
         }
         // generate monospace address string
         QString address;
