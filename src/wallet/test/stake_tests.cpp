@@ -240,7 +240,7 @@ BOOST_AUTO_TEST_CASE(stake_test)
     bilingual_str bl_error;
     std::vector<CRecipient> vecSend;
     int nChangePosRet = -1;
-    CRecipient recipient = {scriptPubKey, nAmountSendAway, fSubtractFeeFromAmount};
+    CRecipient recipient = {CNoDestination(scriptPubKey), nAmountSendAway, fSubtractFeeFromAmount};
     vecSend.push_back(recipient);
 
     CCoinControl coinControl;

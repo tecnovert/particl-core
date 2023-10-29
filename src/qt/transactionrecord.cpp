@@ -94,9 +94,9 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
             sub.debit -= rtx.nFee;
         }
 
-        if (nFlags & ORF_OWNED && nFlags & ORF_FROM) {
-            sub.type = TransactionRecord::SendToSelf;
-        } else
+        //if (nFlags & ORF_OWNED && nFlags & ORF_FROM) {
+            //sub.type = TransactionRecord::SendToSelf;
+        //} else
         if (nFlags & ORF_OWNED) {
             sub.type = TransactionRecord::RecvWithAddress;
         } else

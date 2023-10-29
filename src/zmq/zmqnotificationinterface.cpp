@@ -172,8 +172,7 @@ bool CZMQNotificationInterface::Initialize()
     }
 
     for (const auto& net : gArgs.GetArgs("-whitelistzmq")) {
-        CSubNet subnet;
-        LookupSubNet(net.c_str(), subnet);
+        CSubNet subnet = LookupSubNet(net.c_str());
         if (!subnet.IsValid())
             LogPrintf("Invalid netmask specified in -whitelistzmq: '%s'\n", net);
         else

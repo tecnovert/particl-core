@@ -451,7 +451,7 @@ struct WalletTx
     bool operator<(const WalletTx& a) const { return GetHash() < a.GetHash(); }
 
     // Particl
-    uint256 GetHash() const { return is_record ? irtx->first : tx->GetHash(); }
+    uint256 GetHash() const { return is_record ? irtx->first : tx->GetHash().ToUint256(); }
     bool is_coinstake{false};
     bool is_record{false};
     MapRecords_t::const_iterator irtx;

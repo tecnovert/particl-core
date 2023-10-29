@@ -562,7 +562,7 @@ RPCHelpMan sendmany()
                 fSubtractFeeFromAmount = true;
         }
 
-        CRecipient recipient = {scriptPubKey, nAmount, fSubtractFeeFromAmount};
+        CRecipient recipient = {CNoDestination(scriptPubKey), nAmount, fSubtractFeeFromAmount};
         vecSend.push_back(recipient);
     }
 
