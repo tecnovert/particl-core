@@ -5,10 +5,6 @@
 
 #include <validation.h>
 
-#include <kernel/chain.h>
-#include <kernel/coinstats.h>
-#include <kernel/mempool_persist.h>
-
 #include <arith_uint256.h>
 #include <chain.h>
 #include <checkqueue.h>
@@ -22,7 +18,9 @@
 #include <cuckoocache.h>
 #include <flatfile.h>
 #include <hash.h>
+#include <kernel/chain.h>
 #include <kernel/chainparams.h>
+#include <kernel/coinstats.h>
 #include <kernel/disconnected_transactions.h>
 #include <kernel/mempool_entry.h>
 #include <kernel/messagestartchars.h>
@@ -619,6 +617,9 @@ public:
         {
         }
     };
+
+    /** Clean up all non-chainstate coins from m_view and m_viewmempool. */
+    void CleanupTemporaryCoins() EXCLUSIVE_LOCKS_REQUIRED(cs_main, m_pool.cs);
 
     // Single transaction acceptance
     MempoolAcceptResult AcceptSingleTransaction(const CTransactionRef& ptx, ATMPArgs& args) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
@@ -1385,7 +1386,7 @@ PackageMempoolAcceptResult MemPoolAccept::AcceptMultipleTransactions(const std::
 
     // These context-free package limits can be done before taking the mempool lock.
     PackageValidationState package_state;
-    if (!CheckPackage(txns, package_state)) return PackageMempoolAcceptResult(package_state, {});
+    if (!IsWellFormedPackage(txns, package_state, /*require_sorted=*/true)) return PackageMempoolAcceptResult(package_state, {});
 
     std::vector<Workspace> workspaces{};
     workspaces.reserve(txns.size());
@@ -1474,26 +1475,8 @@ PackageMempoolAcceptResult MemPoolAccept::AcceptMultipleTransactions(const std::
     return PackageMempoolAcceptResult(package_state, std::move(results));
 }
 
-PackageMempoolAcceptResult MemPoolAccept::AcceptSubPackage(const std::vector<CTransactionRef>& subpackage, ATMPArgs& args)
+void MemPoolAccept::CleanupTemporaryCoins()
 {
-    AssertLockHeld(::cs_main);
-    AssertLockHeld(m_pool.cs);
-    auto result = [&]() EXCLUSIVE_LOCKS_REQUIRED(::cs_main, m_pool.cs) {
-        if (subpackage.size() > 1) {
-            return AcceptMultipleTransactions(subpackage, args);
-        }
-        const auto& tx = subpackage.front();
-        ATMPArgs single_args = ATMPArgs::SingleInPackageAccept(args);
-        const auto single_res = AcceptSingleTransaction(tx, single_args);
-        PackageValidationState package_state_wrapped;
-        if (single_res.m_result_type != MempoolAcceptResult::ResultType::VALID) {
-            package_state_wrapped.Invalid(PackageValidationResult::PCKG_TX, "transaction failed");
-        }
-        return PackageMempoolAcceptResult(package_state_wrapped, {{tx->GetWitnessHash(), single_res}});
-    }();
-    // Clean up m_view and m_viewmempool so that other subpackage evaluations don't have access to
-    // coins they shouldn't. Keep some coins in order to minimize re-fetching coins from the UTXO set.
-    //
     // There are 3 kinds of coins in m_view:
     // (1) Temporary coins from the transactions in subpackage, constructed by m_viewmempool.
     // (2) Mempool coins from transactions in the mempool, constructed by m_viewmempool.
@@ -1519,6 +1502,30 @@ PackageMempoolAcceptResult MemPoolAccept::AcceptSubPackage(const std::vector<CTr
     }
     // This deletes the temporary and mempool coins.
     m_viewmempool.Reset();
+}
+
+PackageMempoolAcceptResult MemPoolAccept::AcceptSubPackage(const std::vector<CTransactionRef>& subpackage, ATMPArgs& args)
+{
+    AssertLockHeld(::cs_main);
+    AssertLockHeld(m_pool.cs);
+    auto result = [&]() EXCLUSIVE_LOCKS_REQUIRED(::cs_main, m_pool.cs) {
+        if (subpackage.size() > 1) {
+            return AcceptMultipleTransactions(subpackage, args);
+        }
+        const auto& tx = subpackage.front();
+        ATMPArgs single_args = ATMPArgs::SingleInPackageAccept(args);
+        const auto single_res = AcceptSingleTransaction(tx, single_args);
+        PackageValidationState package_state_wrapped;
+        if (single_res.m_result_type != MempoolAcceptResult::ResultType::VALID) {
+            package_state_wrapped.Invalid(PackageValidationResult::PCKG_TX, "transaction failed");
+        }
+        return PackageMempoolAcceptResult(package_state_wrapped, {{tx->GetWitnessHash(), single_res}});
+    }();
+
+    // Clean up m_view and m_viewmempool so that other subpackage evaluations don't have access to
+    // coins they shouldn't. Keep some coins in order to minimize re-fetching coins from the UTXO set.
+    CleanupTemporaryCoins();
+
     return result;
 }
 
@@ -1532,7 +1539,9 @@ PackageMempoolAcceptResult MemPoolAccept::AcceptPackage(const Package& package, 
     // transactions and thus won't return any MempoolAcceptResults, just a package-wide error.
 
     // Context-free package checks.
-    if (!CheckPackage(package, package_state_quit_early)) return PackageMempoolAcceptResult(package_state_quit_early, {});
+    if (!IsWellFormedPackage(package, package_state_quit_early, /*require_sorted=*/true)) {
+        return PackageMempoolAcceptResult(package_state_quit_early, {});
+    }
 
     // All transactions in the package must be a parent of the last transaction. This is just an
     // opportunity for us to fail fast on a context-free check without taking the mempool lock.
@@ -3948,7 +3957,7 @@ bool Chainstate::ActivateBestChainStep(BlockValidationState& state, CBlockIndex*
 
     // Disconnect active blocks which are no longer in the best chain.
     bool fBlocksDisconnected = false;
-    DisconnectedBlockTransactions disconnectpool{MAX_DISCONNECTED_TX_POOL_SIZE * 1000};
+    DisconnectedBlockTransactions disconnectpool{MAX_DISCONNECTED_TX_POOL_BYTES};
     while (m_chain.Tip() && m_chain.Tip() != pindexFork) {
         if (!DisconnectTip(state, &disconnectpool)) {
             // This is likely a fatal error, but keep the mempool consistent,
@@ -4320,7 +4329,7 @@ bool Chainstate::InvalidateBlock(BlockValidationState& state, CBlockIndex* pinde
 
         // ActivateBestChain considers blocks already in m_chain
         // unconditionally valid already, so force disconnect away from it.
-        DisconnectedBlockTransactions disconnectpool{MAX_DISCONNECTED_TX_POOL_SIZE * 1000};
+        DisconnectedBlockTransactions disconnectpool{MAX_DISCONNECTED_TX_POOL_BYTES};
         bool ret = DisconnectTip(state, &disconnectpool);
         // DisconnectTip will add transactions to disconnectpool.
         // Adjust the mempool to be consistent with the new tip, adding
