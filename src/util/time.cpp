@@ -98,10 +98,10 @@ void SetMockTime(int64_t nMockTimeIn)
     nMockTime.store(nMockTimeIn, std::memory_order_relaxed);
 }
 
-void SetMockTimeOffset(int64_t nMockTimeIn)
+void SetMockTimeOffset(int64_t offset_value)
 {
     mockTimeOffset = true;
-    nMockTime.store(time(nullptr) - nMockTimeIn, std::memory_order_relaxed);
+    nMockTime.store(time(nullptr) - offset_value, std::memory_order_relaxed);
 }
 
 void SetMockTime(std::chrono::seconds mock_time_in)

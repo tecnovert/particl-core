@@ -11,7 +11,7 @@
              (gnu packages gawk)
              (gnu packages gcc)
              ((gnu packages installers) #:select (nsis-x86_64))
-             ((gnu packages linux) #:select (linux-libre-headers-5.15 util-linux))
+             ((gnu packages linux) #:select (linux-libre-headers-6.1 util-linux))
              (gnu packages llvm)
              (gnu packages mingw)
              (gnu packages moreutils)
@@ -19,6 +19,7 @@
              ((gnu packages python) #:select (python-minimal))
              ((gnu packages python-build) #:select (python-tomli))
              ((gnu packages python-crypto) #:select (python-asn1crypto))
+             ((gnu packages python-xyz) #:select (python-altgraph))
              ((gnu packages tls) #:select (openssl))
              ((gnu packages version-control) #:select (git-minimal))
              (gnu packages gperf)
@@ -93,7 +94,7 @@ chain for " target " development."))
       (license (package-license xgcc)))))
 
 (define base-gcc gcc-10)
-(define base-linux-kernel-headers linux-libre-headers-5.15)
+(define base-linux-kernel-headers linux-libre-headers-6.1)
 
 (define* (make-bitcoin-cross-toolchain target
                                        #:key
@@ -372,29 +373,6 @@ thus should be able to compile on most platforms where these exist.")
 certificates or paths. Supports various options, including: validation at a
 specific moment in time, whitelisting and revocation checks.")
       (license license:expat))))
-
-(define-public python-altgraph
-  (package
-    (name "python-altgraph")
-    (version "0.17")
-    (source
-     (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url "https://github.com/ronaldoussoren/altgraph")
-             (commit (string-append "v" version))))
-       (file-name (git-file-name name version))
-       (sha256
-        (base32
-         "09sm4srvvkw458pn48ga9q7ykr4xlz7q8gh1h9w7nxpf001qgpwb"))))
-    (build-system python-build-system)
-    (home-page "https://github.com/ronaldoussoren/altgraph")
-    (synopsis "Python graph (network) package")
-    (description "altgraph is a fork of graphlib: a graph (network) package for
-constructing graphs, BFS and DFS traversals, topological sort, shortest paths,
-etc. with graphviz output.")
-    (license license:expat)))
-
 
 (define-public python-macholib
   (package

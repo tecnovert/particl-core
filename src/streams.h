@@ -182,6 +182,11 @@ public:
         memcpy(dst.data(), m_data.data(), dst.size());
         m_data = m_data.subspan(dst.size());
     }
+
+    void ignore(size_t n)
+    {
+        m_data = m_data.subspan(n);
+    }
 };
 
 /** Double ended buffer combining vector and stream-like interfaces.
@@ -485,7 +490,7 @@ class AutoFile
 {
 protected:
     std::FILE* m_file;
-    const std::vector<std::byte> m_xor;
+    std::vector<std::byte> m_xor;
 
 public:
     explicit AutoFile(std::FILE* file, std::vector<std::byte> data_xor={}) : m_file{file}, m_xor{std::move(data_xor)} {}
@@ -524,6 +529,9 @@ public:
     /** Return true if the wrapped FILE* is nullptr, false otherwise.
      */
     bool IsNull() const { return m_file == nullptr; }
+
+    /** Continue with a different XOR key */
+    void SetXor(std::vector<std::byte> data_xor) { m_xor = data_xor; }
 
     /** Implementation detail, only used internally. */
     std::size_t detail_fread(Span<std::byte> dst);

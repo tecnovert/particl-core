@@ -69,7 +69,7 @@ using MillisecondsDouble = std::chrono::duration<double, std::chrono::millisecon
  */
 int64_t GetTime();
 
-void SetMockTimeOffset(int64_t nMockTimeIn);
+void SetMockTimeOffset(int64_t offset_value);
 
 /**
  * DEPRECATED
