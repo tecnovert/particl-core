@@ -1386,7 +1386,7 @@ uint256 GetOutputsSHA256(const T& txTo)
     bool have_non_plain = false;
     if (txTo.IsParticlVersion()) {
         for (unsigned int n = 0; n < txTo.vpout.size(); n++) {
-            ss << *txTo.vpout[n];
+            ss << TX_WITH_WITNESS(*txTo.vpout[n]);
             if (txTo.vpout[n]->GetType() != OUTPUT_STANDARD) {
                 have_non_plain = true;
             }
@@ -1602,7 +1602,7 @@ bool SignatureHashSchnorr(uint256& hash_out, ScriptExecutionData& execdata, cons
         if (!execdata.m_output_hash) {
             HashWriter sha_single_output{};
             if (tx_to.IsParticlVersion()) {
-                sha_single_output << *(tx_to.vpout[in_pos].get());
+                sha_single_output << TX_WITH_WITNESS(*(tx_to.vpout[in_pos].get()));
             } else {
                 sha_single_output << tx_to.vout[in_pos];
             }
@@ -1629,8 +1629,8 @@ uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn
 {
     assert(nIn < txTo.vin.size());
 
-    if (sigversion == SigVersion::WITNESS_V0
-        || txTo.IsParticlVersion()) {
+    if (sigversion == SigVersion::WITNESS_V0 ||
+        txTo.IsParticlVersion()) {
         uint256 hashPrevouts;
         uint256 hashSequence;
         uint256 hashOutputs;
@@ -1650,7 +1650,7 @@ uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn
             HashWriter ss{};
 
             if (txTo.IsParticlVersion()) {
-                ss << *(txTo.vpout[nIn].get());
+                ss << TX_WITH_WITNESS(*(txTo.vpout[nIn].get()));
             } else {
                 ss << txTo.vout[nIn];
             }
@@ -1697,7 +1697,7 @@ uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn
 
     // Serialize and hash
     HashWriter ss{};
-    ss << txTmp << nHashType;
+    ss << TX_WITH_WITNESS(txTmp) << nHashType;
     return ss.GetHash();
 }
 
@@ -2003,7 +2003,7 @@ static bool VerifyWitnessProgram(const CScriptWitness& witness, int witversion, 
             if ((control[0] & TAPROOT_LEAF_MASK) == TAPROOT_LEAF_TAPSCRIPT) {
                 // Tapscript (leaf version 0xc0)
                 exec_script = CScript(script.begin(), script.end());
-                execdata.m_validation_weight_left = ::GetSerializeSize(witness.stack, PROTOCOL_VERSION) + VALIDATION_WEIGHT_OFFSET;
+                execdata.m_validation_weight_left = ::GetSerializeSize(witness.stack) + VALIDATION_WEIGHT_OFFSET;
                 execdata.m_validation_weight_left_init = true;
                 return ExecuteWitnessScript(stack, exec_script, flags, SigVersion::TAPSCRIPT, checker, execdata, serror);
             }

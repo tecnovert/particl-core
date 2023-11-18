@@ -172,8 +172,8 @@ UniValue blockToJSON(BlockManager& blockman, const CBlock& block, const CBlockIn
 {
     UniValue result = blockheaderToJSON(tip, blockindex);
 
-    result.pushKV("strippedsize", (int)::GetSerializeSize(block, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS));
-    result.pushKV("size", (int)::GetSerializeSize(block, PROTOCOL_VERSION));
+    result.pushKV("strippedsize", (int)::GetSerializeSize(TX_NO_WITNESS(block)));
+    result.pushKV("size", (int)::GetSerializeSize(TX_WITH_WITNESS(block)));
     result.pushKV("weight", (int)::GetBlockWeight(block));
     UniValue txs(UniValue::VARR);
 
@@ -204,7 +204,7 @@ UniValue blockToJSON(BlockManager& blockman, const CBlock& block, const CBlockIn
                 }
 
                 UniValue objTx(UniValue::VOBJ);
-                TxToUniv(*tx, /*block_hash=*/uint256(), /*entry=*/objTx, /*include_hex=*/true, RPCSerializationFlags(), txundo, verbosity);
+                TxToUniv(*tx, /*block_hash=*/uint256(), /*entry=*/objTx, /*include_hex=*/true, /*without_witness=*/RPCSerializationWithoutWitness(), txundo, verbosity);
                 txs.push_back(objTx);
             }
             break;
@@ -824,8 +824,8 @@ static RPCHelpMan getblock()
 
     if (verbosity <= 0)
     {
-        CDataStream ssBlock(SER_NETWORK, PROTOCOL_VERSION | RPCSerializationFlags());
-        ssBlock << block;
+        DataStream ssBlock;
+        ssBlock << RPCTxSerParams(block);
         std::string strHex = HexStr(ssBlock);
         return strHex;
     }
@@ -1966,7 +1966,7 @@ static RPCHelpMan getblockstats()
             for (const CTxOut& out : tx->vout) {
                 tx_total_out += out.nValue;
 
-                size_t out_size = GetSerializeSize(out, PROTOCOL_VERSION) + PER_UTXO_OVERHEAD;
+                size_t out_size = GetSerializeSize(out) + PER_UTXO_OVERHEAD;
                 utxo_size_inc += out_size;
 
                 // The Genesis block and the repeated BIP30 block coinbases don't change the UTXO
@@ -1982,7 +1982,7 @@ static RPCHelpMan getblockstats()
                 if (out->IsStandardOutput()) {
                     tx_total_out += out->GetValue();
                 }
-                size_t out_size = (int64_t) (GetSerializeSize(*out, PROTOCOL_VERSION) + PER_UTXO_OVERHEAD + 1);
+                size_t out_size = (int64_t) (GetSerializeSize(TX_WITH_WITNESS(*out)) + PER_UTXO_OVERHEAD + 1);
                 utxo_size_inc += out_size;
 
                 // Skip unspendable outputs since they are not included in the UTXO set
@@ -2032,7 +2032,7 @@ static RPCHelpMan getblockstats()
                 const CTxOut& prevoutput = coin.out;
 
                 tx_total_in += prevoutput.nValue;
-                size_t prevout_size = GetSerializeSize(prevoutput, PROTOCOL_VERSION) + PER_UTXO_OVERHEAD;
+                size_t prevout_size = GetSerializeSize(prevoutput) + PER_UTXO_OVERHEAD;
                 utxo_size_inc -= prevout_size;
                 utxo_size_inc_actual -= prevout_size;
             }

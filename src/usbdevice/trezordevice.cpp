@@ -708,7 +708,7 @@ int CTrezorDevice::CompleteTransaction(int change_pos, const std::vector<uint32_
                     msg_input->set_particl_extra(s);
 
                     // Send scriptData through script_sig as it's larger than particl_extra can be
-                    CDataStream stream(SER_NETWORK, PROTOCOL_VERSION);
+                    DataStream stream{};
                     stream << txin.scriptData.stack;
                     msg_input->set_script_sig(stream.str());
                 } else {
@@ -820,15 +820,15 @@ int CTrezorDevice::CompleteTransaction(int change_pos, const std::vector<uint32_
                 } else
                 if (send_output->IsType(OUTPUT_CT)) {
                     msg_output->set_particl_output_type(OUTPUT_CT);
-                    CDataStream stream(SER_NETWORK, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS);
-                    stream << *((CTxOutCT*)send_output.get());
+                    DataStream stream{};
+                    stream << TX_NO_WITNESS(*((CTxOutCT*)send_output.get()));
                     msg_output->set_script_pubkey(stream.str());
                     msg_output->set_amount(0);
                 } else
                 if (send_output->IsType(OUTPUT_RINGCT)) {
                     msg_output->set_particl_output_type(OUTPUT_RINGCT);
-                    CDataStream stream(SER_NETWORK, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS);
-                    stream << *((CTxOutRingCT*)send_output.get());
+                    DataStream stream{};
+                    stream << TX_NO_WITNESS(*((CTxOutRingCT*)send_output.get()));
                     msg_output->set_script_pubkey(stream.str());
                     msg_output->set_amount(0);
                 } else {

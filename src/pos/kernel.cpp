@@ -92,7 +92,7 @@ uint256 ComputeStakeModifierV2(const CBlockIndex *pindexPrev, const uint256 &ker
     if (!pindexPrev)
         return uint256();  // genesis block's modifier is 0
 
-    CHashWriter ss(0);
+    HashWriter ss{};
     ss << kernel << pindexPrev->bnStakeModifier;
     return ss.GetHash();
 }
@@ -152,7 +152,7 @@ bool CheckStakeKernelHash(const CBlockIndex *pindexPrev,
     int nStakeModifierHeight = pindexPrev->nHeight;
     int64_t nStakeModifierTime = pindexPrev->nTime;
 
-    CHashWriter ss(0);
+    HashWriter ss{};
     ss << bnStakeModifier;
     ss << nBlockFromTime << prevout.hash << prevout.n << nTime;
     hashProofOfStake = ss.GetHash();
@@ -211,13 +211,13 @@ bool GetKernelInfo(const node::BlockManager& blockman, const CBlockIndex *blocki
     uint32_t nBlockFromTime = blockKernel.nTime;
     uint32_t nTime = blockindex->nTime;
 
-    CHashWriter ss(0);
+    HashWriter ss{};
     ss << blockindex->pprev->bnStakeModifier;
     ss << nBlockFromTime << prevout.hash << prevout.n << nTime;
     hash = ss.GetHash();
 
     return true;
-};
+}
 
 // Check kernel hash target and coinstake signature
 bool CheckProofOfStake(Chainstate &chain_state, BlockValidationState &state, const CBlockIndex *pindexPrev, const CTransaction &tx, int64_t nTime, unsigned int nBits, uint256 &hashProofOfStake, uint256 &targetProofOfStake)
@@ -403,4 +403,4 @@ int64_t GetProofOfStakeReward(const CChainParams &chainparams, const CBlockIndex
 {
     int64_t nSubsidy = (pindexPrev->nMoneySupply / COIN) * chainparams.GetCoinYearReward(pindexPrev->nTime) / (365 * 24 * (60 * 60 / chainparams.GetTargetSpacing()));
     return nSubsidy + nFees;
-};
+}

@@ -1050,7 +1050,7 @@ bool BlockManager::UndoWriteToDisk(const CBlockUndo& blockundo, FlatFilePos& pos
     }
 
     // Write index header
-    unsigned int nSize = GetSerializeSize(blockundo, CLIENT_VERSION);
+    unsigned int nSize = GetSerializeSize(blockundo);
     fileout << GetParams().MessageStart() << nSize;
 
     // Write undo data
@@ -1344,7 +1344,7 @@ bool BlockManager::WriteBlockToDisk(const CBlock& block, FlatFilePos& pos) const
     }
 
     // Write index header
-    unsigned int nSize = GetSerializeSize(block, fileout.GetVersion());
+    unsigned int nSize = GetSerializeSize(TX_WITH_WITNESS(block));
     fileout << GetParams().MessageStart() << nSize;
 
     // Write block
@@ -1353,7 +1353,7 @@ bool BlockManager::WriteBlockToDisk(const CBlock& block, FlatFilePos& pos) const
         return error("WriteBlockToDisk: ftell failed");
     }
     pos.nPos = (unsigned int)fileOutPos;
-    fileout << block;
+    fileout << TX_WITH_WITNESS(block);
 
     return true;
 }
@@ -1367,7 +1367,7 @@ bool BlockManager::WriteUndoDataForBlock(const CBlockUndo& blockundo, BlockValid
     // Write undo information to disk
     if (block.GetUndoPos().IsNull()) {
         FlatFilePos _pos;
-        if (!FindUndoPos(state, block.nFile, _pos, ::GetSerializeSize(blockundo, CLIENT_VERSION) + 40)) {
+        if (!FindUndoPos(state, block.nFile, _pos, ::GetSerializeSize(blockundo) + 40)) {
             return error("ConnectBlock(): FindUndoPos failed");
         }
         uint256 prev_hash; // Particl genesis block txns are valid
@@ -1415,7 +1415,7 @@ bool BlockManager::ReadBlockFromDisk(CBlock& block, const FlatFilePos& pos) cons
 
     // Read block
     try {
-        filein >> block;
+        filein >> TX_WITH_WITNESS(block);
     } catch (const std::exception& e) {
         return error("%s: Deserialize or I/O error - %s at %s", __func__, e.what(), pos.ToString());
     }
@@ -1474,7 +1474,7 @@ bool ReadTransactionFromDiskBlock(const CBlockIndex* pindex, int nIndex, CTransa
             return error("%s: Block %s, txn %d not in available range %d.", __func__, block_pos.ToString(), nIndex, nTxns);
 
         for (int k = 0; k <= nIndex; ++k)
-            filein >> txOut;
+            filein >> TX_WITH_WITNESS(txOut);
     } catch (const std::exception& e)
     {
         return error("%s: Deserialize or I/O error - %s at %s", __func__, e.what(), block_pos.ToString());
@@ -1523,7 +1523,7 @@ bool BlockManager::ReadRawBlockFromDisk(std::vector<uint8_t>& block, const FlatF
 
 FlatFilePos BlockManager::SaveBlockToDisk(const CBlock& block, int nHeight, const FlatFilePos* dbp)
 {
-    unsigned int nBlockSize = ::GetSerializeSize(block, CLIENT_VERSION);
+    unsigned int nBlockSize = ::GetSerializeSize(TX_WITH_WITNESS(block));
     FlatFilePos blockPos;
     const auto position_known {dbp != nullptr};
     if (position_known) {

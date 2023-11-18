@@ -6,6 +6,7 @@
 #include <base58.h>
 #include <chain.h>
 #include <consensus/validation.h>
+#include <consensus/tx_check.h>
 #include <consensus/tx_verify.h>
 #include <consensus/merkle.h>
 #include <core_io.h>
@@ -5667,7 +5668,7 @@ static UniValue SendToInner(const JSONRPCRequest &request, OutputTypes typeIn, O
         result.pushKV("need_hwdevice", UniValue(coincontrol.fNeedHardwareKey ? true : false));
 
         if (fShowHex) {
-            std::string strHex = EncodeHexTx(*(wtx.tx), RPCSerializationFlags());
+            std::string strHex = EncodeHexTx(*(wtx.tx), RPCSerializationWithoutWitness());
             result.pushKV("hex", strHex);
         }
 
@@ -9683,19 +9684,19 @@ static bool PruneBlockFile(ChainstateManager &chainman, CAutoFile& file_in, bool
             blkdat.SetPos(nBlockPos);
             std::shared_ptr<CBlock> pblock = std::make_shared<CBlock>();
             CBlock& block = *pblock;
-            blkdat >> block;
+            blkdat >> TX_WITH_WITNESS(block);
             uint256 blockhash = block.GetHash();
             nRewind = blkdat.GetPos();
 
             num_blocks_in_file++;
             node::BlockMap::iterator mi = chainman.BlockIndex().find(blockhash);
-            if (mi == chainman.BlockIndex().end()
-                || !chainman.ActiveChain().Contains(&mi->second)) {
+            if (mi == chainman.BlockIndex().end() ||
+                !chainman.ActiveChain().Contains(&mi->second)) {
                 num_blocks_removed++;
             } else
             if (!test_only) {
                 fileout << chainparams.MessageStart() << nSize;
-                fileout << block;
+                fileout << TX_WITH_WITNESS(block);
             }
         } catch (const std::exception& e) {
             return error("%s: Deserialize or I/O error - %s\n", __func__, e.what());
@@ -9920,8 +9921,8 @@ static RPCHelpMan rehashblock()
         key.Sign(block.GetHash(), block.vchBlockSig);
     }
 
-    CDataStream ssBlock(SER_NETWORK, PROTOCOL_VERSION | RPCSerializationFlags());
-    ssBlock << block;
+    DataStream ssBlock;
+    ssBlock << RPCTxSerParams(block);
     return HexStr(ssBlock);
 },
     };

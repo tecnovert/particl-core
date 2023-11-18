@@ -689,7 +689,7 @@ static UniValue blockToDeltasJSON(ChainstateManager& chainman, const CBlock& blo
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block is an orphan");
     }
     result.pushKV("confirmations", confirmations);
-    result.pushKV("size", int(::GetSerializeSize(block, PROTOCOL_VERSION)));
+    result.pushKV("size", int(::GetSerializeSize(TX_WITH_WITNESS(block))));
     result.pushKV("height", blockindex->nHeight);
     result.pushKV("version", block.nVersion);
     result.pushKV("merkleroot", block.hashMerkleRoot.GetHex());

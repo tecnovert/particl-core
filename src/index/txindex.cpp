@@ -108,7 +108,7 @@ bool TxIndex::CustomAppend(const interfaces::BlockInfo& block)
     vPos.reserve(block.data->vtx.size());
     for (const auto& tx : block.data->vtx) {
         vPos.emplace_back(tx->GetHash(), pos);
-        pos.nTxOffset += ::GetSerializeSize(*tx, CLIENT_VERSION);
+        pos.nTxOffset += ::GetSerializeSize(TX_WITH_WITNESS(*tx));
     }
     return m_db->WriteTxs(vPos);
 }
@@ -289,7 +289,7 @@ bool TxIndex::FindTx(const uint256& tx_hash, uint256& block_hash, CTransactionRe
         if (fseek(file.Get(), postx.nTxOffset, SEEK_CUR)) {
             return error("%s: fseek(...) failed", __func__);
         }
-        file >> tx;
+        file >> TX_WITH_WITNESS(tx);
     } catch (const std::exception& e) {
         return error("%s: Deserialize or I/O error - %s", __func__, e.what());
     }
@@ -316,7 +316,7 @@ bool TxIndex::FindTx(const uint256& tx_hash, CBlockHeader& header, CTransactionR
         if (fseek(file.Get(), postx.nTxOffset, SEEK_CUR)) {
             return error("%s: fseek(...) failed", __func__);
         }
-        file >> tx;
+        file >> TX_WITH_WITNESS(tx);
     } catch (const std::exception& e) {
         return error("%s: Deserialize or I/O error - %s", __func__, e.what());
     }

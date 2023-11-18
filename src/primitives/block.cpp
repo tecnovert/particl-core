@@ -12,7 +12,7 @@ int WITNESS_SCALE_FACTOR = WITNESS_SCALE_FACTOR_PART;
 
 uint256 CBlockHeader::GetHash() const
 {
-    return (CHashWriter{PROTOCOL_VERSION} << *this).GetHash();
+    return (HashWriter{} << *this).GetHash();
 }
 
 std::string CBlock::ToString() const

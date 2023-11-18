@@ -311,7 +311,7 @@ public:
 
     SERIALIZE_METHODS(CStoredTransaction, obj)
     {
-        READWRITE(obj.tx);
+        READWRITE(TX_WITH_WITNESS(obj.tx));
         READWRITE(obj.vBlinds);
     }
 };

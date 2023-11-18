@@ -352,16 +352,16 @@ BOOST_AUTO_TEST_CASE(test_TxOutRingCT)
     // ---------------- Serialize Transaction with No Segwit ---------------------
     CMutableTransaction tx;
     tx.vpout.emplace_back(txout);
-    tx.nVersion = 2|PARTICL_TXN_VERSION;
+    tx.nVersion = 2 | PARTICL_TXN_VERSION;
     BOOST_CHECK_MESSAGE(tx.IsParticlVersion(), "failed IsParticlVersion");
 
     //The peer that sends the block sets the version that the data stream will use!
-    CDataStream ss(SER_NETWORK, PROTOCOL_VERSION|SERIALIZE_TRANSACTION_NO_WITNESS);
-    ss << tx;
+    DataStream ss{};
+    ss << TX_NO_WITNESS(tx);
 
     // ---------------- Deserialize Transaction ---------------------
     CMutableTransaction txCheck;
-    ss >> txCheck;
+    ss >> TX_WITH_WITNESS(txCheck);
     BOOST_CHECK_MESSAGE(!txCheck.HasWitness(), "deserialize shows witness");
     auto txout_check = txCheck.vpout.at(0);
     BOOST_CHECK_MESSAGE(txout_check->GetType() == OUTPUT_RINGCT, "deserialized output is not ringct");

@@ -19,9 +19,14 @@
 #include <wallet/rpc/util.h>
 #include <wallet/spend.h>
 #include <wallet/wallet.h>
-#include <wallet/hdwallet.h>
+#include <version.h>
 
 #include <univalue.h>
+
+
+// Particl
+#include <wallet/hdwallet.h>
+
 
 extern UniValue SendTypeToInner(const JSONRPCRequest &request);
 
@@ -1794,8 +1799,8 @@ RPCHelpMan walletprocesspsbt()
         CMutableTransaction mtx;
         // Returns true if complete, which we already think it is.
         CHECK_NONFATAL(FinalizeAndExtractPSBT(psbtx, mtx));
-        CDataStream ssTx_final(SER_NETWORK, PROTOCOL_VERSION);
-        ssTx_final << mtx;
+        DataStream ssTx_final;
+        ssTx_final << TX_WITH_WITNESS(mtx);
         result.pushKV("hex", HexStr(ssTx_final));
     }
 

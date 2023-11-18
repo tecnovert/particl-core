@@ -40,6 +40,7 @@
 #include <util/vector.h>
 #include <validation.h>
 #include <validationinterface.h>
+#include <version.h>
 
 #include <insight/insight.h>
 
@@ -54,7 +55,7 @@ using node::GetTransaction;
 using node::NodeContext;
 using node::PSBTAnalysis;
 
-static void TxToUnivExpanded(const CTransaction& tx, const uint256& block_hash, UniValue& entry, bool include_hex, int serialize_flags, const CTxUndo* txundo, TxVerbosity verbosity, ChainstateManager *pchainman, CTxMemPool *pmempool, int raw_verbosity)
+static void TxToUnivExpanded(const CTransaction& tx, const uint256& block_hash, UniValue& entry, bool include_hex, bool without_witness, const CTxUndo* txundo, TxVerbosity verbosity, ChainstateManager *pchainman, CTxMemPool *pmempool, int raw_verbosity)
 {
     uint256 txid = tx.GetHash();
     entry.pushKV("txid", txid.GetHex());
@@ -62,7 +63,7 @@ static void TxToUnivExpanded(const CTransaction& tx, const uint256& block_hash, 
     // Transaction version is actually unsigned in consensus checks, just signed in memory,
     // so cast to unsigned before giving it to the user.
     entry.pushKV("version", static_cast<int64_t>(static_cast<uint32_t>(tx.nVersion)));
-    entry.pushKV("size", (int)::GetSerializeSize(tx, PROTOCOL_VERSION));
+    entry.pushKV("size", (int)::GetSerializeSize(TX_WITH_WITNESS(tx)));
     entry.pushKV("vsize", (GetTransactionWeight(tx) + WITNESS_SCALE_FACTOR - 1) / WITNESS_SCALE_FACTOR);
     entry.pushKV("weight", GetTransactionWeight(tx));
     entry.pushKV("locktime", (int64_t)tx.nLockTime);
@@ -229,7 +230,7 @@ static void TxToUnivExpanded(const CTransaction& tx, const uint256& block_hash, 
     }
 
     if (include_hex) {
-        entry.pushKV("hex", EncodeHexTx(tx, serialize_flags)); // The hex-encoded transaction. Used the name "hex" to be consistent with the verbose output of "getrawtransaction".
+        entry.pushKV("hex", EncodeHexTx(tx, without_witness)); // The hex-encoded transaction. Used the name "hex" to be consistent with the verbose output of "getrawtransaction".
     }
 }
 
@@ -246,9 +247,9 @@ static void TxToJSON(const CTransaction& tx, const uint256 hashBlock, UniValue& 
     // data into the returned UniValue.
 
     if (fParticlMode) {
-        TxToUnivExpanded(tx, /*block_hash=*/uint256(), entry, /*include_hex=*/true, RPCSerializationFlags(), txundo, verbosity, pchainman, pmempool, raw_verbosity);
+        TxToUnivExpanded(tx, /*block_hash=*/uint256(), entry, /*include_hex=*/true, RPCSerializationWithoutWitness(), txundo, verbosity, pchainman, pmempool, raw_verbosity);
     } else {
-        TxToUniv(tx, /*block_hash=*/uint256(), entry, /*include_hex=*/true, RPCSerializationFlags(), txundo, verbosity);
+        TxToUniv(tx, /*block_hash=*/uint256(), entry, /*include_hex=*/true, RPCSerializationWithoutWitness(), txundo, verbosity);
     }
 
     if (!hashBlock.IsNull()) {
@@ -609,7 +610,7 @@ static RPCHelpMan getrawtransaction()
     }
 
     if (verbosity <= 0) {
-        return EncodeHexTx(*tx, RPCSerializationFlags());
+        return EncodeHexTx(*tx, /*without_witness=*/RPCSerializationWithoutWitness());
     }
 
     UniValue result(UniValue::VOBJ);
@@ -1911,7 +1912,7 @@ static RPCHelpMan finalizepsbt()
     std::string result_str;
 
     if (complete && extract) {
-        ssTx << mtx;
+        ssTx << TX_WITH_WITNESS(mtx);
         result_str = HexStr(ssTx);
         result.pushKV("hex", result_str);
     } else {
@@ -2364,8 +2365,8 @@ RPCHelpMan descriptorprocesspsbt()
         CMutableTransaction mtx;
         PartiallySignedTransaction psbtx_copy = psbtx;
         CHECK_NONFATAL(FinalizeAndExtractPSBT(psbtx_copy, mtx));
-        CDataStream ssTx_final(SER_NETWORK, PROTOCOL_VERSION);
-        ssTx_final << mtx;
+        DataStream ssTx_final;
+        ssTx_final << TX_WITH_WITNESS(mtx);
         result.pushKV("hex", HexStr(ssTx_final));
     }
     return result;

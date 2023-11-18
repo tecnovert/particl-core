@@ -170,7 +170,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     pblocktemplate->vTxFees[0] = -nFees;
 
     //LogPrintf("CreateNewBlock(): block weight: %u txs: %u fees: %ld sigops %d\n", GetBlockWeight(*pblock), nBlockTx, nFees, nBlockSigOpsCost);
-    uint64_t nSerializeSize = GetSerializeSize(*pblock, PROTOCOL_VERSION);
+    uint64_t nSerializeSize = GetSerializeSize(TX_WITH_WITNESS(*pblock));
     LogPrint(BCLog::POS, "CreateNewBlock(): total size: %u block weight: %u txs: %u fees: %ld sigops %d\n", nSerializeSize, GetBlockWeight(*pblock), nBlockTx, nFees, nBlockSigOpsCost);
     nLastBlockSize = nSerializeSize + 238 + 70; // Reserve bytes for coinstake txn and block signature
 

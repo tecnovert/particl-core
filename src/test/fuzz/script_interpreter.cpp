@@ -20,7 +20,7 @@ FUZZ_TARGET(script_interpreter)
     FuzzedDataProvider fuzzed_data_provider(buffer.data(), buffer.size());
     {
         const CScript script_code = ConsumeScript(fuzzed_data_provider);
-        const std::optional<CMutableTransaction> mtx = ConsumeDeserializable<CMutableTransaction>(fuzzed_data_provider);
+        const std::optional<CMutableTransaction> mtx = ConsumeDeserializable<CMutableTransaction>(fuzzed_data_provider, TX_WITH_WITNESS);
         if (mtx) {
             const CTransaction tx_to{*mtx};
             const unsigned int in = fuzzed_data_provider.ConsumeIntegral<unsigned int>();
@@ -29,7 +29,7 @@ FUZZ_TARGET(script_interpreter)
                 std::vector<uint8_t> vchAmount(8);
                 part::SetAmount(vchAmount, value);
                 (void)SignatureHash(script_code, tx_to, in, fuzzed_data_provider.ConsumeIntegral<int>(), vchAmount, fuzzed_data_provider.PickValueInArray({SigVersion::BASE, SigVersion::WITNESS_V0}), nullptr);
-                const std::optional<CMutableTransaction> mtx_precomputed = ConsumeDeserializable<CMutableTransaction>(fuzzed_data_provider);
+                const std::optional<CMutableTransaction> mtx_precomputed = ConsumeDeserializable<CMutableTransaction>(fuzzed_data_provider, TX_WITH_WITNESS);
                 if (mtx_precomputed) {
                     const CTransaction tx_precomputed{*mtx_precomputed};
                     const PrecomputedTransactionData precomputed_transaction_data{tx_precomputed};

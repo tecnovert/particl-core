@@ -14,7 +14,6 @@
 #include <serialize.h>
 #include <span.h>
 #include <uint256.h>
-#include <version.h>
 
 #include <string>
 #include <vector>
@@ -157,23 +156,6 @@ public:
     }
 
     int GetVersion() const { return 0; } // Particl: Always hash with witness in ::GetOutputsSHA256()
-};
-
-class CHashWriter : public HashWriter
-{
-private:
-    const int nVersion;
-
-public:
-    CHashWriter(int nVersionIn) : nVersion{nVersionIn} {}
-
-    int GetVersion() const { return nVersion; }
-
-    template<typename T>
-    CHashWriter& operator<<(const T& obj) {
-        ::Serialize(*this, obj);
-        return (*this);
-    }
 };
 
 /** Reads data from an underlying stream, while hashing the read data. */

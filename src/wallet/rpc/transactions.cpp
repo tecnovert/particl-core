@@ -334,7 +334,7 @@ void RecordTxToJSON(interfaces::Chain& chain, const CHDWallet *phdw, const uint2
 
     CStoredTransaction stx;
     if (CHDWalletDB(phdw->GetDatabase()).ReadStoredTx(hash, stx)) { // TODO: cache
-        std::string strHex = EncodeHexTx(*(stx.tx.get()), RPCSerializationFlags());
+        std::string strHex = EncodeHexTx(*(stx.tx.get()), RPCSerializationWithoutWitness());
         entry.pushKV("hex", strHex);
 
         if (verbose) {
@@ -1289,7 +1289,7 @@ const std::shared_ptr<const CWallet> pwallet = GetWalletForJSONRPCRequest(reques
     ListTransactions(*pwallet, wtx, 0, false, details, filter, /*filter_label=*/std::nullopt);
     entry.pushKV("details", details);
 
-    std::string strHex = EncodeHexTx(*wtx.tx, pwallet->chain().rpcSerializationFlags());
+    std::string strHex = EncodeHexTx(*wtx.tx, pwallet->chain().rpcSerializationWithoutWitness());
     entry.pushKV("hex", strHex);
 
     if (verbose) {

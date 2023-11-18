@@ -13861,7 +13861,7 @@ bool CHDWallet::CreateCoinStake(unsigned int nBits, int64_t nTime, int nBlockHei
     }
 
     // Limit size
-    unsigned int nBytes = ::GetSerializeSize(txNew);
+    unsigned int nBytes = ::GetSerializeSize(TX_WITH_WITNESS(txNew));
     if (nBytes >= DEFAULT_BLOCK_MAX_SIZE / 5) {
         return werror("%s: Exceeded coinstake size limit.", __func__);
     }

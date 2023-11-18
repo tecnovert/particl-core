@@ -254,30 +254,30 @@ public:
         address         = addr;
         fReceiveEnabled = receiveOn;
         fReceiveAnon    = receiveAnon;
-    };
+    }
 
     CKeyID address;
     bool fReceiveEnabled;
     bool fReceiveAnon;
 
-    size_t GetSerializeSize(int nType, int nVersion) const
+    size_t GetSerializeSize(int nType) const
     {
         return 22;
-    };
+    }
     template<typename Stream>
     void Serialize(Stream &s) const
     {
         s << address;
         s << fReceiveEnabled;
         s << fReceiveAnon;
-    };
+    }
     template <typename Stream>
     void Unserialize(Stream& s)
     {
         s >> address;
         s >> fReceiveEnabled;
         s >> fReceiveAnon;
-    };
+    }
 };
 
 class SecMsgOptions
@@ -289,7 +289,7 @@ public:
         fNewAddressRecv = true;
         fNewAddressAnon = true;
         fScanIncoming   = false;
-    };
+    }
 
     bool fNewAddressRecv;
     bool fNewAddressAnon;
@@ -306,11 +306,11 @@ public:
     CKeyID               addrOutbox;     // owned address this copy was encrypted with
     std::vector<uint8_t> vchMessage;     // message header + encrypted payload
 
-    size_t GetSerializeSize(int nType, int nVersion) const
+    size_t GetSerializeSize(int nType) const
     {
         return sizeof(timeReceived) + sizeof(status) + sizeof(folderId) + 20 + 20 +
             GetSizeOfCompactSize(vchMessage.size()) + vchMessage.size() * sizeof(uint8_t);
-    };
+    }
     template<typename Stream>
     void Serialize(Stream &s) const
     {
@@ -320,7 +320,7 @@ public:
         s << addrTo;
         s << addrOutbox;
         s << vchMessage;
-    };
+    }
     template <typename Stream>
     void Unserialize(Stream &s)
     {
@@ -330,7 +330,7 @@ public:
         s >> addrTo;
         s >> addrOutbox;
         s >> vchMessage;
-    };
+    }
 };
 
 void AddOptions(ArgsManager& argsman);

@@ -10,6 +10,7 @@
 #include <script/script.h>
 #include <consensus/validation.h>
 #include <consensus/merkle.h>
+#include <consensus/tx_check.h>
 #include <consensus/tx_verify.h>
 #include <key/extkey.h>
 #include <pos/kernel.h>
@@ -39,10 +40,9 @@ BOOST_AUTO_TEST_CASE(oldversion_test)
     CMutableTransaction txn;
     blk.vtx.push_back(MakeTransactionRef(txn));
 
-    CDataStream ss(SER_DISK, 0);
-
-    ss << blk;
-    ss >> blkOut;
+    DataStream ss{};
+    ss << TX_WITH_WITNESS(blk);
+    ss >> TX_WITH_WITNESS(blkOut);
 
     BOOST_CHECK(blk.vtx[0]->nVersion == blkOut.vtx[0]->nVersion);
 }
@@ -124,11 +124,11 @@ BOOST_AUTO_TEST_CASE(particlchain_test)
     blk.hashWitnessMerkleRoot = BlockWitnessMerkleRoot(blk, &mutated);
 
 
-    CDataStream ss(SER_DISK, 0);
-    ss << blk;
+    DataStream ss{};
+    ss << TX_WITH_WITNESS(blk);
 
     CBlock blkOut;
-    ss >> blkOut;
+    ss >> TX_WITH_WITNESS(blkOut);
 
     BOOST_CHECK(blk.hashMerkleRoot == blkOut.hashMerkleRoot);
     BOOST_CHECK(blk.hashWitnessMerkleRoot == blkOut.hashWitnessMerkleRoot);
