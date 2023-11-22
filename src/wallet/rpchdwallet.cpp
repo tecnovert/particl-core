@@ -2986,7 +2986,7 @@ static RPCHelpMan clearwallettransactions()
             throw JSONRPCError(RPC_MISC_ERROR, "GetTxnCursor failed.");
         }
 
-        CDataStream ssKey(SER_DISK, CLIENT_VERSION);
+        CDataStream ssKey(SER_DISK, PROTOCOL_VERSION);
 
         MapWallet_t::const_iterator itw;
         std::string strType;
@@ -9639,7 +9639,7 @@ static RPCHelpMan verifyrawtransaction()
     };
 };
 
-static bool PruneBlockFile(ChainstateManager &chainman, CAutoFile& file_in, bool test_only, size_t &num_blocks_in_file, size_t &num_blocks_removed) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
+static bool PruneBlockFile(ChainstateManager &chainman, AutoFile& file_in, bool test_only, size_t &num_blocks_in_file, size_t &num_blocks_removed) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
 {
     fs::path tmp_filepath = gArgs.GetBlocksDirPath() / "tmp.dat";
 
@@ -9647,7 +9647,7 @@ static bool PruneBlockFile(ChainstateManager &chainman, CAutoFile& file_in, bool
     if (!fpt) {
         return error("%s: Couldn't open temp file.\n", __func__);
     }
-    CAutoFile fileout(fpt, CLIENT_VERSION);
+    AutoFile fileout{fpt};
 
     const CChainParams &chainparams = Params();
     BufferedFile blkdat{file_in, 2 * MAX_BLOCK_SERIALIZED_SIZE, MAX_BLOCK_SERIALIZED_SIZE + 8};
@@ -9786,7 +9786,7 @@ static RPCHelpMan pruneorphanedblocks()
             if (!fs::exists(blk_filepath)) {
                 break;
             }
-            CAutoFile file{chainman.m_blockman.OpenBlockFile(pos, true)};
+            AutoFile file{chainman.m_blockman.OpenBlockFile(pos, true)};
             if (file.IsNull()) {
                 break; // This error is logged in OpenBlockFile
             }

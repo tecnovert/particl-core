@@ -12,13 +12,13 @@
 // Particl dependencies
 #include <blind.h>
 #include <insight/balanceindex.h>
-#include <validation.h>
 #include <consensus/params.h>
 #include <chainparams.h>
 #include <timedata.h>
 #include <common/args.h>
 #include <util/strencodings.h>
 #include <util/moneystr.h>
+#include <script/interpreter.h>
 
 
 static bool CheckStandardOutput(TxValidationState &state, const CTxOutStandard *p, CAmount &nValueOut)

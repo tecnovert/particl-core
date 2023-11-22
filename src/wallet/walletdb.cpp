@@ -26,6 +26,7 @@
 #include <wallet/wallet.h>
 
 #include <key/extkey.h> // recover
+#include <version.h>
 
 #include <atomic>
 #include <optional>
@@ -1497,8 +1498,8 @@ bool WalletBatch::EraseAllByPrefix(std::string sPrefix)
         return error("%s: GetCursor failed.\n", __func__);
     }
 
-    CDataStream ssKey(SER_DISK, CLIENT_VERSION);
-    CDataStream ssValue(SER_DISK, CLIENT_VERSION);
+    CDataStream ssKey(SER_DISK, PROTOCOL_VERSION);
+    CDataStream ssValue(SER_DISK, PROTOCOL_VERSION);
     std::string strType;
     ssKey << sPrefix;
     while (bb->ReadAtCursor2(pcursor, ssKey, ssValue, true) == 0) {
