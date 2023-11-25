@@ -771,7 +771,7 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
     AssertLockHeld(m_pool.cs);
     const CTransactionRef& ptx = ws.m_ptx;
     const CTransaction& tx = *ws.m_ptx;
-    const uint256& hash = ws.m_hash;
+    const Txid& hash = ws.m_hash;
 
     // Copy/alias what we need out of args
     const int64_t nAcceptTime = args.m_accept_time;
@@ -2230,7 +2230,7 @@ DisconnectResult Chainstate::DisconnectBlock(const CBlock& block, const CBlockIn
     for (int i = block.vtx.size() - 1; i >= 0; i--)
     {
         const CTransaction &tx = *(block.vtx[i]);
-        uint256 hash = tx.GetHash();
+        Txid hash = tx.GetHash();
 
         for (const auto &txin : tx.vin) {
             if (txin.IsAnonInput()) {
@@ -2917,7 +2917,7 @@ bool Chainstate::ConnectBlock(const CBlock& block, BlockValidationState& state, 
 
         // Index rct outputs and keyimages
         if (tx_state.m_has_anon_output || tx_state.m_has_anon_input) {
-            COutPoint op(txhash, 0);
+            COutPoint op(Txid::FromUint256(txhash), 0);
             if (tx_state.m_has_anon_input) {
                 assert(tx_state.m_setHaveKI.size());
             }

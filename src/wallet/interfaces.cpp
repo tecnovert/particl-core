@@ -211,7 +211,7 @@ WalletTxOut MakeWalletTxOut(CHDWallet &wallet,
     result.txout.scriptPubKey = oR->scriptPubKey;
     result.time = rtx.GetTxTime();
     result.depth_in_main_chain = depth;
-    result.is_spent = wallet.IsSpent(COutPoint(hash, n));
+    result.is_spent = wallet.IsSpent(COutPoint(Txid::FromUint256(hash), n));
     return result;
 }
 
@@ -658,7 +658,7 @@ public:
                 auto& group = result[entry.first];
                 for (const auto& coin : entry.second) {
                     group.emplace_back(
-                        COutPoint(coin.rtx->first, coin.i), MakeWalletTxOut(*m_wallet_part, coin.txhash, coin.rtx->second, coin.i, coin.nDepth));
+                        COutPoint(Txid::FromUint256(coin.rtx->first), coin.i), MakeWalletTxOut(*m_wallet_part, coin.txhash, coin.rtx->second, coin.i, coin.nDepth));
                 }
             }
             return result;

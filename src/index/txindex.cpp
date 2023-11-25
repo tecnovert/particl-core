@@ -135,7 +135,7 @@ bool TxIndex::DisconnectBlock(const CBlock& block)
 
             ColdStakeIndexOutputKey ok(tx->GetHash(), n);
             batch.Erase(std::make_pair(DB_TXINDEX_CSOUTPUT, ok));
-            erasedCSOuts.insert(COutPoint(ok.m_txnid, ok.m_n));
+            erasedCSOuts.insert(COutPoint(Txid::FromUint256(ok.m_txnid), ok.m_n));
         }
         for (const auto &in : tx->vin) {
             ColdStakeIndexOutputKey ok(in.prevout.hash, in.prevout.n);

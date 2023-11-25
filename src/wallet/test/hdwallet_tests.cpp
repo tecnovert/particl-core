@@ -568,7 +568,7 @@ BOOST_AUTO_TEST_CASE(opiscoinstake_test)
     out0->nValue = nValue;
     out0->scriptPubKey = script;
     txn.vpout.push_back(out0);
-    txn.vin.push_back(CTxIn(COutPoint(uint256S("d496208ea84193e0c5ed05ac708aec84dfd2474b529a7608b836e282958dc72b"), 0)));
+    txn.vin.push_back(CTxIn(COutPoint(Txid::FromUint256(uint256S("d496208ea84193e0c5ed05ac708aec84dfd2474b529a7608b836e282958dc72b")), 0)));
     BOOST_CHECK(txn.IsCoinStake());
 
     std::vector<uint8_t> vchAmount(8);

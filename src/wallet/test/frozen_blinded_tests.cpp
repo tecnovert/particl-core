@@ -215,7 +215,7 @@ BOOST_AUTO_TEST_CASE(frozen_blinded_test)
     for (size_t i = 0; i < rv["frozen_outputs"].size(); ++i) {
         const UniValue &uvo = rv["frozen_outputs"][i];
         if (uvo["spendable"].get_bool() == true) {
-            prevout_spendable = COutPoint(ParseHashO(uvo, "txid"), uvo["n"].getInt<int>());
+            prevout_spendable = COutPoint(Txid::FromUint256(ParseHashO(uvo, "txid")), uvo["n"].getInt<int>());
             break;
         }
     }
@@ -508,7 +508,7 @@ BOOST_AUTO_TEST_CASE(frozen_blinded_test)
             for (const auto &c : vAvailableCoins) {
                 const COutputRecord *oR = c.rtx->second.GetOutput(c.i);
                 if (oR && oR->nFlags & ORF_OWNED && oR->nValue < 500 * COIN) {
-                    op_pre.hash = c.txhash;
+                    op_pre.hash = Txid::FromUint256(c.txhash);
                     op_pre.n = c.i;
                     extract_value_pre = oR->nValue;
                     break;
@@ -525,7 +525,7 @@ BOOST_AUTO_TEST_CASE(frozen_blinded_test)
             for (const auto &c : vAvailableCoins) {
                 const COutputRecord *oR = c.rtx->second.GetOutput(c.i);
                 if (oR && oR->nFlags & ORF_OWNED && oR->nValue < 500 * COIN) {
-                    op_post.hash = c.txhash;
+                    op_post.hash = Txid::FromUint256(c.txhash);
                     op_post.n = c.i;
                     extract_value_post = oR->nValue;
                     break;

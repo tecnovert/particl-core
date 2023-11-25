@@ -184,7 +184,7 @@ BOOST_AUTO_TEST_CASE(rct_test)
     for (const auto &output : vAvailableCoins) {
         const COutputRecord *pout = output.rtx->second.GetOutput(output.i);
         prevouts_sum += pout->nValue;
-        cctl.Select(COutPoint(output.txhash, output.i));
+        cctl.Select(COutPoint(Txid::FromUint256(output.txhash), output.i));
         if (cctl.NumSelected() >= 2) {
             break;
         }
@@ -334,7 +334,7 @@ BOOST_AUTO_TEST_CASE(rct_test)
     for (const auto &output : vAvailableCoins) {
         const COutputRecord *pout = output.rtx->second.GetOutput(output.i);
         prevouts_sum += pout->nValue;
-        cctl.Select(COutPoint(output.txhash, output.i));
+        cctl.Select(COutPoint(Txid::FromUint256(output.txhash), output.i));
         if (cctl.NumSelected() >= 1) {
             break;
         }

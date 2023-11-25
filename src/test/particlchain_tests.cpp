@@ -235,7 +235,7 @@ BOOST_AUTO_TEST_CASE(mixed_input_types)
                 txn.vin.push_back(ai);
                 continue;
             }
-            txn.vin.push_back(CTxIn(prevHash, ti));
+            txn.vin.push_back(CTxIn(Txid::FromUint256(prevHash), ti));
         }
 
         CTransaction tx_c(txn);
@@ -273,7 +273,7 @@ BOOST_AUTO_TEST_CASE(mixed_output_types)
     CMutableTransaction txn;
     txn.nVersion = PARTICL_TXN_VERSION;
     BOOST_CHECK(txn.IsParticlVersion());
-    txn.vin.push_back(CTxIn(prevHash, 0));
+    txn.vin.push_back(CTxIn(Txid::FromUint256(prevHash), 0));
 
     OUTPUT_PTR<CTxOutData> out_fee = MAKE_OUTPUT<CTxOutData>();
     out_fee->vData.push_back(DO_FEE);
@@ -373,7 +373,7 @@ BOOST_AUTO_TEST_CASE(smsg_fees)
     CMutableTransaction txn;
     txn.nVersion = PARTICL_TXN_VERSION;
     BOOST_CHECK(txn.IsParticlVersion());
-    txn.vin.push_back(CTxIn(prevHash, 0));
+    txn.vin.push_back(CTxIn(Txid::FromUint256(prevHash), 0));
 
     CAmount smsg_fee = 20000;
     std::vector<uint8_t> vData(1 + 24);
@@ -523,7 +523,7 @@ BOOST_AUTO_TEST_CASE(taproot)
     CScript tr_scriptPubKey_out = GetScriptForDestination(builder.GetOutput());
     CMutableTransaction txn;
     txn.nVersion = PARTICL_TXN_VERSION;
-    txn.vin.push_back(CTxIn(prevHash, 0));
+    txn.vin.push_back(CTxIn(Txid::FromUint256(prevHash), 0));
     txn.vpout.push_back(MAKE_OUTPUT<CTxOutStandard>(1 * COIN - txfee, tr_scriptPubKey_out));
 
     CTransaction tx_c(txn);

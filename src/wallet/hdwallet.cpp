@@ -1673,7 +1673,7 @@ void CHDWallet::Downgrade()
             for (size_t k = 0; k < nInputs; ++k) {
                 const CCmpPubKey &ki = *((CCmpPubKey*)&vKeyImages[k*33]);
                 op.n = 0;
-                memcpy(op.hash.begin(), ki.begin(), 32);
+                memcpy(op.hash.data_nc(), ki.begin(), 32);
                 op.n = *(ki.begin()+32);
                 rtx.vin.push_back(op);
             }
@@ -1883,7 +1883,7 @@ std::map<CTxDestination, CAmount> CHDWallet::GetAddressBalances() const
                     continue;
                 }
 
-                CAmount n = IsSpent(COutPoint(walletEntry.first, i)) ? 0 : txout->GetValue();
+                CAmount n = IsSpent(COutPoint(Txid::FromUint256(walletEntry.first), i)) ? 0 : txout->GetValue();
 
                 if (!balances.count(addr)) {
                     balances[addr] = 0;
@@ -1901,9 +1901,9 @@ std::map<CTxDestination, CAmount> CHDWallet::GetAddressBalances() const
             }
 
             for (const auto &r : rtx.vout) {
-                if (r.nType != OUTPUT_STANDARD
-                    && r.nType != OUTPUT_CT
-                    && r.nType != OUTPUT_RINGCT) {
+                if (r.nType != OUTPUT_STANDARD &&
+                    r.nType != OUTPUT_CT &&
+                    r.nType != OUTPUT_RINGCT) {
                     continue;
                 }
 
@@ -1916,7 +1916,7 @@ std::map<CTxDestination, CAmount> CHDWallet::GetAddressBalances() const
                     continue;
                 }
 
-                CAmount n =  IsSpent(COutPoint(txhash, r.n)) ? 0 : r.nValue;
+                CAmount n =  IsSpent(COutPoint(Txid::FromUint256(txhash), r.n)) ? 0 : r.nValue;
 
                 std::pair<std::map<CTxDestination, CAmount>::iterator, bool> ret;
                 ret = balances.insert(std::pair<CTxDestination, CAmount>(addr, n));
@@ -2544,7 +2544,7 @@ CAmount CHDWallet::GetSpendableBalance() const
         for (const auto &r : rtx.vout) {
             if (r.nType == OUTPUT_STANDARD &&
                 (r.nFlags & ORF_OWNED || r.nFlags & ORF_STAKEONLY) &&
-                 !IsSpent(COutPoint(txhash, r.n))) {
+                 !IsSpent(COutPoint(Txid::FromUint256(txhash), r.n))) {
                 nBalance += r.nValue;
             }
         }
@@ -2593,7 +2593,7 @@ CAmount CHDWallet::GetBlindBalance()
 
         for (const auto &r : rtx.vout) {
             if (r.nType == OUTPUT_CT &&
-                r.nFlags & ORF_OWNED && !IsSpent(COutPoint(txhash, r.n))) {
+                r.nFlags & ORF_OWNED && !IsSpent(COutPoint(Txid::FromUint256(txhash), r.n))) {
                 nBalance += r.nValue;
             }
         }
@@ -2622,7 +2622,7 @@ CAmount CHDWallet::GetAnonBalance()
 
         for (const auto &r : rtx.vout) {
             if (r.nType == OUTPUT_RINGCT &&
-                r.nFlags & ORF_OWNED && !IsSpent(COutPoint(txhash, r.n))) {
+                r.nFlags & ORF_OWNED && !IsSpent(COutPoint(Txid::FromUint256(txhash), r.n))) {
                 nBalance += r.nValue;
             }
         }
@@ -2704,7 +2704,7 @@ bool CHDWallet::GetBalances(CHDWalletBalances &bal, bool avoid_reuse) const
 
         for (const auto &r : rtx.vout) {
             if (!(r.nFlags & ORF_OWN_ANY) ||
-                IsSpent(COutPoint(txhash, r.n))) {
+                IsSpent(COutPoint(Txid::FromUint256(txhash), r.n))) {
                 continue;
             }
             bool watch_only = r.nFlags & ORF_OWN_WATCH;
@@ -4516,7 +4516,7 @@ int CHDWallet::AddBlindedInputs(CWalletTx &wtx, CTransactionRecord &rtx,
             for (const auto &coin : setCoins) {
                 const uint256 &txhash = coin.first->first;
                 const uint32_t nSequence = coinControl->m_signal_bip125_rbf.value_or(m_signal_rbf) ? MAX_BIP125_RBF_SEQUENCE : (CTxIn::SEQUENCE_FINAL - 1);
-                txNew.vin.push_back(CTxIn(txhash, coin.second, CScript(), nSequence));
+                txNew.vin.push_back(CTxIn(Txid::FromUint256(txhash), coin.second, CScript(), nSequence));
             }
 
             nValueOutPlain = 0;
@@ -4575,7 +4575,7 @@ int CHDWallet::AddBlindedInputs(CWalletTx &wtx, CTransactionRecord &rtx,
                 SignatureData sigdata;
 
                 // Use witness size estimate if set
-                COutPoint prevout(txhash, coin.second);
+                COutPoint prevout(Txid::FromUint256(txhash), coin.second);
                 std::map<COutPoint, CInputData>::const_iterator it = coinControl->m_inputData.find(prevout);
                 if (it != coinControl->m_inputData.end()) {
                     sigdata.scriptWitness = it->second.scriptWitness;
@@ -4695,7 +4695,7 @@ int CHDWallet::AddBlindedInputs(CWalletTx &wtx, CTransactionRecord &rtx,
             auto &txin = txNew.vin[nIn];
             const uint256 &txhash = coin.first->first;
 
-            COutPoint prevout(txhash, coin.second);
+            COutPoint prevout(Txid::FromUint256(txhash), coin.second);
             std::map<COutPoint, CInputData>::const_iterator it = coinControl->m_inputData.find(prevout);
             if (it != coinControl->m_inputData.end()) {
                 memcpy(&vInputBlinds[nIn * 32], it->second.blind.begin(), 32);
@@ -4931,7 +4931,7 @@ int CHDWallet::PlaceRealOutputs(std::vector<std::vector<int64_t> > &vMI, size_t 
                 // TODO: Store pubkey on COutputRecord - in scriptPubKey?
                 const auto &coin = vCoins[k];
                 const uint256 &txhash = coin.first->first;
-                COutPoint op(txhash, coin.second);
+                COutPoint op(Txid::FromUint256(txhash), coin.second);
                 const CCmpPubKey *pk = nullptr;
                 CStoredTransaction stx;
 
@@ -5932,7 +5932,7 @@ void CHDWallet::RecursiveUpdateTxState(const uint256& tx_hash, const TryUpdating
                 batch.WriteTx(wtx);
                 // Iterate over all its outputs, and update those tx states as well (if applicable)
                 for (unsigned int i = 0; i < wtx.tx->vout.size(); ++i) {
-                    std::pair<TxSpends::const_iterator, TxSpends::const_iterator> range = mapTxSpends.equal_range(COutPoint(now, i));
+                    std::pair<TxSpends::const_iterator, TxSpends::const_iterator> range = mapTxSpends.equal_range(COutPoint(Txid::FromUint256(now), i));
                     for (TxSpends::const_iterator iter = range.first; iter != range.second; ++iter) {
                         if (!done.count(iter->second)) {
                             todo.insert(iter->second);
@@ -10320,7 +10320,7 @@ int CHDWallet::UnloadSpent(const uint256 &wtxid, int depth, const uint256 &wtxid
     for (unsigned int i = 0; i < thisTx.tx->GetNumVOuts(); i++) {
         const auto &txout = thisTx.tx->vpout[i];
         if (IsMine(txout.get()) &&
-            !IsSpent(COutPoint(wtxid, i))) {
+            !IsSpent(COutPoint(Txid::FromUint256(wtxid), i))) {
             return 0;
         }
     }
@@ -10344,7 +10344,7 @@ int CHDWallet::UnloadSpent(const uint256 &wtxid, int depth, const uint256 &wtxid
     m_collapsed_txns.insert(wtxid);
     UnloadTransaction(wtxid);
 
-    auto itl = m_collapsed_txn_inputs.lower_bound(COutPoint(wtxid, 0));
+    auto itl = m_collapsed_txn_inputs.lower_bound(COutPoint(Txid::FromUint256(wtxid), 0));
     while (itl != m_collapsed_txn_inputs.end() && itl->hash == wtxid) {
         m_collapsed_txn_inputs.erase(itl++);
     }
@@ -10735,7 +10735,7 @@ int CHDWallet::OwnBlindOut(CHDWalletDB *pwdb, const uint256 &txhash, const CTxOu
     }
 
     if (IsLocked()) {
-        COutPoint op(txhash, rout.n);
+        COutPoint op(Txid::FromUint256(txhash), rout.n);
         if ((rout.nFlags & ORF_LOCKED) &&
             !pwdb->HaveLockedAnonOut(op)) {
             rout.nValue = 0;
@@ -10874,7 +10874,7 @@ int CHDWallet::OwnAnonOut(CHDWalletDB *pwdb, const uint256 &txhash, const CTxOut
     }
 
     if (IsLocked()) {
-        COutPoint op(txhash, rout.n);
+        COutPoint op(Txid::FromUint256(txhash), rout.n);
         if ((rout.nFlags & ORF_LOCKED) &&
             !pwdb->HaveLockedAnonOut(op)) {
             rout.nValue = 0;
@@ -10985,7 +10985,7 @@ int CHDWallet::OwnAnonOut(CHDWalletDB *pwdb, const uint256 &txhash, const CTxOut
         }
     }
 
-    COutPoint op(txhash, rout.n);
+    COutPoint op(Txid::FromUint256(txhash), rout.n);
     CCmpPubKey ki;
 
     if (!key.IsValid()) {
@@ -11590,13 +11590,13 @@ CoinsResult CHDWallet::AvailableCoins(const CCoinControl *coinControl, std::opti
             if (txout->nValue < nMinimumAmount || txout->nValue > nMaximumAmount) {
                 continue;
             }
-            if (coinControl && coinControl->HasSelected() && !coinControl->m_allow_other_inputs && !coinControl->IsSelected(COutPoint(wtxid, i))) {
+            if (coinControl && coinControl->HasSelected() && !coinControl->m_allow_other_inputs && !coinControl->IsSelected(COutPoint(Txid::FromUint256(wtxid), i))) {
                 continue;
             }
-            if (!allow_locked && IsLockedCoin(COutPoint(wtxid, i))) {
+            if (!allow_locked && IsLockedCoin(COutPoint(Txid::FromUint256(wtxid), i))) {
                 continue;
             }
-            if (IsSpent(COutPoint(wtxid, i))) {
+            if (IsSpent(COutPoint(Txid::FromUint256(wtxid), i))) {
                 continue;
             }
 
@@ -11682,16 +11682,16 @@ CoinsResult CHDWallet::AvailableCoins(const CCoinControl *coinControl, std::opti
             if (!(r.nFlags & ORF_OWN_ANY)) {
                 continue;
             }
-            if (IsSpent(COutPoint(txid, r.n))) {
+            if (IsSpent(COutPoint(Txid::FromUint256(txid), r.n))) {
                 continue;
             }
             if (r.nValue < nMinimumAmount || r.nValue > nMaximumAmount) {
                 continue;
             }
-            if (coinControl && coinControl->HasSelected() && !coinControl->m_allow_other_inputs && !coinControl->IsSelected(COutPoint(txid, r.n))) {
+            if (coinControl && coinControl->HasSelected() && !coinControl->m_allow_other_inputs && !coinControl->IsSelected(COutPoint(Txid::FromUint256(txid), r.n))) {
                 continue;
             }
-            if (!allow_locked && IsLockedCoin(COutPoint(txid, r.n))) {
+            if (!allow_locked && IsLockedCoin(COutPoint(Txid::FromUint256(txid), r.n))) {
                 continue;
             }
             if (!allow_used_addresses && IsSpentKey(r.scriptPubKey)) {
@@ -11714,7 +11714,7 @@ CoinsResult CHDWallet::AvailableCoins(const CCoinControl *coinControl, std::opti
             bool from_me = rtx.vin.size() > 0;
             int64_t time = rtx.GetTxTime();
             int input_bytes = CalculateMaximumSignedInputSize(txout, this, coinControl);
-            result.coins[OutputType::UNKNOWN].emplace_back(COutPoint(txid, r.n), txout, nDepth, input_bytes, fSpendableIn, /*solvable*/true, safeTx, time, from_me, feerate, /*mature*/true, fNeedHardwareKey);
+            result.coins[OutputType::UNKNOWN].emplace_back(COutPoint(Txid::FromUint256(txid), r.n), txout, nDepth, input_bytes, fSpendableIn, /*solvable*/true, safeTx, time, from_me, feerate, /*mature*/true, fNeedHardwareKey);
             result.total_amount += r.nValue;
 
             if (nMinimumSumAmount != MAX_MONEY) {
@@ -11856,10 +11856,10 @@ void CHDWallet::AvailableBlindedCoins(std::vector<COutputR>& vCoins, const CCoin
             const uint256 &txid = it->first;
             const CTransactionRecord &rtx = it->second;
             for (const auto &r : rtx.vout) {
-                if (!allow_locked && IsLockedCoin(COutPoint(txid, r.n))) {
+                if (!allow_locked && IsLockedCoin(COutPoint(Txid::FromUint256(txid), r.n))) {
                     continue;
                 }
-                if (coinControl->IsSelected(COutPoint(txid, r.n))) {
+                if (coinControl->IsSelected(COutPoint(Txid::FromUint256(txid), r.n))) {
                     int nDepth = 0;
                     bool fSpendable = true;
                     bool fSolvable = true;
@@ -11930,7 +11930,7 @@ void CHDWallet::AvailableBlindedCoins(std::vector<COutputR>& vCoins, const CCoin
                 continue;
             }
 
-            if (IsSpent(COutPoint(txid, r.n))) {
+            if (IsSpent(COutPoint(Txid::FromUint256(txid), r.n))) {
                 continue;
             }
 
@@ -11946,11 +11946,11 @@ void CHDWallet::AvailableBlindedCoins(std::vector<COutputR>& vCoins, const CCoin
                 }
             }
 
-            if (coinControl && coinControl->HasSelected() && !coinControl->m_allow_other_inputs && !coinControl->IsSelected(COutPoint(txid, r.n))) {
+            if (coinControl && coinControl->HasSelected() && !coinControl->m_allow_other_inputs && !coinControl->IsSelected(COutPoint(Txid::FromUint256(txid), r.n))) {
                 continue;
             }
 
-            if (!allow_locked && IsLockedCoin(COutPoint(txid, r.n))) {
+            if (!allow_locked && IsLockedCoin(COutPoint(Txid::FromUint256(txid), r.n))) {
                 continue;
             }
 
@@ -12179,7 +12179,7 @@ void CHDWallet::AvailableAnonCoins(std::vector<COutputR> &vCoins, const CCoinCon
                 continue;
             }
 
-            if (IsSpent(COutPoint(txid, r.n))) {
+            if (IsSpent(COutPoint(Txid::FromUint256(txid), r.n))) {
                 continue;
             }
 
@@ -12200,11 +12200,11 @@ void CHDWallet::AvailableAnonCoins(std::vector<COutputR> &vCoins, const CCoinCon
                 }
             }
 
-            if (coinControl && coinControl->HasSelected() && !coinControl->m_allow_other_inputs && !coinControl->IsSelected(COutPoint(txid, r.n))) {
+            if (coinControl && coinControl->HasSelected() && !coinControl->m_allow_other_inputs && !coinControl->IsSelected(COutPoint(Txid::FromUint256(txid), r.n))) {
                 continue;
             }
 
-            if (!allow_locked && IsLockedCoin(COutPoint(txid, r.n))) {
+            if (!allow_locked && IsLockedCoin(COutPoint(Txid::FromUint256(txid), r.n))) {
                 continue;
             }
 
@@ -12335,7 +12335,7 @@ bool CHDWallet::GetFirstNonChangeAddress(const uint256 &hash, const CTransaction
             const COutputRecord *txo = prevtx.GetOutput(prevout.n);
             if (txo) {
                 is_record = true;
-                txhash = &prevout.hash;
+                txhash = &prevout.hash.ToUint256();
                 txn_r = &prevtx;
                 por = txo;
                 return true;
@@ -12346,7 +12346,7 @@ bool CHDWallet::GetFirstNonChangeAddress(const uint256 &hash, const CTransaction
             if (prevwtx->tx->vpout.size() > prevout.n &&
                 IsMine(prevwtx->tx->vpout[prevout.n].get())) {
                 is_record = false;
-                txhash = &prevout.hash;
+                txhash = &prevout.hash.ToUint256();
                 txo_n = prevout.n;
                 return true;
             }
@@ -12628,7 +12628,7 @@ bool CHDWallet::IsSpent(const COutPoint& outpoint) const
 
 bool CHDWallet::GetSpendingTxid(const uint256& hash, unsigned int n, uint256 &spent_by_txid) const
 {
-    const COutPoint outpoint(hash, n);
+    const COutPoint outpoint(Txid::FromUint256(hash), n);
     if (m_collapsed_txn_inputs.find(outpoint) != m_collapsed_txn_inputs.end()) {
         return true;
     }
@@ -12844,7 +12844,7 @@ bool CHDWallet::AbandonTransaction(const uint256 &hashTx)
 
         // Iterate over all its outputs, and mark transactions in the wallet that spend them abandoned too
         for (unsigned int i = 0; i < max_known_output; ++i) {
-            std::pair<TxSpends::const_iterator, TxSpends::const_iterator> range = mapTxSpends.equal_range(COutPoint(now, i));
+            std::pair<TxSpends::const_iterator, TxSpends::const_iterator> range = mapTxSpends.equal_range(COutPoint(Txid::FromUint256(now), i));
             for (TxSpends::const_iterator iter = range.first; iter != range.second; ++iter) {
                 if (!done.count(iter->second)) {
                     todo.insert(iter->second);
@@ -12928,7 +12928,7 @@ void CHDWallet::MarkConflicted(const uint256 &hashBlock, int conflicting_height,
 
         // Iterate over all its outputs, and mark transactions in the wallet that spend them abandoned too
         for (unsigned int i = 0; i < max_known_output; ++i) {
-            std::pair<TxSpends::const_iterator, TxSpends::const_iterator> range = mapTxSpends.equal_range(COutPoint(now, i));
+            std::pair<TxSpends::const_iterator, TxSpends::const_iterator> range = mapTxSpends.equal_range(COutPoint(Txid::FromUint256(now), i));
             for (TxSpends::const_iterator iter = range.first; iter != range.second; ++iter) {
                 if (!done.count(iter->second)) {
                     todo.insert(iter->second);
@@ -12995,7 +12995,7 @@ bool CHDWallet::HasWalletSpend(const uint256 hash, const CTransactionRecord &rtx
     AssertLockHeld(cs_wallet);
     unsigned int max_known_output = rtx.GetMaxVout();
     for (unsigned int i = 0; i < max_known_output; ++i) {
-        auto iter = mapTxSpends.find(COutPoint(hash, i));
+        auto iter = mapTxSpends.find(COutPoint(Txid::FromUint256(hash), i));
         if (iter != mapTxSpends.end()) {
             return true;
         }
@@ -13283,10 +13283,10 @@ void CHDWallet::AvailableCoinsForStaking(std::vector<COutput> &vCoins, int64_t n
                 if (txout->GetValue() < m_min_stakeable_value) {
                     continue;
                 }
-                COutPoint kernel(wtxid, i);
+                COutPoint kernel(Txid::FromUint256(wtxid), i);
                 if (!particl::CheckStakeUnused(kernel) ||
-                     IsSpent(COutPoint(wtxid, i)) ||
-                     IsLockedCoin(COutPoint(wtxid, i))) {
+                     IsSpent(kernel) ||
+                     IsLockedCoin(kernel)) {
                     continue;
                 }
 
@@ -13313,7 +13313,7 @@ void CHDWallet::AvailableCoinsForStaking(std::vector<COutput> &vCoins, int64_t n
                     continue;
                 }
                 int input_bytes = 0; // unnecessary
-                vCoins.emplace_back(COutPoint(wtxid, i), txout_old, nDepth, input_bytes, fSpendableIn, fSolvableIn, /*safe*/true, /*time, unneeded*/0, /*from_me, unneeded*/false, /*feerate*/std::nullopt, /*mature*/true, fNeedHardwareKey);
+                vCoins.emplace_back(COutPoint(Txid::FromUint256(wtxid), i), txout_old, nDepth, input_bytes, fSpendableIn, fSolvableIn, /*safe*/true, /*time, unneeded*/0, /*from_me, unneeded*/false, /*feerate*/std::nullopt, /*mature*/true, fNeedHardwareKey);
             }
         }
 
@@ -13341,10 +13341,10 @@ void CHDWallet::AvailableCoinsForStaking(std::vector<COutput> &vCoins, int64_t n
                 if (!(r.nFlags & ORF_OWNED || r.nFlags & ORF_STAKEONLY)) {
                     continue;
                 }
-                COutPoint kernel(txid, r.n);
+                COutPoint kernel(Txid::FromUint256(txid), r.n);
                 if (!particl::CheckStakeUnused(kernel) ||
-                    IsSpent(COutPoint(txid, r.n)) ||
-                    IsLockedCoin(COutPoint(txid, r.n))) {
+                    IsSpent(kernel) ||
+                    IsLockedCoin(kernel)) {
                     continue;
                 }
 
@@ -13374,7 +13374,7 @@ void CHDWallet::AvailableCoinsForStaking(std::vector<COutput> &vCoins, int64_t n
                 bool fNeedHardwareKey = false;
                 CTxOut txout(r.nValue, r.scriptPubKey);
                 int input_bytes = 0; // unnecessary
-                vCoins.emplace_back(COutPoint(txid, r.n), txout, nDepth, input_bytes, fSpendableIn, /*solvable*/true, /*safe*/true, /*time, unneeded*/0, /*from_me, unneeded*/false, /*feerate*/std::nullopt, /*mature*/true, fNeedHardwareKey);
+                vCoins.emplace_back(COutPoint(Txid::FromUint256(txid), r.n), txout, nDepth, input_bytes, fSpendableIn, /*solvable*/true, /*safe*/true, /*time, unneeded*/0, /*from_me, unneeded*/false, /*feerate*/std::nullopt, /*mature*/true, fNeedHardwareKey);
             }
         }
     }

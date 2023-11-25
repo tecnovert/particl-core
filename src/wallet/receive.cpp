@@ -226,7 +226,7 @@ CAmount CachedTxGetAvailableCredit(const CWallet& wallet, const CWalletTx& wtx, 
 
     bool allow_used_addresses = (filter & ISMINE_USED) || !wallet.IsWalletFlagSet(WALLET_FLAG_AVOID_REUSE);
     CAmount nCredit = 0;
-    uint256 hashTx = wtx.GetHash();
+    Txid hashTx = wtx.GetHash();
     for (unsigned int i = 0; i < wtx.tx->GetNumVOuts(); i++) {
         const CScript *pscript = nullptr;
         if (wallet.IsParticlWallet()) {
@@ -480,7 +480,7 @@ Balance GetBalance(const CWallet& wallet, const int min_depth, bool avoid_reuse)
             int tx_depth = phdw->GetDepthInMainChain(rtx);
             for (const auto &r : rtx.vout) {
                 if (r.nType != OUTPUT_STANDARD ||
-                    phdw->IsSpent(COutPoint(txhash, r.n)) ||
+                    phdw->IsSpent(COutPoint(Txid::FromUint256(txhash), r.n)) ||
                     (!allow_used_addresses && phdw->IsSpentKey(r.scriptPubKey))) {
                     continue;
                 }
@@ -567,7 +567,7 @@ std::map<CTxDestination, CAmount> GetAddressBalances(const CWallet& wallet)
                 if(!ExtractDestination(output.scriptPubKey, addr))
                     continue;
 
-                CAmount n = wallet.IsSpent(COutPoint(walletEntry.first, i)) ? 0 : output.nValue;
+                CAmount n = wallet.IsSpent(COutPoint(Txid::FromUint256(walletEntry.first), i)) ? 0 : output.nValue;
                 balances[addr] += n;
             }
         }

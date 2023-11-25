@@ -92,14 +92,14 @@ inline bool IsParticlTxVersion(int nVersion)
 class COutPoint
 {
 public:
-    uint256 hash;
+    Txid hash;
     uint32_t n;
 
     static constexpr uint32_t ANON_MARKER = 0xffffffa0;
     static constexpr uint32_t NULL_INDEX = std::numeric_limits<uint32_t>::max();
 
     COutPoint(): n(NULL_INDEX) { }
-    COutPoint(const uint256& hashIn, uint32_t nIn): hash(hashIn), n(nIn) { }
+    COutPoint(const Txid& hashIn, uint32_t nIn): hash(hashIn), n(nIn) { }
 
     SERIALIZE_METHODS(COutPoint, obj) { READWRITE(obj.hash, obj.n); }
 
@@ -108,8 +108,7 @@ public:
 
     friend bool operator<(const COutPoint& a, const COutPoint& b)
     {
-        int cmp = a.hash.Compare(b.hash);
-        return cmp < 0 || (cmp == 0 && a.n < b.n);
+        return std::tie(a.hash, a.n) < std::tie(b.hash, b.n);
     }
 
     friend bool operator==(const COutPoint& a, const COutPoint& b)
@@ -196,7 +195,7 @@ public:
     }
 
     explicit CTxIn(COutPoint prevoutIn, CScript scriptSigIn=CScript(), uint32_t nSequenceIn=SEQUENCE_FINAL);
-    CTxIn(uint256 hashPrevTx, uint32_t nOut, CScript scriptSigIn=CScript(), uint32_t nSequenceIn=SEQUENCE_FINAL);
+    CTxIn(Txid hashPrevTx, uint32_t nOut, CScript scriptSigIn=CScript(), uint32_t nSequenceIn=SEQUENCE_FINAL);
 
     SERIALIZE_METHODS(CTxIn, obj) {
         READWRITE(obj.prevout, obj.scriptSig, obj.nSequence);
@@ -227,8 +226,8 @@ public:
     {
         nInputs = htole32(nInputs);
         nRingSize = htole32(nRingSize);
-        memcpy(prevout.hash.begin(), &nInputs, 4);
-        memcpy(prevout.hash.begin() + 4, &nRingSize, 4);
+        memcpy(prevout.hash.data_nc(), &nInputs, 4);
+        memcpy(prevout.hash.data_nc() + 4, &nRingSize, 4);
         return true;
     }
 

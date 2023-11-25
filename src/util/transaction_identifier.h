@@ -50,6 +50,8 @@ public:
     template <typename Stream> void Serialize(Stream& s) const { m_wrapped.Serialize(s); }
     template <typename Stream> void Unserialize(Stream& s) { m_wrapped.Unserialize(s); }
 
+    constexpr unsigned char* data_nc() { return m_wrapped.data(); }
+
     /** Conversion function to `uint256`.
      *
      * Note: new code should use `ToUint256`.
@@ -64,5 +66,10 @@ public:
 using Txid = transaction_identifier<false>;
 /** Wtxid commits to all transaction fields including the witness. */
 using Wtxid = transaction_identifier<true>;
+
+inline Txid TxidFromString(std::string_view str)
+{
+    return Txid::FromUint256(uint256S(str.data()));
+}
 
 #endif // BITCOIN_UTIL_TRANSACTION_IDENTIFIER_H

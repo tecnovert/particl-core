@@ -854,7 +854,7 @@ void ParseCoinControlOptions(const UniValue &obj, const CHDWallet *pwallet, CCoi
                 {"n", UniValueType(UniValue::VNUM)},
             });
 
-            COutPoint op(ParseHashO(uvi, "tx"), uvi["n"].getInt<int>());
+            COutPoint op(Txid::FromUint256(ParseHashO(uvi, "tx")), uvi["n"].getInt<int>());
             coin_control.m_selected_inputs.insert(op);
 
             bool have_attribute = false;
@@ -5884,7 +5884,7 @@ static UniValue createsignatureinner(const JSONRPCRequest &request, ChainstateMa
         throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "vout must be positive");
     }
 
-    COutPoint prev_out(txid, nOut);
+    COutPoint prev_out(Txid::FromUint256(txid), nOut);
 
     // Find the prevout if it exists in the wallet or chain
     CTxOutBaseRef txout;
@@ -6374,7 +6374,7 @@ static void traceFrozenOutputs(WalletContext& context, UniValue &rv, CAmount min
                 {"tx", UniValueType(UniValue::VSTR)},
                 {"n", UniValueType(UniValue::VNUM)},
             });
-            COutPoint op(ParseHashO(uvi, "tx"), uvi["n"].getInt<int>());
+            COutPoint op(Txid::FromUint256(ParseHashO(uvi, "tx")), uvi["n"].getInt<int>());
             extra_txouts.insert(op);
         }
     }
@@ -6411,7 +6411,7 @@ static void traceFrozenOutputs(WalletContext& context, UniValue &rv, CAmount min
             }
 
             for (const auto &r : rtx.vout) {
-                bool force_include = extra_txouts.count(COutPoint(txid, r.n));
+                bool force_include = extra_txouts.count(COutPoint(Txid::FromUint256(txid), r.n));
                 if (!in_height && !force_include) {
                     continue;
                 }
@@ -6423,7 +6423,7 @@ static void traceFrozenOutputs(WalletContext& context, UniValue &rv, CAmount min
                     }
                 }
 
-                bool is_spent = pwallet->IsSpent(COutPoint(txid, r.n));
+                bool is_spent = pwallet->IsSpent(COutPoint(Txid::FromUint256(txid), r.n));
                 if (is_spent && !force_include) {
                     continue;
                 }
@@ -6460,7 +6460,7 @@ static void traceFrozenOutputs(WalletContext& context, UniValue &rv, CAmount min
                         continue;
                     }
                 }
-                COutPoint op_trace(txid, r.n);
+                COutPoint op_trace(Txid::FromUint256(txid), r.n);
                 if (top_level.count(op_trace)) {
                     continue;
                 }
@@ -6523,7 +6523,7 @@ static void traceFrozenOutputs(WalletContext& context, UniValue &rv, CAmount min
                     !pwallet->chain().readRCTOutputLink(((CTxOutRingCT*)stx.tx->vpout[r.n].get())->pk, traced_output.m_anon_index)) {
                     warnings.push_back(strprintf("ReadRCTOutputLink failed %s %d", txid.ToString(), r.n));
                 }
-                traced_output.m_is_spent = pwallet->IsSpent(COutPoint(txid, r.n));
+                traced_output.m_is_spent = pwallet->IsSpent(COutPoint(Txid::FromUint256(txid), r.n));
                 if (!stx.GetBlind(r.n, traced_output.m_blinding_factor.begin())) {
                     warnings.push_back(strprintf("GetBlind failed %s %d", txid.ToString(), r.n));
                 }
@@ -6823,7 +6823,7 @@ static RPCHelpMan debugwallet()
                 if ((r.nType != OUTPUT_RINGCT && r.nType != OUTPUT_CT) ||
                     !(r.nFlags & ORF_OWNED) ||
                     r.nValue < min_frozen_blinded_value ||
-                    pwallet->IsSpent(COutPoint(txid, r.n))) {
+                    pwallet->IsSpent(COutPoint(Txid::FromUint256(txid), r.n))) {
                     continue;
                 }
 
@@ -6910,7 +6910,7 @@ static RPCHelpMan debugwallet()
             CCoinControl cctl;
             cctl.m_spend_frozen_blinded = true;
             cctl.m_addChangeOutput = false;
-            cctl.Select(COutPoint(input_txid, input_n));
+            cctl.Select(COutPoint(Txid::FromUint256(input_txid), input_n));
 
             std::vector<CTempRecipient> vec_send;
             std::string sError;
@@ -7164,7 +7164,7 @@ static RPCHelpMan debugwallet()
                     }
                     if ((r.nType == OUTPUT_CT || r.nType == OUTPUT_RINGCT) &&
                         (r.nFlags & ORF_OWNED || r.nFlags & ORF_STAKEONLY) &&
-                        !pwallet->IsSpent(COutPoint(txhash, r.n))) {
+                        !pwallet->IsSpent(COutPoint(Txid::FromUint256(txhash), r.n))) {
                         uint256 tmp;
                         if (!stx.GetBlind(r.n, tmp.begin())) {
                             add_error("Missing blinding factor.", txhash, r.n);
@@ -8372,7 +8372,7 @@ static RPCHelpMan createrawparttransaction()
             mInputBlinds[rawTx.vin.size()] = blind;
         }
 
-        CTxIn in(COutPoint(txid, nOutput), CScript(), nSequence);
+        CTxIn in(COutPoint(Txid::FromUint256(txid), nOutput), CScript(), nSequence);
 
         rawTx.vin.push_back(in);
     }
@@ -9484,7 +9484,7 @@ static RPCHelpMan verifyrawtransaction()
                 throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "vout must be positive");
             }
 
-            COutPoint out(txid, nOut);
+            COutPoint out(Txid::FromUint256(txid), nOut);
             std::vector<unsigned char> pkData(ParseHexO(prevOut, "scriptPubKey"));
             CScript scriptPubKey(pkData.begin(), pkData.end());
 
