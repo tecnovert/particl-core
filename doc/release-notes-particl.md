@@ -3,6 +3,7 @@
 ==============
 
 - Fixed segfault with getblock verbosity > 2
+- New checkpoints.
 
 
 23.2.6
