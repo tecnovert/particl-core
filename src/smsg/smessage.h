@@ -369,7 +369,7 @@ public:
     void ClearBanned();
     void ShowFundingTxns(UniValue &result);
 
-    int ReceiveData(PeerManager *peerLogic, CNode *pfrom, const std::string &strCommand, CDataStream &vRecv);
+    int ReceiveData(PeerManager *peerLogic, CNode *pfrom, const std::string &strCommand, DataStream &vRecv);
     bool SendData(CNode *pto, bool fSendTrickle);
 
     bool ScanBlock(const CBlock &block);
