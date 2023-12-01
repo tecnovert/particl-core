@@ -11,7 +11,6 @@
 #include <random.h>
 #include <serialize.h>
 #include <streams.h>
-#include <version.h>
 #include <logging.h>
 
 #include <common/bloom.h>
@@ -181,7 +180,7 @@ void LoadCTWhitelist(const unsigned char *data, size_t data_length)
 
 void LoadCTTaintedFilter(const unsigned char *data, size_t data_length)
 {
-    CDataStream stream(Span<const unsigned char>(data, data_length), SER_NETWORK, PROTOCOL_VERSION);
+    DataStream stream{Span<const unsigned char>(data, data_length)};
     stream >> ct_tainted_filter;
 }
 

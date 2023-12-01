@@ -93,7 +93,7 @@ public:
 // a database transaction begins reads are consistent with it. It would be good
 // to change that assumption in future and avoid the performance hit, though in
 // practice it does not appear to be large.
-bool SecMsgDB::ScanBatch(const CDataStream &key, std::string *value, bool *deleted) const
+bool SecMsgDB::ScanBatch(const DataStream &key, std::string *value, bool *deleted) const
 {
     if (!activeBatch) {
         return false;
@@ -170,7 +170,7 @@ bool SecMsgDB::ReadPK(const CKeyID &addr, CPubKey &pubkey)
         return false;
     }
 
-    CDataStream ssKey(SER_DISK, CLIENT_VERSION);
+    DataStream ssKey{};
     ssKey.reserve(sizeof(addr) + 2);
     ssKey << uint8_t(DBK_PUBLICKEY[0]);
     ssKey << uint8_t(DBK_PUBLICKEY[1]);
@@ -198,7 +198,7 @@ bool SecMsgDB::ReadPK(const CKeyID &addr, CPubKey &pubkey)
     }
 
     try {
-        CDataStream ssValue(MakeUCharSpan(strValue), SER_DISK, CLIENT_VERSION);
+        DataStream ssValue{MakeUCharSpan(strValue)};
         ssValue >> pubkey;
     } catch (std::exception &e) {
         LogPrintf("%s unserialize threw: %s.\n", __func__, e.what());
@@ -214,12 +214,12 @@ bool SecMsgDB::WritePK(const CKeyID &addr, const CPubKey &pubkey)
         return false;
     }
 
-    CDataStream ssKey(SER_DISK, CLIENT_VERSION);
+    DataStream ssKey{};
     ssKey.reserve(sizeof(addr) + 2);
     ssKey << uint8_t(DBK_PUBLICKEY[0]);
     ssKey << uint8_t(DBK_PUBLICKEY[1]);
     ssKey << addr;
-    CDataStream ssValue(SER_DISK, CLIENT_VERSION);
+    DataStream ssValue{};
     ssValue.reserve(sizeof(pubkey));
     ssValue << pubkey;
 
@@ -244,7 +244,7 @@ bool SecMsgDB::ExistsPK(const CKeyID &addr)
         return false;
     }
 
-    CDataStream ssKey(SER_DISK, CLIENT_VERSION);
+    DataStream ssKey{};
     ssKey.reserve(sizeof(addr)+2);
     ssKey << uint8_t(DBK_PUBLICKEY[0]);
     ssKey << uint8_t(DBK_PUBLICKEY[1]);
@@ -268,7 +268,7 @@ bool SecMsgDB::ReadKey(const CKeyID &idk, SecMsgKey &key)
         return false;
     }
 
-    CDataStream ssKey(SER_DISK, CLIENT_VERSION);
+    DataStream ssKey{};
     ssKey.reserve(sizeof(idk) + 2);
     ssKey << uint8_t(DBK_SECRETKEY[0]);
     ssKey << uint8_t(DBK_SECRETKEY[1]);
@@ -296,7 +296,7 @@ bool SecMsgDB::ReadKey(const CKeyID &idk, SecMsgKey &key)
     }
 
     try {
-        CDataStream ssValue(MakeUCharSpan(strValue), SER_DISK, CLIENT_VERSION);
+        DataStream ssValue{MakeUCharSpan(strValue)};
         ssValue >> key;
     } catch (std::exception &e) {
         LogPrintf("%s unserialize threw: %s.\n", __func__, e.what());
@@ -311,13 +311,13 @@ bool SecMsgDB::WriteKey(const CKeyID &idk, const SecMsgKey &key)
     if (!pdb) {
         return false;
     }
-    CDataStream ssKey(SER_DISK, CLIENT_VERSION);
+    DataStream ssKey{};
     ssKey.reserve(sizeof(idk) + 2);
     ssKey << uint8_t(DBK_SECRETKEY[0]);
     ssKey << uint8_t(DBK_SECRETKEY[1]);
     ssKey << idk;
 
-    CDataStream ssValue(SER_DISK, CLIENT_VERSION);
+    DataStream ssValue{};
     ssValue.reserve(sizeof(key));
     ssValue << key;
 
@@ -358,7 +358,7 @@ bool SecMsgDB::NextSmesg(leveldb::Iterator *it, const std::string &prefix, uint8
     memcpy(chKey, it->key().data(), 30);
 
     try {
-        CDataStream ssValue(MakeUCharSpan(it->value()), SER_DISK, CLIENT_VERSION);
+        DataStream ssValue(MakeUCharSpan(it->value()));
         ssValue >> smsgStored;
     } catch (std::exception &e) {
         LogPrintf("%s unserialize threw: %s.\n", __func__, e.what());
@@ -397,7 +397,7 @@ bool SecMsgDB::ReadSmesg(const uint8_t *chKey, SecMsgStored &smsgStored)
         return false;
     }
 
-    CDataStream ssKey(SER_DISK, CLIENT_VERSION);
+    DataStream ssKey{};
     ssKey.write(AsBytes(Span{(const char*)chKey, 30}));
     std::string strValue;
 
@@ -422,7 +422,7 @@ bool SecMsgDB::ReadSmesg(const uint8_t *chKey, SecMsgStored &smsgStored)
     }
 
     try {
-        CDataStream ssValue(MakeUCharSpan(strValue), SER_DISK, CLIENT_VERSION);
+        DataStream ssValue(MakeUCharSpan(strValue));
         ssValue >> smsgStored;
     } catch (std::exception &e) {
         LogPrintf("%s unserialize threw: %s.\n", __func__, e.what());
@@ -438,9 +438,8 @@ bool SecMsgDB::WriteSmesg(const uint8_t *chKey, const SecMsgStored &smsgStored)
         return false;
     }
 
-    CDataStream ssKey(SER_DISK, CLIENT_VERSION);
+    DataStream ssKey{}, ssValue{};
     ssKey.write(AsBytes(Span{(const char*)chKey, 30}));
-    CDataStream ssValue(SER_DISK, CLIENT_VERSION);
     ssValue << smsgStored;
 
     if (activeBatch) {
@@ -464,7 +463,7 @@ bool SecMsgDB::ExistsSmesg(const uint8_t *chKey)
         return false;
     }
 
-    CDataStream ssKey(SER_DISK, CLIENT_VERSION);
+    DataStream ssKey{};
     ssKey.write(AsBytes(Span{(const char*)chKey, 30}));
     std::string unused;
 
@@ -481,7 +480,7 @@ bool SecMsgDB::ExistsSmesg(const uint8_t *chKey)
 
 bool SecMsgDB::EraseSmesg(const uint8_t *chKey)
 {
-    CDataStream ssKey(SER_DISK, CLIENT_VERSION);
+    DataStream ssKey{};
     ssKey.write(AsBytes(Span{(const char*)chKey, 30}));
 
     if (activeBatch) {
@@ -505,7 +504,7 @@ bool SecMsgDB::ReadPurged(const uint8_t *chKey, SecMsgPurged &smsgPurged)
         return false;
     }
 
-    CDataStream ssKey(SER_DISK, CLIENT_VERSION);
+    DataStream ssKey{};
     ssKey.write(AsBytes(Span{(const char*)chKey, 30}));
     std::string strValue;
 
@@ -529,7 +528,7 @@ bool SecMsgDB::ReadPurged(const uint8_t *chKey, SecMsgPurged &smsgPurged)
     }
 
     try {
-        CDataStream ssValue(MakeUCharSpan(strValue), SER_DISK, CLIENT_VERSION);
+        DataStream ssValue(MakeUCharSpan(strValue));
         ssValue >> smsgPurged;
     } catch (std::exception &e) {
         LogPrintf("%s unserialize threw: %s.\n", __func__, e.what());
@@ -545,9 +544,8 @@ bool SecMsgDB::WritePurged(const uint8_t *chKey, const SecMsgPurged &smsgPurged)
         return false;
     }
 
-    CDataStream ssKey(SER_DISK, CLIENT_VERSION);
+    DataStream ssKey{}, ssValue{};
     ssKey.write(AsBytes(Span{(const char*)chKey, 30}));
-    CDataStream ssValue(SER_DISK, CLIENT_VERSION);
     ssValue << smsgPurged;
 
     if (activeBatch) {
@@ -592,7 +590,7 @@ bool SecMsgDB::NextPurged(leveldb::Iterator *it, const std::string &prefix, uint
     memcpy(chKey, it->key().data(), 30);
 
     try {
-        CDataStream ssValue(MakeUCharSpan(it->value()), SER_DISK, CLIENT_VERSION);
+        DataStream ssValue(MakeUCharSpan(it->value()));
         ssValue >> smsgPurged;
     } catch (std::exception &e) {
         LogPrintf("%s unserialize threw: %s.\n", __func__, e.what());
@@ -623,7 +621,7 @@ bool SecMsgDB::NextPrivKey(leveldb::Iterator *it, const std::string &prefix, CKe
     memcpy(idk.begin(), it->key().data()+2, 20);
 
     try {
-        CDataStream ssValue(MakeUCharSpan(it->value()), SER_DISK, CLIENT_VERSION);
+        DataStream ssValue(MakeUCharSpan(it->value()));
         ssValue >> key;
     } catch (std::exception &e) {
         LogPrintf("%s unserialize threw: %s.\n", __func__, e.what());
@@ -639,7 +637,7 @@ bool SecMsgDB::ReadFundingData(const uint256 &key, std::vector<uint8_t> &data)
         return false;
     }
 
-    CDataStream ssKey(SER_DISK, CLIENT_VERSION);
+    DataStream ssKey{};
     ssKey.write(AsBytes(Span{(const char*)DBK_FUNDING_TX_DATA.data(), DBK_FUNDING_TX_DATA.size()}));
     ssKey.write(AsBytes(Span{(const char*)key.begin(), 32}));
     std::string strValue;
@@ -665,7 +663,7 @@ bool SecMsgDB::ReadFundingData(const uint256 &key, std::vector<uint8_t> &data)
     }
 
     try {
-        CDataStream ssValue(MakeUCharSpan(strValue), SER_DISK, CLIENT_VERSION);
+        DataStream ssValue(MakeUCharSpan(strValue));
         ssValue >> data;
     } catch (std::exception &e) {
         LogPrintf("%s unserialize threw: %s.\n", __func__, e.what());
@@ -681,18 +679,16 @@ bool SecMsgDB::WriteFundingData(const uint256 &key, int height, const std::vecto
         return false;
     }
 
-    CDataStream ssKey(SER_DISK, CLIENT_VERSION);
+    DataStream ssKey{}, ssValue{};
     ssKey.write(AsBytes(Span{(const char*)DBK_FUNDING_TX_DATA.data(), DBK_FUNDING_TX_DATA.size()}));
     ssKey.write(AsBytes(Span{(const char*)key.begin(), 32}));
-    CDataStream ssValue(SER_DISK, CLIENT_VERSION);
     ssValue << data;
 
     uint32_t be_height = htobe32((uint32_t)height);
-    CDataStream ssKeyI(SER_DISK, CLIENT_VERSION);
+    DataStream ssKeyI{}, ssValueI{};
     ssKeyI.write(AsBytes(Span{(const char*)DBK_FUNDING_TX_LINK.data(), DBK_FUNDING_TX_LINK.size()}));
     ssKeyI.write(AsBytes(Span{(const char*)&be_height, 4}));
     ssKeyI.write(AsBytes(Span{(const char*)key.begin(), 32}));
-    CDataStream ssValueI(SER_DISK, CLIENT_VERSION);
 
     if (activeBatch) {
         activeBatch->Put(ssKey.str(), ssValue.str());
@@ -716,12 +712,11 @@ bool SecMsgDB::WriteFundingData(const uint256 &key, int height, const std::vecto
 
 bool SecMsgDB::EraseFundingData(int height, const uint256 &key)
 {
-    CDataStream ssKey(SER_DISK, CLIENT_VERSION);
+    DataStream ssKey{}, ssKeyI{};
     ssKey.write(AsBytes(Span{(const char*)DBK_FUNDING_TX_DATA.data(), DBK_FUNDING_TX_DATA.size()}));
     ssKey.write(AsBytes(Span{(const char*)key.begin(), 32}));
 
     uint32_t be_height = htobe32((uint32_t)height);
-    CDataStream ssKeyI(SER_DISK, CLIENT_VERSION);
     ssKeyI.write(AsBytes(Span{(const char*)DBK_FUNDING_TX_LINK.data(), DBK_FUNDING_TX_LINK.size()}));
     ssKeyI.write(AsBytes(Span{(const char*)&be_height, 4}));
     ssKeyI.write(AsBytes(Span{(const char*)key.begin(), 32}));
@@ -774,9 +769,8 @@ bool SecMsgDB::WriteBestBlock(const uint256 &block_hash, int height)
         return false;
     }
 
-    CDataStream ssKey(SER_DISK, CLIENT_VERSION);
+    DataStream ssKey{}, ssValue{};
     ssKey.write(AsBytes(Span{(const char*)DBK_BEST_BLOCK.data(), DBK_BEST_BLOCK.size()}));
-    CDataStream ssValue(SER_DISK, CLIENT_VERSION);
     ssValue << block_hash;
     ssValue << height;
 
@@ -797,7 +791,7 @@ bool SecMsgDB::WriteBestBlock(const uint256 &block_hash, int height)
 
 bool SecMsgDB::ReadBestBlock(uint256 &block_hash, int &height)
 {
-    CDataStream ssKey(SER_DISK, CLIENT_VERSION);
+    DataStream ssKey{};
     ssKey.write(AsBytes(Span{(const char*)DBK_BEST_BLOCK.data(), DBK_BEST_BLOCK.size()}));
     std::string strValue;
 
@@ -822,7 +816,7 @@ bool SecMsgDB::ReadBestBlock(uint256 &block_hash, int &height)
     }
 
     try {
-        CDataStream ssValue(MakeUCharSpan(strValue), SER_DISK, CLIENT_VERSION);
+        DataStream ssValue(MakeUCharSpan(strValue));
         ssValue >> block_hash;
         ssValue >> height;
     } catch (std::exception &e) {
@@ -835,7 +829,7 @@ bool SecMsgDB::ReadBestBlock(uint256 &block_hash, int &height)
 
 bool SecMsgDB::EraseBestBlock()
 {
-    CDataStream ssKey(SER_DISK, CLIENT_VERSION);
+    DataStream ssKey{};
     ssKey.write(AsBytes(Span{(const char*)DBK_BEST_BLOCK.data(), DBK_BEST_BLOCK.size()}));
 
     if (activeBatch) {
@@ -859,9 +853,8 @@ void SecMsgDB::Compact() const
 
 bool PutBestBlock(leveldb::WriteBatch *batch, const uint256 &block_hash, int height)
 {
-    CDataStream ssKey(SER_DISK, CLIENT_VERSION);
+    DataStream ssKey{}, ssValue{};
     ssKey.write(AsBytes(Span{(const char*)DBK_BEST_BLOCK.data(), DBK_BEST_BLOCK.size()}));
-    CDataStream ssValue(SER_DISK, CLIENT_VERSION);
     ssValue << block_hash;
     ssValue << height;
 
@@ -871,18 +864,16 @@ bool PutBestBlock(leveldb::WriteBatch *batch, const uint256 &block_hash, int hei
 
 bool PutFundingData(leveldb::WriteBatch *batch, const uint256 &key, int height, const std::vector<uint8_t> &data)
 {
-    CDataStream ssKey(SER_DISK, CLIENT_VERSION);
+    DataStream ssKey{}, ssValue{};
     ssKey.write(AsBytes(Span{(const char*)DBK_FUNDING_TX_DATA.data(), DBK_FUNDING_TX_DATA.size()}));
     ssKey.write(AsBytes(Span{(const char*)key.begin(), 32}));
-    CDataStream ssValue(SER_DISK, CLIENT_VERSION);
     ssValue << data;
 
     uint32_t be_height = htobe32((uint32_t)height);
-    CDataStream ssKeyI(SER_DISK, CLIENT_VERSION);
+    DataStream ssKeyI{}, ssValueI{};
     ssKeyI.write(AsBytes(Span{(const char*)DBK_FUNDING_TX_LINK.data(), DBK_FUNDING_TX_LINK.size()}));
     ssKeyI.write(AsBytes(Span{(const char*)&be_height, 4}));
     ssKeyI.write(AsBytes(Span{(const char*)key.begin(), 32}));
-    CDataStream ssValueI(SER_DISK, CLIENT_VERSION);
 
     batch->Put(ssKey.str(), ssValue.str());
     batch->Put(ssKeyI.str(), ssValueI.str());

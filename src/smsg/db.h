@@ -11,7 +11,7 @@
 #include <sync.h>
 #include <pubkey.h>
 
-class CDataStream;
+class DataStream;
 class uint256;
 
 namespace smsg {
@@ -52,7 +52,7 @@ public:
     bool Open(const char *pszMode="r+");
     bool IsOpen() const { return pdb; };
 
-    bool ScanBatch(const CDataStream &key, std::string *value, bool *deleted) const;
+    bool ScanBatch(const DataStream &key, std::string *value, bool *deleted) const;
 
     bool TxnBegin();
     bool TxnCommit();

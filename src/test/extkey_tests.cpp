@@ -280,7 +280,7 @@ void RunSerialiseTests()
     BOOST_CHECK(eKey58.ToString() == "XPARHAr37YxmFP8wyjkaHAQWmp84GiyLikL7EL8j9BCx4LkB8Q1Bw5Kr8sA1GA3Ym53zNLcaxxFHr6u81JVTeCaD61c6fKS1YRAuti8Zu5SzJCjh");
 
 
-    CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
+    DataStream ss{};
     ss << sk << skInvalid;
 
     ss >> sk_;

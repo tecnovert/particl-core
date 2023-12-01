@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE(stealth_key_serialise)
     const char *testAddr2 = "2w3KXRWZtyMyYrHdKqK7voiwiRy66gbpxEF3WcmHUF3M7qV3tj6AsRTFQyKV5wYmgu5PJFy1RN8kmNaF63ZSQfJ18DHMKvxdj1DpCmmQ";
     BOOST_CHECK(sxAddr.Encoded() == testAddr2);
 
-    CDataStream ss(SER_DISK, 0);
+    DataStream ss{};
 
     ss << sxAddr;
     CStealthAddress sxAddr2;

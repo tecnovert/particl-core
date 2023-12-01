@@ -12,6 +12,7 @@
 #include <netaddress.h>
 #include <netbase.h>
 #include <netmessagemaker.h>
+#include <node/protocol_version.h>
 #include <serialize.h>
 #include <span.h>
 #include <streams.h>
@@ -22,7 +23,6 @@
 #include <util/strencodings.h>
 #include <util/string.h>
 #include <validation.h>
-#include <version.h>
 
 #include <boost/test/unit_test.hpp>
 
@@ -858,13 +858,13 @@ BOOST_AUTO_TEST_CASE(initial_advertise_from_version_message)
 
     const auto msg_version =
         NetMsg::Make(NetMsgType::VERSION, PROTOCOL_VERSION, services, time, services, CAddress::V1_NETWORK(peer_us));
-    CDataStream msg_version_stream{msg_version.data, SER_NETWORK, PROTOCOL_VERSION};
+    DataStream msg_version_stream{msg_version.data};
 
     m_node.peerman->ProcessMessage(
         peer, NetMsgType::VERSION, msg_version_stream, time_received_dummy, interrupt_dummy);
 
     const auto msg_verack = NetMsg::Make(NetMsgType::VERACK);
-    CDataStream msg_verack_stream{msg_verack.data, SER_NETWORK, PROTOCOL_VERSION};
+    DataStream msg_verack_stream{msg_verack.data};
 
     // Will set peer.fSuccessfullyConnected to true (necessary in SendMessages()).
     m_node.peerman->ProcessMessage(
@@ -1126,7 +1126,7 @@ public:
     void SendV1Version(const MessageStartChars& magic)
     {
         CMessageHeader hdr(magic, "version", 126 + InsecureRandRange(11));
-        CDataStream ser(SER_NETWORK, CLIENT_VERSION);
+        DataStream ser{};
         ser << hdr;
         m_to_send.insert(m_to_send.end(), UCharCast(ser.data()), UCharCast(ser.data() + ser.size()));
     }

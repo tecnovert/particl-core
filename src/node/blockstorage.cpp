@@ -48,7 +48,6 @@ extern bool fBalancesIndex;
 #include <insight/insight.h>
 #include <chainparams.h>
 #include <coins.h>
-#include <version.h>
 
 #include <stdint.h>
 
@@ -424,7 +423,7 @@ bool BlockTreeDB::ReadRCTKeyImage(const CCmpPubKey &ki, CAnonKeyImageInfo &data)
 {
     std::pair<uint8_t, CCmpPubKey> key = std::make_pair(DB_RCTKEYIMAGE, ki);
     // Versions before 0.19.2.15 store only the txid
-    CDataStream ssValue(SER_DISK, PROTOCOL_VERSION);
+    DataStream ssValue{};
     if (!ReadStream(key, ssValue)) {
         return false;
     }

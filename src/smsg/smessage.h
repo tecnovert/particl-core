@@ -24,7 +24,7 @@
 #include <boost/signals2/signal.hpp>
 
 class UniValue;
-class CDataStream;
+class DataStream;
 namespace wallet {
 class CWallet;
 class CCoinControl;

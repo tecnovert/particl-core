@@ -2986,7 +2986,7 @@ static RPCHelpMan clearwallettransactions()
             throw JSONRPCError(RPC_MISC_ERROR, "GetTxnCursor failed.");
         }
 
-        CDataStream ssKey(SER_DISK, PROTOCOL_VERSION);
+        DataStream ssKey{};
 
         MapWallet_t::const_iterator itw;
         std::string strType;

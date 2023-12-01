@@ -100,16 +100,13 @@ private:
 class SpanReader
 {
 private:
-    const int m_version;
     Span<const unsigned char> m_data;
 
 public:
     /**
-     * @param[in]  version Serialization Version (including any flags)
      * @param[in]  data Referenced byte vector to overwrite/append
      */
-    SpanReader(int version, Span<const unsigned char> data)
-        : m_version{version}, m_data{data} {}
+    explicit SpanReader(Span<const unsigned char> data) : m_data{data} {}
 
     template<typename T>
     SpanReader& operator>>(T&& obj)
@@ -117,8 +114,6 @@ public:
         ::Unserialize(*this, obj);
         return (*this);
     }
-
-    int GetVersion() const { return m_version; }
 
     size_t size() const { return m_data.size(); }
     bool empty() const { return m_data.empty(); }
@@ -287,50 +282,6 @@ public:
     void Xor(const std::vector<unsigned char>& key)
     {
         util::Xor(MakeWritableByteSpan(*this), MakeByteSpan(key));
-    }
-};
-
-class CDataStream : public DataStream
-{
-private:
-    int nType;
-    int nVersion;
-
-public:
-    explicit CDataStream(int nTypeIn, int nVersionIn)
-        : nType{nTypeIn},
-          nVersion{nVersionIn} {}
-
-    explicit CDataStream(Span<const uint8_t> sp, int type, int version) : CDataStream{AsBytes(sp), type, version} {}
-    explicit CDataStream(Span<const value_type> sp, int nTypeIn, int nVersionIn)
-        : DataStream{sp},
-          nType{nTypeIn},
-          nVersion{nVersionIn} {}
-
-    void Init(const char* pbegin, const char* pend, int nTypeIn, int nVersionIn)
-    {
-        nType = nTypeIn;
-        nVersion = nVersionIn;
-        Span sp = AsBytes(Span{pbegin, pend});
-        vch = vector_type(sp.data(), sp.data() + sp.size());
-    }
-
-    int GetType() const          { return nType; }
-    void SetVersion(int n)       { nVersion = n; }
-    int GetVersion() const       { return nVersion; }
-
-    template <typename T>
-    CDataStream& operator<<(const T& obj)
-    {
-        ::Serialize(*this, obj);
-        return *this;
-    }
-
-    template <typename T>
-    CDataStream& operator>>(T&& obj)
-    {
-        ::Unserialize(*this, obj);
-        return *this;
     }
 };
 
