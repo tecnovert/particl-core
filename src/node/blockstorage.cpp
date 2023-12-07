@@ -973,6 +973,9 @@ const CBlockIndex* BlockManager::GetLastCheckpoint(const CCheckpointData& data)
 bool BlockManager::IsBlockPruned(const CBlockIndex* pblockindex)
 {
     AssertLockHeld(::cs_main);
+    if (!pblockindex) {
+        return false; // mempool txn
+    }
     return (m_have_pruned && !(pblockindex->nStatus & BLOCK_HAVE_DATA) && pblockindex->nTx > 0);
 }
 

@@ -622,6 +622,8 @@ static RPCHelpMan getrawtransaction()
         LOCK(cs_main);
         blockindex = chainman.m_blockman.LookupBlockIndex(hash_block);
     }
+
+    // Particl: See dde7ac5c704688c8a9af29bd07e5ae8114824ce7
     if (verbosity == 1) {
         TxToJSON(*tx, hash_block, result, chainman.ActiveChainstate());
         return result;

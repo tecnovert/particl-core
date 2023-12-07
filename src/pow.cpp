@@ -146,8 +146,8 @@ bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params&
 {
     arith_uint256 bnProofOfWorkLimit;
     if (nBlockHeight < nLastImportHeight) {
-        arith_uint256 nMinProofOfWorkLimit = arith_uint256("00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-        arith_uint256 nMaxProofOfWorkLimit = UintToArith256(params.powLimit);
+        arith_uint256 nMinProofOfWorkLimit{UintToArith256(uint256S("00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"))};
+        arith_uint256 nMaxProofOfWorkLimit{UintToArith256(params.powLimit)};
         arith_uint256 nStep = ((nMaxProofOfWorkLimit - nMinProofOfWorkLimit) / nLastImportHeight);
         bnProofOfWorkLimit = nMinProofOfWorkLimit + nStep * nBlockHeight;
     } else {

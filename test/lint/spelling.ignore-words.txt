@@ -35,3 +35,6 @@ te
 diable
 crypted
 ro
+Collet
+fpt
+sLanguage

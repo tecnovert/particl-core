@@ -281,7 +281,7 @@ static CBlock CreateGenesisBlockTestNet(uint32_t nTime, uint32_t nNonce, uint32_
     out->scriptPubKey = CScript() << OP_HASH160 << ParseHex("89ca93e03119d53fd9ad1e65ce22b6f8791f8a49") << OP_EQUAL;
     txNew.vpout.push_back(out);
 
-    // Community Initative
+    // Community Initiative
     // rAybJ7dx4t6heHy99WqGcXkoT4Bh3V9qZ8 340288104577fcc3a6a84b98f7eac1a54e5287ee
     out = MAKE_OUTPUT<CTxOutStandard>();
     out->nValue = 156675 * COIN;

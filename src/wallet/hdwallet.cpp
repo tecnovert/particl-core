@@ -277,8 +277,7 @@ bool CHDWallet::ProcessStakingSettings(std::string &sError)
                 if (!IsHex(s) || !(s.size() == 64)) {
                     throw JSONRPCError(RPC_INVALID_PARAMETER, "Must be 32 bytes and hex encoded.");
                 }
-                arith_uint256 target;
-                target.SetHex(s);
+                arith_uint256 target{UintToArith256(uint256S(s))};
                 m_smsg_difficulty_target = target.GetCompact();
             } catch (std::exception &e) {
                 AppendError(sError, "\"smsgdifficultytarget\" not valid.");

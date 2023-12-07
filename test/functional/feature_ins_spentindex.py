@@ -51,8 +51,8 @@ class SpentIndexTest(ParticlTestFramework):
         nodes[3].extkeyimportmaster('けっこん　ゆそう　へいねつ　しあわせ　ちまた　きつね　たんたい　むかし　たかい　のいず　こわもて　けんこう')
 
         addrs = []
-        addrs.append(nodes[1].getnewaddress())
-        addrs.append(nodes[1].getnewaddress())
+        for i in range(2):
+            addrs.append(nodes[1].getnewaddress())
 
         unspent = nodes[0].listunspent()
 
@@ -89,7 +89,6 @@ class SpentIndexTest(ParticlTestFramework):
         assert (float(txVerbose2["vin"][0]["value"]) > 0)
         assert (txVerbose2["vin"][0]["valueSat"] > 0)
 
-
         # Check the mempool index
         txid2 = nodes[0].sendtoaddress(addrs[1], 5)
         self.sync_all()
@@ -98,7 +97,6 @@ class SpentIndexTest(ParticlTestFramework):
         assert (float(txVerbose3["vin"][0]["value"]) > 0)
         assert (txVerbose3["vin"][0]["valueSat"] > 0)
 
-
         # Check the database index
         self.stakeBlocks(1)
 
@@ -106,12 +104,10 @@ class SpentIndexTest(ParticlTestFramework):
         ro = nodes[1].getblock(block1_hash)
         assert (txid2 in ro['tx'])
 
-
         txVerbose4 = self.nodes[3].getrawtransaction(txid2, 2)
         assert (len(txVerbose4["vin"][0]["address"]) > 0)
         assert (float(txVerbose4["vin"][0]["value"]) > 0)
         assert (txVerbose4["vin"][0]["valueSat"] > 0)
-
 
         # Check block deltas
         print("Testing getblockdeltas...")

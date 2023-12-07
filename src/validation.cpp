@@ -7541,11 +7541,11 @@ unsigned int GetNextTargetRequired(const CBlockIndex *pindexLast, const Consensu
 
     if (nHeight < int(Params().GetLastImportHeight())) {
         if (nHeight == 0) {
-            return arith_uint256("00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").GetCompact();
+            return UintToArith256(uint256S("00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")).GetCompact();
         }
         int nLastImportHeight = int(Params().GetLastImportHeight());
-        arith_uint256 nMaxProofOfWorkLimit = arith_uint256("000000000008ffffffffffffffffffffffffffffffffffffffffffffffffffff");
-        arith_uint256 nMinProofOfWorkLimit = UintToArith256(consensus.powLimit);
+        arith_uint256 nMaxProofOfWorkLimit{UintToArith256(uint256S("000000000008ffffffffffffffffffffffffffffffffffffffffffffffffffff"))};
+        arith_uint256 nMinProofOfWorkLimit{UintToArith256(consensus.powLimit)};
         arith_uint256 nStep = (nMaxProofOfWorkLimit - nMinProofOfWorkLimit) / nLastImportHeight;
 
         bnProofOfWorkLimit = nMaxProofOfWorkLimit - (nStep * nHeight);

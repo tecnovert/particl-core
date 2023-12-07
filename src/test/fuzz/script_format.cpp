@@ -22,7 +22,7 @@ FUZZ_TARGET(script_format, .init = initialize_script_format)
 {
     FuzzedDataProvider fuzzed_data_provider(buffer.data(), buffer.size());
     const CScript script{ConsumeScript(fuzzed_data_provider)};
-    if (script.size() > MAX_STANDARD_TX_WEIGHT / WITNESS_SCALE_FACTOR) {
+    if (script.size() > size_t(MAX_STANDARD_TX_WEIGHT / WITNESS_SCALE_FACTOR)) {
         return;
     }
 
