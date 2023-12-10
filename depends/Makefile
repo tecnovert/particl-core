@@ -52,7 +52,7 @@ PROTOBUF ?=
 NO_USB ?=
 
 C_STANDARD ?= c11
-CXX_STANDARD ?= c++17
+CXX_STANDARD ?= c++20
 
 BUILD = $(shell ./config.guess)
 HOST ?= $(BUILD)
