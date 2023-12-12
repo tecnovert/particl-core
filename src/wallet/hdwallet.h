@@ -340,7 +340,7 @@ public:
      * Insert additional inputs into the transaction by
      * calling CreateTransaction();
      */
-    bool FundTransaction(CMutableTransaction& tx, CAmount& nFeeRet, int& nChangePosInOut, bilingual_str& error, bool lockUnspents, const std::set<int>& setSubtractFeeFromOutputs, CCoinControl);
+    bool FundTransaction(const CMutableTransaction& tx, CTransactionRef &tx_new, CAmount& nFeeRet, std::optional<unsigned int> change_pos, bilingual_str& error, bool lockUnspents, const std::set<int>& setSubtractFeeFromOutputs, CCoinControl);
     bool SignTransaction(CMutableTransaction& tx) const override EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     /** Reset transaction creation state */
@@ -351,9 +351,9 @@ public:
      * selected by SelectCoins(); Also create the change output, when needed
      * @note passing nChangePosInOut as -1 will result in setting a random position
      */
-    bool CreateTransaction(const std::vector<CRecipient>& vecSend, CTransactionRef& tx, CAmount& nFeeRet, int& nChangePosInOut,
+    bool CreateTransaction(const std::vector<CRecipient>& vecSend, CTransactionRef& tx, CAmount& nFeeRet, std::optional<unsigned int> change_pos,
                            bilingual_str& strFailReason, const CCoinControl& coin_control, FeeCalculation& fee_calc_out, bool sign = true);
-    bool CreateTransaction(std::vector<CTempRecipient>& vecSend, CTransactionRef& tx, CAmount& nFeeRet, int& nChangePosInOut,
+    bool CreateTransaction(std::vector<CTempRecipient>& vecSend, CTransactionRef& tx, CAmount& nFeeRet, std::optional<unsigned int> change_pos,
                            bilingual_str& strFailReason, const CCoinControl& coin_control, FeeCalculation& fee_calc_out, bool sign = true);
     /** Test if mempool would accept tx */
     bool TestMempoolAccept(const CTransactionRef &tx, std::string &sError, CAmount override_max_fee=-1) const;

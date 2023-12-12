@@ -3896,7 +3896,6 @@ int CHDWallet::AddStandardInputs(CWalletTx &wtx, CTransactionRecord &rtx,
                     if (nSubtractFeeFromAmount > 0) { // Reduce the amount of the fee that must be funded from outputs
                         nFeeRet -= nFeeRet > extra_fee_from_change ? extra_fee_from_change : nFeeRet;
                     }
-
                 } else {
                     nChangePosInOut = coinControl->nChangePos;
                     InsertChangeAddress(r, vecSend, nChangePosInOut);
@@ -4280,6 +4279,7 @@ int CHDWallet::AddStandardInputs(CWalletTx &wtx, CTransactionRecord &rtx,
               feeCalc.est.fail.start, feeCalc.est.fail.end,
               100 * feeCalc.est.fail.withinTarget / all_est,
               feeCalc.est.fail.withinTarget, feeCalc.est.fail.totalConfirmed, feeCalc.est.fail.inMempool, feeCalc.est.fail.leftMempool);
+    coinControl->m_fee_calculation = feeCalc;
     return 0;
 }
 
@@ -4840,6 +4840,7 @@ int CHDWallet::AddBlindedInputs(CWalletTx &wtx, CTransactionRecord &rtx,
               feeCalc.est.fail.start, feeCalc.est.fail.end,
               100 * feeCalc.est.fail.withinTarget / all_est,
               feeCalc.est.fail.withinTarget, feeCalc.est.fail.totalConfirmed, feeCalc.est.fail.inMempool, feeCalc.est.fail.leftMempool);
+    coinControl->m_fee_calculation = feeCalc;
     return 0;
 };
 
@@ -5426,8 +5427,8 @@ int CHDWallet::AddAnonInputs(CWalletTx &wtx, CTransactionRecord &rtx,
                 // prevents potential overpayment in fees if the coins
                 // selected to meet nFeeNeeded result in a transaction that
                 // requires less fee than the prior iteration.
-                if (nFeeRet > nFeeNeeded && nChangePosInOut != -1
-                    && nSubtractFeeFromAmount == 0) {
+                if (nFeeRet > nFeeNeeded && nChangePosInOut != -1 &&
+                    nSubtractFeeFromAmount == 0) {
                     auto &r = vecSend[nChangePosInOut];
 
                     CAmount extraFeePaid = nFeeRet - nFeeNeeded;
@@ -5705,6 +5706,7 @@ int CHDWallet::AddAnonInputs(CWalletTx &wtx, CTransactionRecord &rtx,
               feeCalc.est.fail.start, feeCalc.est.fail.end,
               100 * feeCalc.est.fail.withinTarget / all_est,
               feeCalc.est.fail.withinTarget, feeCalc.est.fail.totalConfirmed, feeCalc.est.fail.inMempool, feeCalc.est.fail.leftMempool);
+    coinControl->m_fee_calculation = feeCalc;
     return 0;
 };
 
@@ -8832,7 +8834,7 @@ bool CHDWallet::GetFullChainPath(const CExtKeyAccount *pa, size_t nChain, std::v
     return true;
 };
 
-bool CHDWallet::FundTransaction(CMutableTransaction& tx, CAmount& nFeeRet, int& nChangePosInOut, bilingual_str& error, bool lockUnspents, const std::set<int>& setSubtractFeeFromOutputs, CCoinControl coinControl)
+bool CHDWallet::FundTransaction(const CMutableTransaction& tx, CTransactionRef &tx_new, CAmount& nFeeRet, std::optional<unsigned int> change_pos, bilingual_str& error, bool lockUnspents, const std::set<int>& setSubtractFeeFromOutputs, CCoinControl coinControl)
 {
     std::vector<CTempRecipient> vecSend;
 
@@ -8873,8 +8875,8 @@ bool CHDWallet::FundTransaction(CMutableTransaction& tx, CAmount& nFeeRet, int& 
         }
     }
 
-    if (nChangePosInOut != -1) {
-        coinControl.nChangePos = nChangePosInOut;
+    if (change_pos && coinControl.nChangePos == -1) {
+        coinControl.nChangePos = *change_pos;
     }
 
     // Acquire the locks to prevent races to the new locked unspents between the
@@ -8882,31 +8884,8 @@ bool CHDWallet::FundTransaction(CMutableTransaction& tx, CAmount& nFeeRet, int& 
     LOCK(cs_wallet);
 
     FeeCalculation fee_calc;
-    CTransactionRef tx_new;
-    if (!CreateTransaction(vecSend, tx_new, nFeeRet, nChangePosInOut, error, coinControl, fee_calc, false)) {
+    if (!CreateTransaction(vecSend, tx_new, nFeeRet, change_pos, error, coinControl, fee_calc, false)) {
         return false;
-    }
-
-    if (nChangePosInOut != -1) {
-        tx.vpout.insert(tx.vpout.begin() + nChangePosInOut, tx_new->vpout[nChangePosInOut]);
-    }
-
-    // Copy output sizes from new transaction; they may have had the fee subtracted from them
-    for (unsigned int idx = 0; idx < tx.vpout.size(); idx++) {
-        if (tx.vpout[idx]->IsType(OUTPUT_STANDARD)) {
-            tx.vpout[idx]->SetValue(tx_new->vpout[idx]->GetValue());
-        }
-    }
-
-    // Add new txins (keeping original txin scriptSig/order)
-    for (const auto &txin : tx_new->vin) {
-        if (!coinControl.IsSelected(txin.prevout)) {
-            tx.vin.push_back(txin);
-
-            if (lockUnspents) {
-                LockCoin(txin.prevout);
-            }
-        }
     }
 
     if (nFeeRet > this->m_default_max_tx_fee) {
@@ -8983,7 +8962,7 @@ bool CHDWallet::SignTransaction(CMutableTransaction &tx) const
 }
 
 bool CHDWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CTransactionRef& tx, CAmount& nFeeRet,
-                                int& nChangePosInOut, bilingual_str& error, const CCoinControl& coin_control, FeeCalculation& fee_calc_out, bool sign)
+                                std::optional<unsigned int> change_pos, bilingual_str& error, const CCoinControl& coin_control, FeeCalculation& fee_calc_out, bool sign)
 {
     WalletLogPrintf("CHDWallet %s\n", __func__);
 
@@ -9004,13 +8983,18 @@ bool CHDWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CTrans
         vecSendB.emplace_back(tr);
     }
 
-    return CreateTransaction(vecSendB, tx, nFeeRet, nChangePosInOut, error, coin_control, fee_calc_out, sign);
+    return CreateTransaction(vecSendB, tx, nFeeRet, change_pos, error, coin_control, fee_calc_out, sign);
 };
 
 bool CHDWallet::CreateTransaction(std::vector<CTempRecipient>& vecSend, CTransactionRef& tx, CAmount& nFeeRet,
-                                int& nChangePosInOut, bilingual_str& error, const CCoinControl& coin_control, FeeCalculation& fee_calc_out, bool sign)
+                                std::optional<unsigned int> change_pos, bilingual_str& error, const CCoinControl& coin_control, FeeCalculation& fee_calc_out, bool sign)
 {
     WalletLogPrintf("CHDWallet %s\n", __func__);
+
+    // If both change_pos and coin_control.nChangePos are set coin_control.nChangePos has priority
+    if (change_pos && coin_control.nChangePos == -1) {
+        coin_control.nChangePos = *change_pos;
+    }
 
     CTransactionRecord rtxTemp;
     CWalletTx wtxNew(tx, TxStateInactive{});
@@ -9023,8 +9007,8 @@ bool CHDWallet::CreateTransaction(std::vector<CTempRecipient>& vecSend, CTransac
     }
 
     for (const auto &r : vecSend) {
-        if (r.fChange) {
-            nChangePosInOut = r.n;
+        if (r.fChange && !change_pos) {
+            change_pos = r.n;
             break;
         }
     }

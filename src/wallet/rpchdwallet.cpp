@@ -855,7 +855,8 @@ void ParseCoinControlOptions(const UniValue &obj, const CHDWallet *pwallet, CCoi
             });
 
             COutPoint op(Txid::FromUint256(ParseHashO(uvi, "tx")), uvi["n"].getInt<int>());
-            coin_control.m_selected_inputs.insert(op);
+            PreselectedInput stub;
+            coin_control.m_selected[op] = stub;
 
             bool have_attribute = false;
             CInputData im;

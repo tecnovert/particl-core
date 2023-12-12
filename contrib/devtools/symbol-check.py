@@ -54,7 +54,7 @@ IGNORE_EXPORTS = {
 
 # Expected linker-loader names can be found here:
 # https://sourceware.org/glibc/wiki/ABIList?action=recall&rev=16
-ELF_INTERPRETER_NAMES: dict[lief.ELF.ARCH, Dict[lief.ENDIANNESS, str]] = {
+ELF_INTERPRETER_NAMES: dict[lief.ELF.ARCH, dict[lief.ENDIANNESS, str]] = {
     lief.ELF.ARCH.i386:    {
         lief.ENDIANNESS.LITTLE: "/lib/ld-linux.so.2",
     },
