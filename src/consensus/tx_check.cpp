@@ -19,6 +19,7 @@
 #include <util/strencodings.h>
 #include <util/moneystr.h>
 #include <script/interpreter.h>
+#include <logging.h>
 
 
 static bool CheckStandardOutput(TxValidationState &state, const CTxOutStandard *p, CAmount &nValueOut)

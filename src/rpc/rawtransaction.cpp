@@ -620,21 +620,17 @@ static RPCHelpMan getrawtransaction()
     // If request is verbosity >= 1 but no blockhash was given, then look up the blockindex
     if (request.params[2].isNull()) {
         LOCK(cs_main);
-        blockindex = chainman.m_blockman.LookupBlockIndex(hash_block);
+        blockindex = chainman.m_blockman.LookupBlockIndex(hash_block); // May be nullptr for mempool transactions
     }
-
-    // Particl: See dde7ac5c704688c8a9af29bd07e5ae8114824ce7
     if (verbosity == 1) {
-        TxToJSON(*tx, hash_block, result, chainman.ActiveChainstate());
+        TxToJSON(*tx, hash_block, result, chainman.ActiveChainstate(), nullptr, TxVerbosity::SHOW_DETAILS, &chainman, node.mempool.get(), verbosity);
         return result;
     }
 
     CBlockUndo blockUndo;
     CBlock block;
-    const bool is_block_pruned{WITH_LOCK(cs_main, return chainman.m_blockman.IsBlockPruned(blockindex))};
 
-    if (tx->IsCoinBase() ||
-        !blockindex || is_block_pruned ||
+    if (tx->IsCoinBase() || !blockindex || WITH_LOCK(::cs_main, return chainman.m_blockman.IsBlockPruned(*blockindex)) ||
         !(chainman.m_blockman.UndoReadFromDisk(blockUndo, *blockindex) && chainman.m_blockman.ReadBlockFromDisk(block, *blockindex))) {
         TxToJSON(*tx, hash_block, result, chainman.ActiveChainstate(), nullptr, TxVerbosity::SHOW_DETAILS, &chainman, node.mempool.get(), verbosity);
         return result;

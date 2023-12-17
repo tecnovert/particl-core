@@ -27,11 +27,16 @@ struct NodeContext;
 } // namespace node
 
 #ifdef WIN32
-int CreateMessageWindow();
+int CreateMessageWindow(node::NodeContext& node);
 int CloseMessageWindow();
 #endif
 
-bool ShutdownRequestedMainThread();
+/** Initialize node context shutdown and args variables. */
+void InitContext(node::NodeContext& node);
+/** Return whether node shutdown was requested. */
+bool ShutdownRequested(node::NodeContext& node);
+/** Check the hidden window on windows for signals then call ShutdownRequested. (Particl) */
+bool ShutdownRequestedMainThread(node::NodeContext& node);
 
 /** Interrupt threads */
 void Interrupt(node::NodeContext& node);

@@ -894,6 +894,13 @@ public:
         return true;
     }
 
+    virtual bool shutdownRequested() override
+    {
+        if (!m_wallet_part)
+            return false;
+        return m_wallet_part->chain().shutdownRequested();
+    }
+
     CHDWallet *m_wallet_part = nullptr;
 };
 

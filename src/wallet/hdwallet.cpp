@@ -1512,6 +1512,7 @@ bool CHDWallet::ImportStealthAddress(const CStealthAddress &sxAddr, const CKey &
     }
     UnsetWalletFlag(WALLET_FLAG_BLANK_WALLET);
 
+    MaybeUpdateBirthTime(GetTime());
     return true;
 };
 
@@ -6217,13 +6218,13 @@ int CHDWallet::ExtKeyImportLoose(CHDWalletDB *pwdb, CStoredExtKey &sekIn, CKeyID
     // It's possible for a public ext key to be added first
     CStoredExtKey sekExist, sek = sekIn;
     if (pwdb->ReadExtKey(id, sekExist)) {
-        if (IsCrypted()
-            && 0 != ExtKeyUnlock(&sekExist)) {
+        if (IsCrypted() &&
+            0 != ExtKeyUnlock(&sekExist)) {
             return werrorN(13, "%s: %s", __func__, ExtKeyGetString(13));
         }
         sek = sekExist;
-        if (!sek.kp.IsValidV()
-            && sekIn.kp.IsValidV()) {
+        if (!sek.kp.IsValidV() &&
+            sekIn.kp.IsValidV()) {
             sek.kp = sekIn.kp;
             std::vector<uint8_t> v;
             sek.mapValue[EKVT_ADDED_SECRET_AT] = SetCompressedInt64(v, GetTime());
@@ -6380,6 +6381,7 @@ int CHDWallet::ExtKeyImportAccount(CHDWalletDB *pwdb, CStoredExtKey &sekIn, int6
 
     std::vector<uint8_t> v;
     sea->mapValue[EKVT_CREATED_AT] = SetCompressedInt64(v, nCreatedAt);
+    MaybeUpdateBirthTime(nCreatedAt);
 
     if (0 != ExtKeySaveAccountToDB(pwdb, idAccount, sea)) {
         sea->FreeChains();
@@ -6517,7 +6519,9 @@ int CHDWallet::ExtKeyNewMaster(CHDWalletDB *pwdb, CKeyID &idMaster, bool fAutoGe
     sekRoot.nFlags |= EAF_ACTIVE;
     sekRoot.mapValue[EKVT_KEY_TYPE] = SetChar(v, EKT_BIP44_MASTER);
     sekRoot.kp = CExtKeyPair(evRootKey);
-    sekRoot.mapValue[EKVT_CREATED_AT] = SetCompressedInt64(v, GetTime());
+    int64_t nCreatedAt = GetTime();
+    sekRoot.mapValue[EKVT_CREATED_AT] = SetCompressedInt64(v, nCreatedAt);
+    MaybeUpdateBirthTime(nCreatedAt);
     sekRoot.sLabel = "Initial BIP44 Master";
     CKeyID idRoot = sekRoot.GetID();
 
@@ -6538,7 +6542,8 @@ int CHDWallet::ExtKeyNewMaster(CHDWalletDB *pwdb, CKeyID &idMaster, bool fAutoGe
     sekMaster.kp = CExtKeyPair(evMasterKey);
     sekMaster.mapValue[EKVT_PATH] = vPath;
     sekMaster.mapValue[EKVT_ROOT_ID] = SetCKeyID(v, idRoot);
-    sekMaster.mapValue[EKVT_CREATED_AT] = SetCompressedInt64(v, GetTime());
+    sekMaster.mapValue[EKVT_CREATED_AT] = SetCompressedInt64(v, nCreatedAt);
+    MaybeUpdateBirthTime(nCreatedAt);
     sekMaster.sLabel = "Initial Master";
 
     idMaster = sekMaster.GetID();
@@ -6573,7 +6578,9 @@ int CHDWallet::ExtKeyCreateAccount(CStoredExtKey *sekAccount, CKeyID &idMaster, 
     ekaOut.idMaster = idMaster;
     ekaOut.sLabel = sLabel;
     ekaOut.nFlags |= EAF_ACTIVE;
+    int64_t nCreatedAt = GetTime();
     ekaOut.mapValue[EKVT_CREATED_AT] = SetCompressedInt64(v, GetTime());
+    MaybeUpdateBirthTime(nCreatedAt);
 
     if (sekAccount->kp.IsValidV()) {
         ekaOut.nFlags |= EAF_HAVE_SECRET;
@@ -7063,6 +7070,7 @@ int CHDWallet::ExtKeyLoadMaster()
     // Find earliest key creation time, as wallet birthday
     int64_t nCreatedAt = 0;
     GetCompressedInt64(pEKMaster->mapValue[EKVT_CREATED_AT], (uint64_t&)nCreatedAt);
+    MaybeUpdateBirthTime(nCreatedAt);
 
     auto spk_man = GetLegacyScriptPubKeyMan();
     if (spk_man) {
@@ -7172,6 +7180,7 @@ int CHDWallet::ExtKeyLoadAccounts()
         // Find earliest key creation time, as wallet birthday
         int64_t nCreatedAt;
         GetCompressedInt64(sea->mapValue[EKVT_CREATED_AT], (uint64_t&)nCreatedAt);
+        MaybeUpdateBirthTime(nCreatedAt);
 
         auto spk_man = GetLegacyScriptPubKeyMan();
         if (spk_man) {
@@ -8644,7 +8653,9 @@ int CHDWallet::NewExtKeyFromAccount(CHDWalletDB *pwdb, const CKeyID &idAccount,
 
     sekOut->nFlags |= EAF_ACTIVE | EAF_RECEIVE_ON | EAF_IN_ACCOUNT;
     sekOut->mapValue[EKVT_PATH] = PushUInt32(vAccountPath, nNewChildNo);
-    sekOut->mapValue[EKVT_CREATED_AT] = SetCompressedInt64(v, GetTime());
+    int64_t nCreatedAt = GetTime();
+    sekOut->mapValue[EKVT_CREATED_AT] = SetCompressedInt64(v, nCreatedAt);
+    MaybeUpdateBirthTime(nCreatedAt);
     sekOut->sLabel = sLabel;
 
     if (IsCrypted() &&

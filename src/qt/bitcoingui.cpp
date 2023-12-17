@@ -18,7 +18,6 @@
 #include <qt/platformstyle.h>
 #include <qt/rpcconsole.h>
 #include <qt/utilitydialog.h>
-#include <shutdown.h>
 
 #ifdef ENABLE_WALLET
 #include <qt/walletcontroller.h>
@@ -789,7 +788,8 @@ void BitcoinGUI::setCurrentWallet(WalletModel* wallet_model)
         }
     }
 
-    if (!test_mode && !wallet_model->wallet().hdEnabled() && !ShutdownRequested()) {
+    bool shutdown_requested = wallet_model->wallet().shutdownRequested();
+    if (!test_mode && !wallet_model->wallet().hdEnabled() && !shutdown_requested) {
         showMnemonicClicked();
     }
 

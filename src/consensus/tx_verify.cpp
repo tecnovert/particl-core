@@ -27,6 +27,7 @@
 #include <timedata.h>
 #include <common/args.h>
 #include <util/strencodings.h>
+#include <logging.h>
 
 
 bool IsFinalTx(const CTransaction &tx, int nBlockHeight, int64_t nBlockTime)

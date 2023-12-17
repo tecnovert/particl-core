@@ -346,6 +346,7 @@ public:
     virtual CAmount getCredit(const CTxOutBase *txout, wallet::isminefilter filter) = 0;
     virtual wallet::isminetype txoutIsMine(const CTxOutBase *txout) = 0;
     virtual bool describeRecordTx(const uint256 &txid, const CTransactionRecord &rtx, UniValue &rv) = 0;
+    virtual bool shutdownRequested() = 0;
 };
 
 //! Wallet chain client that in addition to having chain client methods for

@@ -20,7 +20,6 @@
 #include <node/context.h>
 #include <node/interface_ui.h>
 #include <noui.h>
-#include <shutdown.h>
 #include <util/check.h>
 #include <util/exception.h>
 #include <util/strencodings.h>
@@ -248,7 +247,7 @@ static bool AppInit(NodeContext& node)
         }
 
 #ifdef WIN32
-        if (CreateMessageWindow() != 0) {
+        if (CreateMessageWindow(node) != 0) {
             return false;
         }
 #endif
@@ -299,9 +298,7 @@ MAIN_FUNCTION
     if (ProcessInitCommands(args)) return EXIT_SUCCESS;
 
     // Start application
-    if (AppInit(node)) {
-        WaitForShutdown();
-    } else {
+    if (!AppInit(node) || !Assert(node.shutdown)->wait()) {
         node.exit_status = EXIT_FAILURE;
     }
     Interrupt(node);

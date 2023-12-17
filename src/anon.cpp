@@ -22,6 +22,7 @@
 #include <node/blockstorage.h>
 #include <common/args.h>
 #include <util/strencodings.h>
+#include <logging.h>
 
 
 bool CheckAnonInputMempoolConflicts(const CTxIn &txin, const uint256 txhash, CTxMemPool *pmempool, TxValidationState &state)

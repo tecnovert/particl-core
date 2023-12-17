@@ -18,8 +18,8 @@
 #include <core_io.h>
 #include <node/context.h>
 #include <script/solver.h>
-#include <shutdown.h>
 #include <pos/kernel.h>
+#include <init.h>
 
 #include <univalue.h>
 
@@ -789,7 +789,7 @@ static UniValue blockToDeltasJSON(ChainstateManager& chainman, const CBlock& blo
     PushTime(result, "mediantime", blockindex->GetMedianTimePast());
     result.pushKV("nonce", (uint64_t)block.nNonce);
     result.pushKV("bits", strprintf("%08x", block.nBits));
-    result.pushKV("difficulty", GetDifficulty(blockindex));
+    result.pushKV("difficulty", GetDifficulty(*blockindex));
     result.pushKV("chainwork", blockindex->nChainWork.GetHex());
 
     if (blockindex->pprev)
@@ -964,6 +964,7 @@ static RPCHelpMan gettxoutsetinfobyscript()
                 },
         [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
+    node::NodeContext &node = EnsureAnyNodeContext(request.context);
     ChainstateManager &chainman = EnsureAnyChainman(request.context);
     UniValue ret(UniValue::VOBJ);
 
@@ -1004,7 +1005,7 @@ static RPCHelpMan gettxoutsetinfobyscript()
     PerScriptTypeStats statsOther;
 
     while (pcursor->Valid()) {
-        if (ShutdownRequested()) return false;
+        if (ShutdownRequested(node)) return false;
         COutPoint key;
         Coin coin;
         if (pcursor->GetKey(key) && pcursor->GetValue(coin)) {

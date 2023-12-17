@@ -45,10 +45,10 @@
 #include <pos/kernel.h>
 #include <crypto/sha256.h>
 #include <warnings.h>
-#include <shutdown.h>
 #include <txmempool.h>
 #include <common/args.h>
 #include <undo.h>
+#include <interfaces/node.h>
 
 #include <univalue.h>
 
@@ -4582,7 +4582,7 @@ static RPCHelpMan getstakinginfo()
     }
 
 
-    obj.pushKV("difficulty", GetDifficulty(pchainman->ActiveChain().Tip()));
+    obj.pushKV("difficulty", GetDifficulty(*pchainman->ActiveChain().Tip()));
     obj.pushKV("lastsearchtime", (uint64_t)pwallet->nLastCoinStakeSearchTime);
 
     obj.pushKV("weight", (uint64_t)nWeight);
@@ -6604,7 +6604,7 @@ static bool GetTxInputTypeFromBlockUndo(CHDWallet *const pwallet, uint8_t &type_
 
     CBlockUndo blockUndo;
     CBlock block;
-    const bool is_block_pruned{WITH_LOCK(cs_main, return pchainman->m_blockman.IsBlockPruned(blockindex))};
+    const bool is_block_pruned{WITH_LOCK(cs_main, return pchainman->m_blockman.IsBlockPruned(*blockindex))};
     if (is_block_pruned) {
         str_error = "Block is pruned";
         return false;
@@ -6773,7 +6773,7 @@ static RPCHelpMan debugwallet()
             CHDWallet *pw = GetParticlWallet(wallet.get());
             pw->Downgrade();
         }
-        StartShutdown();
+        interfaces::MakeNode(EnsureAnyNodeContext(request.context))->startShutdown();
         return "Wallet downgraded - Shutting down.";
     }
 
@@ -9640,9 +9640,10 @@ static RPCHelpMan verifyrawtransaction()
     };
 };
 
-static bool PruneBlockFile(ChainstateManager &chainman, AutoFile& file_in, bool test_only, size_t &num_blocks_in_file, size_t &num_blocks_removed) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
+static bool PruneBlockFile(const JSONRPCRequest& request, ChainstateManager &chainman, AutoFile& file_in, bool test_only, size_t &num_blocks_in_file, size_t &num_blocks_removed) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
 {
     fs::path tmp_filepath = gArgs.GetBlocksDirPath() / "tmp.dat";
+    std::unique_ptr<interfaces::Node> node = interfaces::MakeNode(EnsureAnyNodeContext(request.context));
 
     FILE *fpt = fopen(fs::PathToString(tmp_filepath).c_str(), "w");
     if (!fpt) {
@@ -9655,7 +9656,7 @@ static bool PruneBlockFile(ChainstateManager &chainman, AutoFile& file_in, bool 
     uint64_t nRewind = blkdat.GetPos();
 
     while (!blkdat.eof()) {
-        if (ShutdownRequested()) return false;
+        if (node->shutdownRequested()) return false;
 
         blkdat.SetPos(nRewind);
         nRewind++; // start one byte further next time, in case of failure
@@ -9793,7 +9794,7 @@ static RPCHelpMan pruneorphanedblocks()
             }
             LogPrintf("Pruning block file blk%05u.dat...\n", (unsigned int)nFile);
             size_t num_blocks_in_file = 0, num_blocks_removed = 0;
-            PruneBlockFile(chainman, file, test_only, num_blocks_in_file, num_blocks_removed);
+            PruneBlockFile(request, chainman, file, test_only, num_blocks_in_file, num_blocks_removed);
 
             if (!test_only) {
                 fs::path tmp_filepath = gArgs.GetBlocksDirPath() / "tmp.dat";
@@ -9818,7 +9819,7 @@ static RPCHelpMan pruneorphanedblocks()
         response.pushKV("note", "Node is shutting down.");
         // Force reindex on next startup
         pblocktree->WriteFlag("v1", false);
-        StartShutdown();
+        interfaces::MakeNode(EnsureAnyNodeContext(request.context))->startShutdown();
     }
 
     response.pushKV("files", files);
