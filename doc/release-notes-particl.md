@@ -8,6 +8,7 @@
   - gettransaction for fee for tx records shown once instead of in details.
   - filtertransactions total amount now includes fee for sent txns.
     - matches gettransaction for mapwallet transactions.
+- smsg: Fix found messages counter when scanning files.
 
 
 0.19.2.23

@@ -415,7 +415,7 @@ void ThreadSecureMsgPow()
 
             // Test if message was sent to self
             bool fOwnMessage;
-            if (smsgModule.ScanMessage(pHeader, pPayload, psmsg->nPayload, true, fOwnMessage) != 0) {
+            if (smsgModule.ScanMessage(pHeader, pPayload, psmsg->nPayload, true, fOwnMessage) != SMSG_NO_ERROR) {
                 // Message recipient is not this node (or failed)
             }
         }
@@ -2123,8 +2123,8 @@ bool CSMSG::ScanBuckets(bool scan_all)
     fs::path pathSmsgDir = GetDataDir() / STORE_DIR;
     fs::directory_iterator itend;
 
-    if (!fs::exists(pathSmsgDir)
-        || !fs::is_directory(pathSmsgDir)) {
+    if (!fs::exists(pathSmsgDir) ||
+        !fs::is_directory(pathSmsgDir)) {
         LogPrintf("Message store directory does not exist.\n");
         return true; // not an error
     }
@@ -2222,7 +2222,9 @@ bool CSMSG::ScanBuckets(bool scan_all)
                     bool fOwnMessage;
                     int rv = ScanMessage(smsg.data(), &vchData[0], smsg.nPayload, false, fOwnMessage);
                     if (rv == SMSG_NO_ERROR) {
-                        nFoundMessages++;
+                        if (fOwnMessage) {
+                            nFoundMessages++;
+                        }
                     } else {
                         // SecureMsgScanMessage failed
                     }
@@ -2301,8 +2303,8 @@ int CSMSG::WalletUnlocked(CWallet *pwallet)
     fs::path pathSmsgDir = GetDataDir() / STORE_DIR;
     fs::directory_iterator itend;
 
-    if (!fs::exists(pathSmsgDir)
-        || !fs::is_directory(pathSmsgDir)) {
+    if (!fs::exists(pathSmsgDir) ||
+        !fs::is_directory(pathSmsgDir)) {
         LogPrintf("Message store directory does not exist.\n");
         return SMSG_NO_ERROR; // not an error
     }
@@ -2389,8 +2391,10 @@ int CSMSG::WalletUnlocked(CWallet *pwallet)
                 // Don't report to gui,
                 bool fOwnMessage;
                 int rv = ScanMessage(smsg.data(), &vchData[0], smsg.nPayload, false, fOwnMessage, true);
-                if (rv == 0) {
-                    nFoundMessages++;
+                if (rv == SMSG_NO_ERROR) {
+                    if (fOwnMessage) {
+                        nFoundMessages++;
+                    }
                 } else
                 if (rv == SMSG_WALLET_LOCKED) {
                     remove_file = false;
@@ -3116,7 +3120,7 @@ int CSMSG::Receive(CNode *pfrom, std::vector<uint8_t> &vchData)
             }
 
             bool fOwnMessage;
-            if (ScanMessage(&vchData[n], &vchData[n + SMSG_HDR_LEN], psmsg->nPayload, true, fOwnMessage) != 0) {
+            if (ScanMessage(&vchData[n], &vchData[n + SMSG_HDR_LEN], psmsg->nPayload, true, fOwnMessage) != SMSG_NO_ERROR) {
                 // message recipient is not this node (or failed)
             }
         } // cs_smsg
@@ -3837,7 +3841,7 @@ int CSMSG::Import(SecureMessage *psmsg, std::string &sError, bool setread, bool 
     }
 
     bool fOwnMessage;
-    if (ScanMessage(psmsg->data(), psmsg->pPayload, psmsg->nPayload, false, fOwnMessage) != 0) {
+    if (ScanMessage(psmsg->data(), psmsg->pPayload, psmsg->nPayload, false, fOwnMessage) != SMSG_NO_ERROR) {
         // message recipient is not this node (or failed)
         return SMSG_GENERAL_ERROR;
     }
