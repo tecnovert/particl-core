@@ -51,6 +51,12 @@ Next Major Version
   - Convert mnemonics to and from entropy and word form.
 
 
+23.2.8
+==============
+
+- smsg: Fix found messages counter when scanning files.
+
+
 23.2.7
 ==============
 
