@@ -415,9 +415,9 @@ void ThreadSecureMsgPow(smsg::CSMSG *smsg_module)
             }
 
             // Test if message was sent to self
-            bool fOwnMessage;
-            if (smsg_module->ScanMessage(pHeader, pPayload, smsg.nPayload, true, fOwnMessage) != 0) {
-                // Message recipient is not this node (or failed)
+            bool received_msg{false};
+            if (smsg_module->ScanMessage(pHeader, pPayload, smsg.nPayload, true, received_msg) != SMSG_NO_ERROR) {
+                // ScanMessage failed
             }
         }
 
@@ -2155,8 +2155,8 @@ bool CSMSG::ScanBuckets(bool scan_all)
     fs::path pathSmsgDir = gArgs.GetDataDirNet() / fs::PathFromString(STORE_DIR);
     fs::directory_iterator itend;
 
-    if (!fs::exists(pathSmsgDir)
-        || !fs::is_directory(pathSmsgDir)) {
+    if (!fs::exists(pathSmsgDir) ||
+        !fs::is_directory(pathSmsgDir)) {
         LogPrintf("Message store directory does not exist.\n");
         return true; // not an error
     }
@@ -2252,10 +2252,12 @@ bool CSMSG::ScanBuckets(bool scan_all)
                 if (!scan_all && smsg.timestamp + smsg.m_ttl < now) {
                     // Expired message
                 } else {
-                    bool fOwnMessage;
-                    int rv = ScanMessage(header_buffer, vchData.data(), smsg.nPayload, false, fOwnMessage);
+                    bool received_msg{false};
+                    int rv = ScanMessage(header_buffer, vchData.data(), smsg.nPayload, false, received_msg);
                     if (rv == SMSG_NO_ERROR) {
-                        nFoundMessages++;
+                        if (received_msg) {
+                            nFoundMessages++;
+                        }
                     } else {
                         // SecureMsgScanMessage failed
                     }
@@ -2335,8 +2337,8 @@ int CSMSG::WalletUnlocked(wallet::CWallet *pwallet)
     fs::path pathSmsgDir = gArgs.GetDataDirNet() / fs::PathFromString(STORE_DIR);
     fs::directory_iterator itend;
 
-    if (!fs::exists(pathSmsgDir)
-        || !fs::is_directory(pathSmsgDir)) {
+    if (!fs::exists(pathSmsgDir) ||
+        !fs::is_directory(pathSmsgDir)) {
         LogPrintf("Message store directory does not exist.\n");
         return SMSG_NO_ERROR; // not an error
     }
@@ -2422,10 +2424,12 @@ int CSMSG::WalletUnlocked(wallet::CWallet *pwallet)
                 }
 
                 // Don't report to gui,
-                bool fOwnMessage;
-                int rv = ScanMessage(header_buffer, &vchData[0], smsg.nPayload, false, fOwnMessage, true);
-                if (rv == 0) {
-                    nFoundMessages++;
+                bool received_msg{false};
+                int rv = ScanMessage(header_buffer, &vchData[0], smsg.nPayload, false, received_msg, true);
+                if (rv == SMSG_NO_ERROR) {
+                    if (received_msg) {
+                        nFoundMessages++;
+                    }
                 } else
                 if (rv == SMSG_WALLET_LOCKED) {
                     remove_file = false;
@@ -3163,9 +3167,9 @@ int CSMSG::Receive(PeerManager *peerLogic, CNode *pfrom, std::vector<uint8_t> &v
                 break;
             }
 
-            bool fOwnMessage;
-            if (ScanMessage(&vchData[n], &vchData[n + SMSG_HDR_LEN], smsg.nPayload, true, fOwnMessage) != 0) {
-                // message recipient is not this node (or failed)
+            bool received_msg{false};
+            if (ScanMessage(&vchData[n], &vchData[n + SMSG_HDR_LEN], smsg.nPayload, true, received_msg) != SMSG_NO_ERROR) {
+                // ScanMessage failed
             }
         } // cs_smsg
 
@@ -4051,15 +4055,15 @@ int CSMSG::Import(SecureMessage *psmsg, std::string &sError, bool setread, bool 
         return SMSG_CHECKSUM_MISMATCH;
     }
 
-    bool fOwnMessage;
+    bool received_msg{false};
     unsigned char header_buffer[SMSG_HDR_LEN];
     psmsg->WriteHeader(header_buffer);
-    if (ScanMessage(header_buffer, psmsg->pPayload, psmsg->nPayload, false, fOwnMessage) != 0) {
-        // message recipient is not this node (or failed)
+    if (ScanMessage(header_buffer, psmsg->pPayload, psmsg->nPayload, false, received_msg) != SMSG_NO_ERROR) {
+        // ScanMessage failed
         return SMSG_GENERAL_ERROR;
     }
 
-    if (!fOwnMessage && !submitmsg) {
+    if (!received_msg && !submitmsg) {
         sError = "Message not received.";
         return SMSG_GENERAL_ERROR;
     }

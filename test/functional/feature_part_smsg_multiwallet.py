@@ -32,9 +32,12 @@ class SmsgMultiWalletTest(ParticlTestFramework):
 
         nodes[2].extkeyimportmaster(nodes[2].mnemonic('new')['master'])
 
+        address0 = nodes[0].getnewaddress()
+        nodes[1].smsgaddaddress(address0, nodes[0].getaddressinfo(address0)['pubkey'])
         address1 = nodes[1].getnewaddress()
         nodes[1].smsgaddlocaladdress(address1)
         nodes[2].smsgaddaddress(address1, nodes[1].smsglocalkeys()['wallet_keys'][0]['public_key'])
+
 
         nodes[2].createwallet('wallet_2')
         w1 = nodes[2].get_wallet_rpc('default_wallet')
@@ -63,6 +66,8 @@ class SmsgMultiWalletTest(ParticlTestFramework):
         nodes[1].smsgaddaddress(address2_1, address2_1_info['pubkey'])
         nodes[1].smsgaddaddress(address2_2, address2_2_info['pubkey'])
         nodes[1].smsgaddaddress(address2_3, pubkey2_3)
+
+        nodes[1].smsgsend(address1, address0, 'test 1->0')
 
         nodes[1].smsgsend(address1, address2_1, 'test 1')
         nodes[1].smsgsend(address1, address2_2, 'test 2')
