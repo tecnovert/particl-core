@@ -1,4 +1,10 @@
 
+23.2.8
+==============
+
+- smsg: Fix found messages counter when scanning files.
+
+
 23.2.7
 ==============
 
