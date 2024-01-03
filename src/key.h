@@ -267,6 +267,9 @@ public:
         s >> fCompressed;
     }
 };
+
+CKey GenerateRandomKey(bool compressed = true) noexcept;
+
 /*
 struct CExtKey {
     unsigned char nDepth;
