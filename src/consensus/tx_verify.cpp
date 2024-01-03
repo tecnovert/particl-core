@@ -20,13 +20,14 @@
 
 // Particl dependencies
 #include <blind.h>
-#include <insight/balanceindex.h>
-#include <validation.h>
-#include <consensus/params.h>
 #include <chainparams.h>
-#include <timedata.h>
+#include <consensus/params.h>
 #include <common/args.h>
+#include <insight/balanceindex.h>
+#include <logging.h>
+#include <timedata.h>
 #include <util/strencodings.h>
+#include <validation.h>
 
 
 bool IsFinalTx(const CTransaction &tx, int nBlockHeight, int64_t nBlockTime)

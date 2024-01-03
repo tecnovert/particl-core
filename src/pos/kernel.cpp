@@ -1,24 +1,26 @@
 // Copyright (c) 2012-2013 The PPCoin developers
 // Copyright (c) 2014 The BlackCoin developers
-// Copyright (c) 2017-2023 The Particl Core developers
+// Copyright (c) 2017-2024 The Particl Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <pos/kernel.h>
 
 #include <chainparams.h>
-#include <serialize.h>
-#include <streams.h>
-#include <hash.h>
-#include <script/interpreter.h>
-#include <script/script.h>
-#include <policy/policy.h>
 #include <consensus/validation.h>
 #include <coins.h>
+#include <hash.h>
 #include <insight/insight.h>
-#include <txmempool.h>
+#include <logging.h>
 #include <node/transaction.h>
+#include <policy/policy.h>
+#include <script/interpreter.h>
+#include <script/script.h>
+#include <serialize.h>
+#include <streams.h>
+#include <txmempool.h>
 #include <validation.h>
+
 
 /* Calculate the difficulty for a given block index.
  * Duplicated from rpc/blockchain.cpp for linking

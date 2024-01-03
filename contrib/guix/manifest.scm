@@ -10,7 +10,7 @@
              (gnu packages file)
              (gnu packages gawk)
              (gnu packages gcc)
-             ((gnu packages installers) #:select (nsis-x86_64))
+             ((gnu packages installers) #:select (nsis-x86_64 nsis-i686))
              ((gnu packages linux) #:select (linux-libre-headers-5.15 util-linux))
              (gnu packages llvm)
              (gnu packages mingw)
@@ -606,7 +606,7 @@ inspecting signatures in Mach-O binaries.")
            ;; Windows
            (list zip
                  (make-mingw-pthreads-cross-toolchain "i686-w64-mingw32")
-                 (make-nsis-for-gcc-10 nsis-i686)
+                 nsis-i686
                  nss-certs
                  osslsigncode))
           ((string-contains target "-linux-")
