@@ -54,7 +54,7 @@ using node::GetTransaction;
 using node::NodeContext;
 using node::PSBTAnalysis;
 
-static void TxToUnivExpanded(const CTransaction& tx, const uint256& block_hash, UniValue& entry, bool include_hex, bool without_witness, const CTxUndo* txundo, TxVerbosity verbosity, ChainstateManager *pchainman, CTxMemPool *pmempool, int raw_verbosity)
+static void TxToUnivExpanded(const CTransaction& tx, const uint256& block_hash, UniValue& entry, bool include_hex, const CTxUndo* txundo, TxVerbosity verbosity, ChainstateManager *pchainman, CTxMemPool *pmempool, int raw_verbosity)
 {
     uint256 txid = tx.GetHash();
     entry.pushKV("txid", txid.GetHex());
@@ -229,7 +229,7 @@ static void TxToUnivExpanded(const CTransaction& tx, const uint256& block_hash, 
     }
 
     if (include_hex) {
-        entry.pushKV("hex", EncodeHexTx(tx, without_witness)); // The hex-encoded transaction. Used the name "hex" to be consistent with the verbose output of "getrawtransaction".
+        entry.pushKV("hex", EncodeHexTx(tx)); // The hex-encoded transaction. Used the name "hex" to be consistent with the verbose output of "getrawtransaction".
     }
 }
 
@@ -246,9 +246,9 @@ static void TxToJSON(const CTransaction& tx, const uint256 hashBlock, UniValue& 
     // data into the returned UniValue.
 
     if (fParticlMode) {
-        TxToUnivExpanded(tx, /*block_hash=*/uint256(), entry, /*include_hex=*/true, RPCSerializationWithoutWitness(), txundo, verbosity, pchainman, pmempool, raw_verbosity);
+        TxToUnivExpanded(tx, /*block_hash=*/uint256(), entry, /*include_hex=*/true, txundo, verbosity, pchainman, pmempool, raw_verbosity);
     } else {
-        TxToUniv(tx, /*block_hash=*/uint256(), entry, /*include_hex=*/true, RPCSerializationWithoutWitness(), txundo, verbosity);
+        TxToUniv(tx, /*block_hash=*/uint256(), entry, /*include_hex=*/true, txundo, verbosity);
     }
 
     if (!hashBlock.IsNull()) {
@@ -609,7 +609,7 @@ static RPCHelpMan getrawtransaction()
     }
 
     if (verbosity <= 0) {
-        return EncodeHexTx(*tx, /*without_witness=*/RPCSerializationWithoutWitness());
+        return EncodeHexTx(*tx);
     }
 
     UniValue result(UniValue::VOBJ);

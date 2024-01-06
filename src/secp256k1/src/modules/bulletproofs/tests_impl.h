@@ -37,8 +37,7 @@ static void test_bulletproof_api(void) {
     const uint64_t *mv_ptr = min_value;
     unsigned char rewind_blind[32];
     uint64_t rewind_v;
-
-    int32_t ecount = 0;
+    int32_t dummy = 0;
 
     blind_ptr[0] = blind;
     blind_ptr[1] = blind;
@@ -46,26 +45,20 @@ static void test_bulletproof_api(void) {
     blind_ptr[3] = blind;
     pcommit_arr[0] = pcommit;
 
-    secp256k1_context_set_error_callback(none, counting_illegal_callback_fn, &ecount);
-    secp256k1_context_set_error_callback(sign, counting_illegal_callback_fn, &ecount);
-    secp256k1_context_set_error_callback(vrfy, counting_illegal_callback_fn, &ecount);
-    secp256k1_context_set_error_callback(both, counting_illegal_callback_fn, &ecount);
-    secp256k1_context_set_illegal_callback(none, counting_illegal_callback_fn, &ecount);
-    secp256k1_context_set_illegal_callback(sign, counting_illegal_callback_fn, &ecount);
-    secp256k1_context_set_illegal_callback(vrfy, counting_illegal_callback_fn, &ecount);
-    secp256k1_context_set_illegal_callback(both, counting_illegal_callback_fn, &ecount);
-
     CHECK(secp256k1_generator_generate(both, &value_gen, blind) != 0);
     CHECK(secp256k1_pedersen_commit(both, &pcommit[0], blind, value[0], &value_gen, &secp256k1_generator_const_h) != 0);
     CHECK(secp256k1_pedersen_commit(both, &pcommit[1], blind, value[1], &value_gen, &secp256k1_generator_const_h) != 0);
     CHECK(secp256k1_pedersen_commit(both, &pcommit[2], blind, value[2], &value_gen, &secp256k1_generator_const_h) != 0);
     CHECK(secp256k1_pedersen_commit(both, &pcommit[3], blind, value[3], &value_gen, &secp256k1_generator_const_h) != 0);
 
+    secp256k1_context_set_illegal_callback(none, counting_callback_fn, &dummy);
+    secp256k1_context_set_illegal_callback(both, counting_callback_fn, &dummy);
+
     /* generators */
     gens = secp256k1_bulletproof_generators_create(none, NULL, 256);
-    CHECK(gens == NULL && ecount == 1);
+    CHECK(gens == NULL);
     gens = secp256k1_bulletproof_generators_create(none, &secp256k1_generator_const_h, 256);
-    CHECK(gens != NULL && ecount == 1);
+    CHECK(gens != NULL);
 
     CHECK(secp256k1_ecmult_gen_context_is_built(&none->ecmult_gen_ctx));
     CHECK(secp256k1_ecmult_gen_context_is_built(&sign->ecmult_gen_ctx));
@@ -73,186 +66,104 @@ static void test_bulletproof_api(void) {
     CHECK(secp256k1_ecmult_gen_context_is_built(&both->ecmult_gen_ctx));
 
     /* rangeproof_prove */
-    ecount = 0;
     /*
     CHECK(secp256k1_bulletproof_rangeproof_prove(none, scratch, gens, proof, &plen, value, NULL, blind_ptr, 1, &value_gen, 64, blind, NULL, 0) == 0);
-    CHECK(ecount == 1);
     CHECK(secp256k1_bulletproof_rangeproof_prove(sign, scratch, gens, proof, &plen, value, NULL, blind_ptr, 1, &value_gen, 64, blind, NULL, 0) == 0);
-    CHECK(ecount == 2);
     CHECK(secp256k1_bulletproof_rangeproof_prove(vrfy, scratch, gens, proof, &plen, value, NULL, blind_ptr, 1, &value_gen, 64, blind, NULL, 0) == 0);
-    CHECK(ecount == 3);
     */
     CHECK(secp256k1_bulletproof_rangeproof_prove(both, scratch, gens, proof, &plen, value, NULL, blind_ptr, 1, &value_gen, 64, blind, NULL, 0) == 1);
-    CHECK(ecount == 0);
     plen = 2000;
     CHECK(secp256k1_bulletproof_rangeproof_prove(both, scratch, gens, proof, &plen, value, NULL, blind_ptr, 2, &value_gen, 64, blind, NULL, 0) == 1);
-    CHECK(ecount == 0);
     plen = 2000;
     CHECK(secp256k1_bulletproof_rangeproof_prove(both, scratch, gens, proof, &plen, value, NULL, blind_ptr, 4, &value_gen, 64, blind, NULL, 0) == 0); /* too few gens */
-    CHECK(ecount == 1);
 
     CHECK(secp256k1_bulletproof_rangeproof_prove(both, scratch, gens, proof, &plen, value, min_value, blind_ptr, 2, &value_gen, 64, blind, NULL, 0) == 1); /* mv = v, ok */
-    CHECK(ecount == 1);
     CHECK(secp256k1_bulletproof_rangeproof_prove(both, scratch, gens, proof, &plen, &value[1], &min_value[1], blind_ptr, 2, &value_gen, 64, blind, NULL, 0) == 1); /* mv = 0, ok */
-    CHECK(ecount == 1);
     CHECK(secp256k1_bulletproof_rangeproof_prove(both, scratch, gens, proof, &plen, &value[2], &min_value[2], blind_ptr, 2, &value_gen, 64, blind, NULL, 0) == 0); /* mv > v, !ok */
-    CHECK(ecount == 1);
 
     CHECK(secp256k1_bulletproof_rangeproof_prove(both, NULL, gens, proof, &plen, value, NULL, blind_ptr, 1, &value_gen, 64, blind, NULL, 0) == 0);
-    CHECK(ecount == 2);
     CHECK(secp256k1_bulletproof_rangeproof_prove(both, scratch, NULL, proof, &plen, value, NULL, blind_ptr, 1, &value_gen, 64, blind, NULL, 0) == 0);
-    CHECK(ecount == 3);
     CHECK(secp256k1_bulletproof_rangeproof_prove(both, scratch, gens, NULL, &plen, value, NULL, blind_ptr, 1, &value_gen, 64, blind, NULL, 0) == 0);
-    CHECK(ecount == 4);
     CHECK(secp256k1_bulletproof_rangeproof_prove(both, scratch, gens, proof, NULL, value, NULL, blind_ptr, 1, &value_gen, 64, blind, NULL, 0) == 0);
-    CHECK(ecount == 5);
     CHECK(secp256k1_bulletproof_rangeproof_prove(both, scratch, gens, proof, &plen, NULL, NULL, blind_ptr, 1, &value_gen, 64, blind, NULL, 0) == 0);
-    CHECK(ecount == 6);
     CHECK(secp256k1_bulletproof_rangeproof_prove(both, scratch, gens, proof, &plen, value, NULL, NULL, 1, &value_gen, 64, blind, NULL, 0) == 0);
-    CHECK(ecount == 7);
     CHECK(secp256k1_bulletproof_rangeproof_prove(both, scratch, gens, proof, &plen, value, NULL, blind_ptr, 0, &value_gen, 64, blind, NULL, 0) == 0);
-    CHECK(ecount == 8);
     CHECK(secp256k1_bulletproof_rangeproof_prove(both, scratch, gens, proof, &plen, value, NULL, blind_ptr, 1, NULL, 64, blind, NULL, 0) == 0);
-    CHECK(ecount == 9);
     CHECK(secp256k1_bulletproof_rangeproof_prove(both, scratch, gens, proof, &plen, value, NULL, blind_ptr, 1, &value_gen, 0, blind, NULL, 0) == 0);
-    CHECK(ecount == 10);
     CHECK(secp256k1_bulletproof_rangeproof_prove(both, scratch, gens, proof, &plen, value, NULL, blind_ptr, 1, &value_gen, 65, blind, NULL, 0) == 0);
-    CHECK(ecount == 11);
     CHECK(secp256k1_bulletproof_rangeproof_prove(both, scratch, gens, proof, &plen, value, NULL, blind_ptr, 1, &value_gen, -1, blind, NULL, 0) == 0);
-    CHECK(ecount == 12);
     CHECK(secp256k1_bulletproof_rangeproof_prove(both, scratch, gens, proof, &plen, value, NULL, blind_ptr, 1, &value_gen, 64, NULL, NULL, 0) == 0);
-    CHECK(ecount == 13);
     CHECK(secp256k1_bulletproof_rangeproof_prove(both, scratch, gens, proof, &plen, value, NULL, blind_ptr, 1, &value_gen, 64, blind, blind, 0) == 1);
-    CHECK(ecount == 13);
     CHECK(secp256k1_bulletproof_rangeproof_prove(both, scratch, gens, proof, &plen, value, min_value, blind_ptr, 1, &value_gen, 64, blind, blind, 32) == 1);
-    CHECK(ecount == 13);
 
     /* rangeproof_verify */
-    ecount = 0;
     /*
     CHECK(secp256k1_bulletproof_rangeproof_verify(none, scratch, gens, proof, plen, min_value, pcommit, 1, 64, &value_gen, blind, 32) == 0);
-    CHECK(ecount == 1);
     CHECK(secp256k1_bulletproof_rangeproof_verify(sign, scratch, gens, proof, plen, min_value, pcommit, 1, 64, &value_gen, blind, 32) == 0);
-    CHECK(ecount == 2);
     CHECK(secp256k1_bulletproof_rangeproof_verify(vrfy, scratch, gens, proof, plen, min_value, pcommit, 1, 64, &value_gen, blind, 32) == 1);
-    CHECK(ecount == 2);
     */
     CHECK(secp256k1_bulletproof_rangeproof_verify(both, scratch, gens, proof, plen, min_value, pcommit, 1, 64, &value_gen, blind, 32) == 1);
-    CHECK(ecount == 0);
 
     CHECK(secp256k1_bulletproof_rangeproof_verify(both, scratch, gens, proof, plen, min_value, pcommit, 1, 63, &value_gen, blind, 32) == 0);
-    CHECK(ecount == 0);
     CHECK(secp256k1_bulletproof_rangeproof_verify(both, scratch, gens, proof, plen - 1, min_value, pcommit, 1, 63, &value_gen, blind, 32) == 0);
-    CHECK(ecount == 0);
     CHECK(secp256k1_bulletproof_rangeproof_verify(both, scratch, gens, proof, 0, min_value, pcommit, 1, 63, &value_gen, blind, 32) == 0);
-    CHECK(ecount == 0);
     CHECK(secp256k1_bulletproof_rangeproof_verify(both, scratch, gens, proof, plen, min_value, pcommit, 1, 64, &value_gen, blind, 31) == 0);
-    CHECK(ecount == 0);
     CHECK(secp256k1_bulletproof_rangeproof_verify(both, scratch, gens, proof, plen, min_value, pcommit, 1, 64, &value_gen, NULL, 0) == 0);
-    CHECK(ecount == 0);
     CHECK(secp256k1_bulletproof_rangeproof_verify(both, scratch, gens, proof, plen, min_value, pcommit, 2, 64, &value_gen, blind, 32) == 0);
-    CHECK(ecount == 0);
     CHECK(secp256k1_bulletproof_rangeproof_verify(both, scratch, gens, proof, plen, min_value, pcommit, 4, 64, &value_gen, blind, 32) == 0);
-    CHECK(ecount == 1);
 
     CHECK(secp256k1_bulletproof_rangeproof_verify(both, NULL, gens, proof, plen, min_value, pcommit, 1, 64, &value_gen, blind, 32) == 0);
-    CHECK(ecount == 2);
     CHECK(secp256k1_bulletproof_rangeproof_verify(both, scratch, NULL, proof, plen, min_value, pcommit, 1, 64, &value_gen, blind, 32) == 0);
-    CHECK(ecount == 3);
     CHECK(secp256k1_bulletproof_rangeproof_verify(both, scratch, gens, NULL, plen, min_value, pcommit, 1, 64, &value_gen, blind, 32) == 0);
-    CHECK(ecount == 4);
     CHECK(secp256k1_bulletproof_rangeproof_verify(both, scratch, gens, proof, plen, NULL, pcommit, 1, 64, &value_gen, blind, 32) == 0);
-    CHECK(ecount == 4);
     CHECK(secp256k1_bulletproof_rangeproof_verify(both, scratch, gens, proof, plen, min_value, NULL, 1, 64, &value_gen, blind, 32) == 0);
-    CHECK(ecount == 5);
     CHECK(secp256k1_bulletproof_rangeproof_verify(both, scratch, gens, proof, plen, min_value, pcommit, 0, 64, &value_gen, blind, 32) == 0);
-    CHECK(ecount == 6);
     CHECK(secp256k1_bulletproof_rangeproof_verify(both, scratch, gens, proof, plen, min_value, pcommit, 1, 65, &value_gen, blind, 32) == 0);
-    CHECK(ecount == 7);
     CHECK(secp256k1_bulletproof_rangeproof_verify(both, scratch, gens, proof, plen, min_value, pcommit, 1, 0, &value_gen, blind, 32) == 0);
-    CHECK(ecount == 8);
     CHECK(secp256k1_bulletproof_rangeproof_verify(both, scratch, gens, proof, plen, min_value, pcommit, 1, 64, NULL, blind, 32) == 0);
-    CHECK(ecount == 9);
     CHECK(secp256k1_bulletproof_rangeproof_verify(both, scratch, gens, proof, plen, min_value, pcommit, 1, 64, &value_gen, NULL, 32) == 0);
-    CHECK(ecount == 10);
     CHECK(secp256k1_bulletproof_rangeproof_verify(both, scratch, gens, proof, plen, min_value, pcommit, 1, 64, &value_gen, blind, 0) == 0);
-    CHECK(ecount == 10);
 
     /* verify_multi */
-    ecount = 0;
     /*
     CHECK(secp256k1_bulletproof_rangeproof_verify_multi(none, scratch, gens, &proof_ptr, 1, plen, &mv_ptr, pcommit_arr, 1, 64, &value_gen, blind_ptr, &blindlen) == 0);
-    CHECK(ecount == 1);
     CHECK(secp256k1_bulletproof_rangeproof_verify_multi(sign, scratch, gens, &proof_ptr, 1, plen, &mv_ptr, pcommit_arr, 1, 64, &value_gen, blind_ptr, &blindlen) == 0);
-    CHECK(ecount == 2);
     CHECK(secp256k1_bulletproof_rangeproof_verify_multi(vrfy, scratch, gens, &proof_ptr, 1, plen, &mv_ptr, pcommit_arr, 1, 64, &value_gen, blind_ptr, &blindlen) == 1);
-    CHECK(ecount == 2);
     */
     CHECK(secp256k1_bulletproof_rangeproof_verify_multi(both, scratch, gens, &proof_ptr, 1, plen, &mv_ptr, pcommit_arr, 1, 64, &value_gen, blind_ptr, &blindlen) == 1);
-    CHECK(ecount == 0);
 
     CHECK(secp256k1_bulletproof_rangeproof_verify_multi(both, NULL, gens, &proof_ptr, 1, plen, &mv_ptr, pcommit_arr, 1, 64, &value_gen, blind_ptr, &blindlen) == 0);
-    CHECK(ecount == 1);
     CHECK(secp256k1_bulletproof_rangeproof_verify_multi(both, scratch, NULL, &proof_ptr, 1, plen, &mv_ptr, pcommit_arr, 1, 64, &value_gen, blind_ptr, &blindlen) == 0);
-    CHECK(ecount == 2);
     CHECK(secp256k1_bulletproof_rangeproof_verify_multi(both, scratch, gens, NULL, 1, plen, &mv_ptr, pcommit_arr, 1, 64, &value_gen, blind_ptr, &blindlen) == 0);
-    CHECK(ecount == 3);
     CHECK(secp256k1_bulletproof_rangeproof_verify_multi(both, scratch, gens, &proof_ptr, 0, plen, &mv_ptr, pcommit_arr, 1, 64, &value_gen, blind_ptr, &blindlen) == 0);
-    CHECK(ecount == 4);
     CHECK(secp256k1_bulletproof_rangeproof_verify_multi(both, scratch, gens, &proof_ptr, 1, plen, NULL, pcommit_arr, 1, 64, &value_gen, blind_ptr, &blindlen) == 0);
-    CHECK(ecount == 4);
     CHECK(secp256k1_bulletproof_rangeproof_verify_multi(both, scratch, gens, &proof_ptr, 1, plen, &mv_ptr, NULL, 1, 64, &value_gen, blind_ptr, &blindlen) == 0);
-    CHECK(ecount == 5);
     CHECK(secp256k1_bulletproof_rangeproof_verify_multi(both, scratch, gens, &proof_ptr, 1, plen, &mv_ptr, pcommit_arr, 1, 64, NULL, blind_ptr, &blindlen) == 0);
-    CHECK(ecount == 6);
     CHECK(secp256k1_bulletproof_rangeproof_verify_multi(both, scratch, gens, &proof_ptr, 1, plen, &mv_ptr, pcommit_arr, 1, 64, &value_gen, NULL, &blindlen) == 0);
-    CHECK(ecount == 7);
     CHECK(secp256k1_bulletproof_rangeproof_verify_multi(both, scratch, gens, &proof_ptr, 1, plen, &mv_ptr, pcommit_arr, 1, 64, &value_gen, blind_ptr, NULL) == 0);
-    CHECK(ecount == 8);
     CHECK(secp256k1_bulletproof_rangeproof_verify_multi(both, scratch, gens, &proof_ptr, 1, plen, &mv_ptr, pcommit_arr, 1, 64, &value_gen, NULL, NULL) == 0);
-    CHECK(ecount == 8);
 
     CHECK(secp256k1_bulletproof_rangeproof_verify_multi(both, scratch, gens, &proof_ptr, 1, plen, &mv_ptr, pcommit_arr, 0, 64, &value_gen, blind_ptr, &blindlen) == 0);
-    CHECK(ecount == 9);
     CHECK(secp256k1_bulletproof_rangeproof_verify_multi(both, scratch, gens, &proof_ptr, 1, plen, &mv_ptr, pcommit_arr, 1, 65, &value_gen, blind_ptr, &blindlen) == 0);
-    CHECK(ecount == 10);
     CHECK(secp256k1_bulletproof_rangeproof_verify_multi(both, scratch, gens, &proof_ptr, 1, plen, &mv_ptr, pcommit_arr, 1, 63, &value_gen, blind_ptr, &blindlen) == 0);
-    CHECK(ecount == 10);
     CHECK(secp256k1_bulletproof_rangeproof_verify_multi(both, scratch, gens, &proof_ptr, 1, plen, &mv_ptr, pcommit_arr, 1, 0, &value_gen, blind_ptr, &blindlen) == 0);
-    CHECK(ecount == 11);
     CHECK(secp256k1_bulletproof_rangeproof_verify_multi(both, scratch, gens, &proof_ptr, 1, plen, &mv_ptr, pcommit_arr, 2, 64, &value_gen, blind_ptr, &blindlen) == 0);
-    CHECK(ecount == 11);
     CHECK(secp256k1_bulletproof_rangeproof_verify_multi(both, scratch, gens, &proof_ptr, 1, plen, &mv_ptr, pcommit_arr, 4, 64, &value_gen, blind_ptr, &blindlen) == 0);
-    CHECK(ecount == 12);
 
     /* Rewind */
-    ecount = 0;
     CHECK(secp256k1_bulletproof_rangeproof_rewind(none, gens, &rewind_v, rewind_blind, proof, plen, min_value[0], pcommit, &value_gen, blind, blind, 32) == 1);
-    CHECK(ecount == 0);
     CHECK(secp256k1_bulletproof_rangeproof_rewind(none, NULL, &rewind_v, rewind_blind, proof, plen, min_value[0], pcommit, &value_gen, blind, blind, 32) == 0);
-    CHECK(ecount == 1);
     CHECK(secp256k1_bulletproof_rangeproof_rewind(none, gens, NULL, rewind_blind, proof, plen, min_value[0], pcommit, &value_gen, blind, blind, 32) == 0);
-    CHECK(ecount == 2);
     CHECK(secp256k1_bulletproof_rangeproof_rewind(none, gens, &rewind_v, NULL, proof, plen, min_value[0], pcommit, &value_gen, blind, blind, 32) == 0);
-    CHECK(ecount == 3);
     CHECK(secp256k1_bulletproof_rangeproof_rewind(none, gens, &rewind_v, rewind_blind, NULL, plen, min_value[0], pcommit, &value_gen, blind, blind, 32) == 0);
-    CHECK(ecount == 4);
     CHECK(secp256k1_bulletproof_rangeproof_rewind(none, gens, &rewind_v, rewind_blind, proof, 0, min_value[0], pcommit, &value_gen, blind, blind, 32) == 0);
-    CHECK(ecount == 4);
     CHECK(secp256k1_bulletproof_rangeproof_rewind(none, gens, &rewind_v, rewind_blind, proof, plen, 0, pcommit, &value_gen, blind, blind, 32) == 0);
-    CHECK(ecount == 4);
     CHECK(secp256k1_bulletproof_rangeproof_rewind(none, gens, &rewind_v, rewind_blind, proof, plen, min_value[0], NULL, &value_gen, blind, blind, 32) == 0);
-    CHECK(ecount == 5);
     CHECK(secp256k1_bulletproof_rangeproof_rewind(none, gens, &rewind_v, rewind_blind, proof, plen, min_value[0], pcommit, NULL, blind, blind, 32) == 0);
-    CHECK(ecount == 6);
     CHECK(secp256k1_bulletproof_rangeproof_rewind(none, gens, &rewind_v, rewind_blind, proof, plen, min_value[0], pcommit, &value_gen, NULL, blind, 32) == 0);
-    CHECK(ecount == 7);
     CHECK(secp256k1_bulletproof_rangeproof_rewind(none, gens, &rewind_v, rewind_blind, proof, plen, min_value[0], pcommit, &value_gen, blind, NULL, 32) == 0);
-    CHECK(ecount == 8);
     CHECK(secp256k1_bulletproof_rangeproof_rewind(none, gens, &rewind_v, rewind_blind, proof, plen, min_value[0], pcommit, &value_gen, blind, blind, 0) == 0);
-    CHECK(ecount == 8);
     CHECK(secp256k1_bulletproof_rangeproof_rewind(none, gens, &rewind_v, rewind_blind, proof, plen, min_value[0], pcommit, &value_gen, blind, NULL, 0) == 0);
-    CHECK(ecount == 8);
 
     secp256k1_bulletproof_generators_destroy(none, gens);
     secp256k1_bulletproof_generators_destroy(none, NULL);

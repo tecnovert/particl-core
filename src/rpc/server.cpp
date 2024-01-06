@@ -605,9 +605,4 @@ void RPCRunLaterErase(const std::string &name)
     deadlineTimers.erase(name);
 }
 
-bool RPCSerializationWithoutWitness()
-{
-    return (gArgs.GetIntArg("-rpcserialversion", DEFAULT_RPC_SERIALIZE_VERSION) == 0);
-}
-
 CRPCTable tableRPC;

@@ -5669,7 +5669,7 @@ static UniValue SendToInner(const JSONRPCRequest &request, OutputTypes typeIn, O
         result.pushKV("need_hwdevice", UniValue(coincontrol.fNeedHardwareKey ? true : false));
 
         if (fShowHex) {
-            std::string strHex = EncodeHexTx(*(wtx.tx), RPCSerializationWithoutWitness());
+            std::string strHex = EncodeHexTx(*(wtx.tx));
             result.pushKV("hex", strHex);
         }
 
@@ -9924,7 +9924,7 @@ static RPCHelpMan rehashblock()
     }
 
     DataStream ssBlock;
-    ssBlock << RPCTxSerParams(block);
+    ssBlock << TX_WITH_WITNESS(block);
     return HexStr(ssBlock);
 },
     };

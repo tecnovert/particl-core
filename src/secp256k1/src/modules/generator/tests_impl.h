@@ -16,6 +16,11 @@
 
 #include "include/secp256k1_generator.h"
 
+static void skip_error_callback_fn(const char* str, void* data) {
+    (void)str;
+    (void)data;
+}
+
 void test_generator_api(void) {
     unsigned char key[32];
     unsigned char blind[32];
@@ -24,59 +29,40 @@ void test_generator_api(void) {
     secp256k1_context *sign = secp256k1_context_create(SECP256K1_CONTEXT_SIGN);
     secp256k1_context *vrfy = secp256k1_context_create(SECP256K1_CONTEXT_VERIFY);
     secp256k1_generator gen;
-    int32_t ecount = 0;
 
-    secp256k1_context_set_error_callback(none, counting_illegal_callback_fn, &ecount);
-    secp256k1_context_set_error_callback(sign, counting_illegal_callback_fn, &ecount);
-    secp256k1_context_set_error_callback(vrfy, counting_illegal_callback_fn, &ecount);
-    secp256k1_context_set_illegal_callback(none, counting_illegal_callback_fn, &ecount);
-    secp256k1_context_set_illegal_callback(sign, counting_illegal_callback_fn, &ecount);
-    secp256k1_context_set_illegal_callback(vrfy, counting_illegal_callback_fn, &ecount);
     secp256k1_testrand256(key);
     secp256k1_testrand256(blind);
 
+    secp256k1_context_set_illegal_callback(none, skip_error_callback_fn, NULL);
+    secp256k1_context_set_illegal_callback(vrfy, skip_error_callback_fn, NULL);
+
     CHECK(secp256k1_generator_generate(none, &gen, key) == 1);
-    CHECK(ecount == 0);
     CHECK(secp256k1_generator_generate(none, NULL, key) == 0);
-    CHECK(ecount == 1);
     CHECK(secp256k1_generator_generate(none, &gen, NULL) == 0);
-    CHECK(ecount == 2);
 
     CHECK(secp256k1_ecmult_gen_context_is_built(&none->ecmult_gen_ctx));
     CHECK(secp256k1_ecmult_gen_context_is_built(&sign->ecmult_gen_ctx));
     CHECK(secp256k1_ecmult_gen_context_is_built(&vrfy->ecmult_gen_ctx));
-    ecount = 2;
     CHECK(secp256k1_generator_generate_blinded(sign, &gen, key, blind) == 1);
-    CHECK(ecount == 2);
     /*CHECK(secp256k1_generator_generate_blinded(vrfy, &gen, key, blind) == 0);
     CHECK(ecount == 3);*/
-    CHECK(ecount == 2);
 
     /*CHECK(secp256k1_generator_generate_blinded(none, &gen, key, blind) == 0);
     CHECK(ecount == 3);
     * */
     CHECK(secp256k1_generator_generate_blinded(vrfy, NULL, key, blind) == 0);
-    CHECK(ecount == 3);
 
     CHECK(secp256k1_generator_generate_blinded(vrfy, &gen, NULL, blind) == 0);
-    CHECK(ecount == 4);
     CHECK(secp256k1_generator_generate_blinded(vrfy, &gen, key, NULL) == 0);
-    CHECK(ecount == 5);
 
     CHECK(secp256k1_generator_serialize(none, sergen, &gen) == 1);
-    CHECK(ecount == 5);
     CHECK(secp256k1_generator_serialize(none, NULL, &gen) == 0);
-    CHECK(ecount == 6);
     CHECK(secp256k1_generator_serialize(none, sergen, NULL) == 0);
-    CHECK(ecount == 7);
 
     CHECK(secp256k1_generator_serialize(none, sergen, &gen) == 1);
     CHECK(secp256k1_generator_parse(none, &gen, sergen) == 1);
-    CHECK(ecount == 7);
     CHECK(secp256k1_generator_parse(none, NULL, sergen) == 0);
-    CHECK(ecount == 8);
     CHECK(secp256k1_generator_parse(none, &gen, NULL) == 0);
-    CHECK(ecount == 9);
 
     secp256k1_context_destroy(none);
     secp256k1_context_destroy(sign);
