@@ -4799,7 +4799,7 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
         MaybePunishNodeForDuplicates(state.nodeId, state);
 
         if (received_new_header) {
-            LogPrintfCategory(BCLog::NET, "Saw new cmpctblock header hash=%s peer=%d\n",
+            LogInfo("Saw new cmpctblock header hash=%s peer=%d\n",
                 blockhash.ToString(), pfrom.GetId());
         }
 

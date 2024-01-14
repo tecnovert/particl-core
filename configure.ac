@@ -5,8 +5,8 @@ define(_CLIENT_VERSION_PARTICL, 1)
 define(_CLIENT_VERSION_BUILD, 0)
 define(_CLIENT_VERSION_RC, 0)
 define(_CLIENT_VERSION_IS_RELEASE, false)
-define(_COPYRIGHT_YEAR, 2023)
-define(_COPYRIGHT_YEAR_BTC, 2023)
+define(_COPYRIGHT_YEAR, 2024)
+define(_COPYRIGHT_YEAR_BTC, 2024)
 define(_COPYRIGHT_HOLDERS,[The %s developers])
 define(_COPYRIGHT_HOLDERS_SUBSTITUTION,[[Particl Core]])
 AC_INIT([Particl Core],m4_join([.], _CLIENT_VERSION_MAJOR, _CLIENT_VERSION_MINOR, _CLIENT_VERSION_PARTICL, _CLIENT_VERSION_BUILD)m4_if(_CLIENT_VERSION_RC, [0], [], [rc]_CLIENT_VERSION_RC),[https://github.com/particl/particl-core/issues],[particl],[https://particl.io/])
@@ -1353,8 +1353,6 @@ if test "$enable_fuzz_binary" = "yes"; then
      ]],[[
       */ int not_main() {
      ]])])
-
-  CHECK_RUNTIME_LIB
 fi
 
 if test "$enable_wallet" != "no"; then
