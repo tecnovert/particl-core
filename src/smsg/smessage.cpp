@@ -3940,7 +3940,7 @@ int CSMSG::Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID 
     }
 
     uint256 P;
-    if (!secp256k1_ecdh(secp256k1_context_smsg, P.begin(), &pubkey, keyR.begin(), nullptr, nullptr)) {
+    if (!secp256k1_ecdh(secp256k1_context_smsg, P.begin(), &pubkey, UCharCast(keyR.begin()), nullptr, nullptr)) {
         return errorN(SMSG_GENERAL_ERROR, "%s: secp256k1_ecdh failed.", __func__);
     }
 
@@ -4547,7 +4547,7 @@ int CSMSG::Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, c
     }
 
     uint256 P;
-    if (!secp256k1_ecdh(secp256k1_context_smsg, P.begin(), &R, keyDest.begin(), nullptr, nullptr)) {
+    if (!secp256k1_ecdh(secp256k1_context_smsg, P.begin(), &R, UCharCast(keyDest.begin()), nullptr, nullptr)) {
         return errorN(SMSG_GENERAL_ERROR, "%s: secp256k1_ecdh failed.", __func__);
     }
 

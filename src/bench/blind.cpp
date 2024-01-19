@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Particl Core developers
+// Copyright (c) 2017-2024 The Particl Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -41,7 +41,7 @@ static void Blind(benchmark::Bench& bench)
     assert(secp256k1_rangeproof_sign(secp256k1_ctx_blind,
         &vchRangeproof[0], &nRangeProofLen,
         min_value, &commitment,
-        &vBlind[0], ephemeral_key.begin(),
+        &vBlind[0], UCharCast(ephemeral_key.begin()),
         ct_exponent, ct_bits,
         nValue,
         nullptr, 0,

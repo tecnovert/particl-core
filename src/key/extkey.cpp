@@ -589,7 +589,7 @@ int CEKAStealthKey::SetSxAddr(CStealthAddress &sxAddr) const
     sxAddr.prefix.bitfield = nPrefix;
     sxAddr.scan_pubkey = pkScan;
     sxAddr.spend_pubkey = pkSpend;
-    sxAddr.scan_secret.Set(skScan.begin(), true);
+    sxAddr.scan_secret.Set(UCharCast(skScan.begin()), true);
     return 0;
 };
 

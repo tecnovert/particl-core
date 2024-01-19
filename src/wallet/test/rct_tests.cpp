@@ -270,7 +270,7 @@ BOOST_AUTO_TEST_CASE(rct_test)
             const CCmpPubKey &ki = *((CCmpPubKey*)&vKeyImages[k*33]);
             if (test_keyimage == ki) {
                 real_column = i;
-                vpsk[0] = key.begin();
+                vpsk[0] = UCharCast(key.begin());
 
                 // Get blinding factor
                 CHDWalletDB wdb(pwallet->GetDatabase());
@@ -300,7 +300,7 @@ BOOST_AUTO_TEST_CASE(rct_test)
 
     uint8_t blindSum[32] = {0}; // Set by secp256k1_prepare_mlsag
     vpsk[nRows-1] = blindSum;
-    vpBlinds.push_back(cctl.vSplitCommitBlindingKeys[0].begin());
+    vpBlinds.push_back(UCharCast(cctl.vSplitCommitBlindingKeys[0].begin()));
 
     const uint8_t *pSplitCommit = &vDL[(1 + (nInputs+1) * nRingSize) * 32];
     BOOST_REQUIRE(0 == secp256k1_prepare_mlsag(&vM[0], blindSum,

@@ -374,7 +374,7 @@ BOOST_AUTO_TEST_CASE(ringct_test)
     std::vector<const uint8_t*> sk(nRows); // pass in pointer to secret keys to keep them in secured memory
 
     for (size_t k = 0; k < txins.size(); ++k) {
-        sk[k] = k_ins[k].begin();
+        sk[k] = UCharCast(k_ins[k].begin());
     }
     uint8_t blindSum[32];
     memset(blindSum, 0, 32);
@@ -604,7 +604,7 @@ int doTest(secp256k1_context *ctx, size_t nInputs, size_t nOutputs, CAmount nFee
     std::vector<const uint8_t*> sk(nRows); // pass in pointer to secret keys to keep them in secured memory
 
     for (size_t k = 0; k < txins.size(); ++k) {
-        sk[k] = kIns[k].begin();
+        sk[k] = UCharCast(kIns[k].begin());
     }
     uint8_t blindSum[32]; // memory for last key (sum of blinding factors)
     memset(blindSum, 0, 32);

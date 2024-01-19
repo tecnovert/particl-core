@@ -5567,7 +5567,7 @@ int CHDWallet::AddAnonInputs(CWalletTx &wtx, CTransactionRecord &rtx,
                     }
 
                     // Keyimage is required for the tx hash
-                    if (0 != (rv = secp256k1_get_keyimage(&vKeyImages[k * 33], ao.pubkey.begin(), key.begin()))) {
+                    if (0 != (rv = secp256k1_get_keyimage(&vKeyImages[k * 33], ao.pubkey.begin(), UCharCast(key.begin())))) {
                         return wserrorN(1, sError, __func__, "secp256k1_get_keyimage failed %d", rv);
                     }
                 }
@@ -5611,7 +5611,7 @@ int CHDWallet::AddAnonInputs(CWalletTx &wtx, CTransactionRecord &rtx,
                         if (!coinControl->SetKeyFromInputData(idk, vsk[k]) && !GetKey(idk, vsk[k])) {
                             return wserrorN(1, sError, __func__, _("No key for anonoutput, %s").translated, HexStr(ao.pubkey));
                         }
-                        vpsk[k] = vsk[k].begin();
+                        vpsk[k] = UCharCast(vsk[k].begin());
                         vpBlinds.push_back(&vInputBlinds[l][k * 32]);
                     }
                 }
@@ -5634,7 +5634,7 @@ int CHDWallet::AddAnonInputs(CWalletTx &wtx, CTransactionRecord &rtx,
                         std::vector<const uint8_t*> vpAllBlinds = vpOutBlinds;
 
                         for (size_t k = 0; k < l; ++k) {
-                            vpAllBlinds.push_back(vSplitCommitBlindingKeys[k].begin());
+                            vpAllBlinds.push_back(UCharCast(vSplitCommitBlindingKeys[k].begin()));
                         }
 
                         vSplitCommitBlindingKeys[l].MakeKeyData();
@@ -5665,7 +5665,7 @@ int CHDWallet::AddAnonInputs(CWalletTx &wtx, CTransactionRecord &rtx,
 
                     memcpy(&vDL[(1 + (nSigInputs+1) * nSigRingSize) * 32], splitInputCommit.data, 33);
 
-                    vpBlinds.emplace_back(vSplitCommitBlindingKeys[l].begin());
+                    vpBlinds.emplace_back(UCharCast(vSplitCommitBlindingKeys[l].begin()));
                     const uint8_t *pSplitCommit = splitInputCommit.data;
 
                     if (0 != (rv = secp256k1_prepare_mlsag(&vm[0], blindSum,
@@ -6816,7 +6816,7 @@ int CHDWallet::ExtKeyEncrypt(CStoredExtKey *sek, const CKeyingMaterial &vMKey, b
 
     std::vector<uint8_t> vchCryptedSecret;
     CPubKey pubkey = sek->kp.pubkey;
-    CKeyingMaterial vchSecret(sek->kp.key.begin(), sek->kp.key.end());
+    CKeyingMaterial vchSecret(UCharCast(sek->kp.key.begin()), UCharCast(sek->kp.key.end()));
     if (!EncryptSecret(vMKey, vchSecret, pubkey.GetHash(), vchCryptedSecret)) {
         return werrorN(1, "EncryptSecret failed.");
     }
@@ -8215,7 +8215,7 @@ int CHDWallet::NewStealthKeyFromAccount(
     if (nPrefixBits > 0) {
         // If pPrefix is null, set nPrefix from the hash of kSpend
         uint8_t tmp32[32];
-        CSHA256().Write(kSpend.begin(), 32).Finalize(tmp32);
+        CSHA256().Write(UCharCast(kSpend.begin()), 32).Finalize(tmp32);
         memcpy(&nPrefix, tmp32, 4);
         nPrefix = le32toh(nPrefix);
     }
@@ -8525,7 +8525,7 @@ int CHDWallet::NewStealthKeyV2FromAccount(
     if (nPrefixBits > 0) {
         // If pPrefix is null, set nPrefix from the hash of kScan
         uint8_t tmp32[32];
-        CSHA256().Write(kScan.begin(), 32).Finalize(tmp32);
+        CSHA256().Write(UCharCast(kScan.begin()), 32).Finalize(tmp32);
         memcpy(&nPrefix, tmp32, 4);
         nPrefix = le32toh(nPrefix);
     }
@@ -10119,7 +10119,7 @@ int CHDWallet::CheckForStealthAndNarration(const CTxOutBase *pb, const CTxOutDat
             }
 
             NarrationCrypter crypter;
-            crypter.SetKey(sShared.begin(), &vchEphemPK[0]);
+            crypter.SetKey(UCharCast(sShared.begin()), &vchEphemPK[0]);
 
             std::vector<uint8_t> vchNarr;
             if (!crypter.Decrypt(&vData[nNarrOffset], lenNarr, vchNarr)) {
@@ -10985,7 +10985,7 @@ int CHDWallet::OwnAnonOut(CHDWalletDB *pwdb, const uint256 &txhash, const CTxOut
     if (!key.IsValid()) {
         // Unknown key, expected for watchonly outputs
     } else {
-        if (0 != secp256k1_get_keyimage(ki.ncbegin(), pout->pk.begin(), key.begin())) {
+        if (0 != secp256k1_get_keyimage(ki.ncbegin(), pout->pk.begin(), UCharCast(key.begin()))) {
             WalletLogPrintf("Error: %s - secp256k1_get_keyimage failed.\n", __func__);
         } else
         if (!pwdb->WriteAnonKeyImage(ki, op)) {

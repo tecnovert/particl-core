@@ -2289,7 +2289,7 @@ static RPCHelpMan importstealthaddress()
         if (sPrefix_num.empty()) {
             // if pPrefix is null, set nPrefix from the hash of kSpend
             uint8_t tmp32[32];
-            CSHA256().Write(skSpend.begin(), 32).Finalize(tmp32);
+            CSHA256().Write(UCharCast(skSpend.begin()), 32).Finalize(tmp32);
             memcpy(&nPrefix, tmp32, 4);
             nPrefix = le32toh(nPrefix);
         }
@@ -7747,7 +7747,7 @@ static RPCHelpMan derivefromstealthaddress()
     result.pushKV("pubkey", HexStr(pkDest));
     result.pushKV("ephemeral_pubkey", HexStr(pkEphem));
     if (sEphem.IsValid()) {
-        result.pushKV("ephemeral_privatekey", HexStr(Span<const unsigned char>(sEphem.begin(), 32)));
+        result.pushKV("ephemeral_privatekey", HexStr(sEphem));
     }
     if (sSpendR.IsValid()) {
         result.pushKV("privatekey", CBitcoinSecret(sSpendR).ToString());

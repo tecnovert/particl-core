@@ -249,12 +249,12 @@ bool VerifyMLSAG(const CTransaction &tx, TxValidationState &state)
     }
 
     return true;
-};
+}
 
 int GetKeyImage(CCmpPubKey &ki, const CCmpPubKey &pubkey, const CKey &key)
 {
-    return secp256k1_get_keyimage(ki.ncbegin(), pubkey.begin(), key.begin());
-};
+    return secp256k1_get_keyimage(ki.ncbegin(), pubkey.begin(), UCharCast(key.begin()));
+}
 
 bool AddKeyImagesToMempool(const CTransaction &tx, CTxMemPool &pool)
 {

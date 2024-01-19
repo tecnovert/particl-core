@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2023 The Particl Core developers
+// Copyright (c) 2017-2024 The Particl Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -44,7 +44,7 @@ static void Mlsag(benchmark::Bench& bench)
 
     for (size_t k = 0; k < nBlinded; ++k) {
         vBlindsOut[0].MakeNewKey(true);
-        pblinds[nInputs + k] = vBlindsOut[k].begin();
+        pblinds[nInputs + k] = UCharCast(vBlindsOut[k].begin());
 
         assert(secp256k1_pedersen_commit(secp256k1_ctx_blind, &cm_out[k], pblinds[nInputs + k], nValues[nInputs + k], &secp256k1_generator_const_h, &secp256k1_generator_const_g));
         pcm_out[k] = cm_out[k].data;
@@ -62,13 +62,13 @@ static void Mlsag(benchmark::Bench& bench)
     for (size_t i = 0; i < nCols; ++i) {
         if (i == nRealCol) {
             vKeys[k].MakeNewKey(true);
-            pkeys[k] = vKeys[k].begin();
+            pkeys[k] = UCharCast(vKeys[k].begin());
 
             CPubKey pk = vKeys[k].GetPubKey();
             memcpy(&m[(i+k*nCols)*33], pk.begin(), 33);
 
             vBlindsIn[k].MakeNewKey(true);
-            pblinds[k] = vBlindsIn[k].begin();
+            pblinds[k] = UCharCast(vBlindsIn[k].begin());
 
             assert(secp256k1_pedersen_commit(secp256k1_ctx_blind, &cm_in[i+k*nCols], pblinds[k], nValues[k], &secp256k1_generator_const_h, &secp256k1_generator_const_g));
             pcm_in[i+k*nCols] = cm_in[i+k*nCols].data;
@@ -83,7 +83,7 @@ static void Mlsag(benchmark::Bench& bench)
 
         CAmount v = 10;
         key.MakeNewKey(true);
-        assert(secp256k1_pedersen_commit(secp256k1_ctx_blind, &cm_in[i+k*nCols], key.begin(), v, &secp256k1_generator_const_h, &secp256k1_generator_const_g));
+        assert(secp256k1_pedersen_commit(secp256k1_ctx_blind, &cm_in[i+k*nCols], UCharCast(key.begin()), v, &secp256k1_generator_const_h, &secp256k1_generator_const_g));
         pcm_in[i+k*nCols] = cm_in[i+k*nCols].data;
     }
 

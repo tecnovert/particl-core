@@ -176,7 +176,7 @@ int StealthShared(const CKey &secret, const ec_point &pubkey, CKey &sharedSOut)
 
     // H(eQ)
     sharedSOut.MakeKeyData();
-    if (!secp256k1_ecdh(secp256k1_ctx_stealth, sharedSOut.begin_nc(), &Q, secret.begin(), nullptr, nullptr)) {
+    if (!secp256k1_ecdh(secp256k1_ctx_stealth, sharedSOut.begin_nc(), &Q, UCharCast(secret.begin()), nullptr, nullptr)) {
         sharedSOut.ClearKeyData();
         return errorN(1, "%s: secp256k1_ctx_stealth failed.", __func__);
     }
@@ -230,14 +230,14 @@ int StealthSecret(const CKey &secret, const ec_point &pubkey, const ec_point &pk
 
     // H(eQ)
     sharedSOut.MakeKeyData();
-    if (!secp256k1_ecdh(secp256k1_ctx_stealth, sharedSOut.begin_nc(), &Q, secret.begin(), nullptr, nullptr)) {
+    if (!secp256k1_ecdh(secp256k1_ctx_stealth, sharedSOut.begin_nc(), &Q, UCharCast(secret.begin()), nullptr, nullptr)) {
         sharedSOut.ClearKeyData();
         return errorN(1, "%s: secp256k1_ctx_stealth failed.", __func__);
     }
 
     // C = sharedSOut * G
     // R' = R + C
-    if (!secp256k1_ec_pubkey_tweak_add(secp256k1_ctx_stealth, &R, sharedSOut.begin())) {
+    if (!secp256k1_ec_pubkey_tweak_add(secp256k1_ctx_stealth, &R, UCharCast(sharedSOut.begin()))) {
         sharedSOut.ClearKeyData();
         return errorN(1, "%s: secp256k1_ec_pubkey_tweak_add failed.", __func__); // Start again with a new ephemeral key
     }
@@ -275,7 +275,7 @@ int StealthSecretSpend(const CKey &scanSecret, const ec_point &ephemPubkey, cons
 
     uint8_t tmp32[32];
     // H(dP)
-    if (!secp256k1_ecdh(secp256k1_ctx_stealth, tmp32, &P, scanSecret.begin(), nullptr, nullptr)) {
+    if (!secp256k1_ecdh(secp256k1_ctx_stealth, tmp32, &P, UCharCast(scanSecret.begin()), nullptr, nullptr)) {
         return errorN(1, "%s: secp256k1_ctx_stealth failed.", __func__);
     }
 
@@ -291,11 +291,11 @@ int StealthSecretSpend(const CKey &scanSecret, const ec_point &ephemPubkey, cons
 int StealthSharedToSecretSpend(const CKey &sharedS, const CKey &spendSecret, CKey &secretOut)
 {
     secretOut = spendSecret;
-    if (!secp256k1_ec_seckey_tweak_add(secp256k1_ctx_stealth, secretOut.begin_nc(), sharedS.begin())) {
+    if (!secp256k1_ec_seckey_tweak_add(secp256k1_ctx_stealth, secretOut.begin_nc(), UCharCast(sharedS.begin()))) {
         return errorN(1, "%s: secp256k1_ec_seckey_tweak_add failed.", __func__);
     }
 
-    if (!secp256k1_ec_seckey_verify(secp256k1_ctx_stealth, secretOut.begin())) { // necessary?
+    if (!secp256k1_ec_seckey_verify(secp256k1_ctx_stealth, UCharCast(secretOut.begin()))) { // necessary?
         return errorN(1, "%s: secp256k1_ec_seckey_verify failed.", __func__);
     }
 
@@ -313,7 +313,7 @@ int StealthSharedToPublicKey(const ec_point &pkSpend, const CKey &sharedS, ec_po
         return errorN(1, "%s: secp256k1_ec_pubkey_parse R failed.", __func__);
     }
 
-    if (!secp256k1_ec_pubkey_tweak_add(secp256k1_ctx_stealth, &R, sharedS.begin())) {
+    if (!secp256k1_ec_pubkey_tweak_add(secp256k1_ctx_stealth, &R, UCharCast(sharedS.begin()))) {
         return errorN(1, "%s: secp256k1_ec_pubkey_tweak_add failed.", __func__);
     }
 
@@ -401,7 +401,7 @@ int MakeStealthData(const std::string &sNarration, stealth_prefix prefix, const 
     std::vector<uint8_t> vchNarr;
     if (sNarration.length() > 0) {
         NarrationCrypter crypter;
-        crypter.SetKey(sShared.begin(), pkEphem.begin());
+        crypter.SetKey(UCharCast(sShared.begin()), pkEphem.begin());
 
         if (!crypter.Encrypt((uint8_t*)sNarration.data(), sNarration.length(), vchNarr)) {
             return errorN(1, sError, __func__, "Narration encryption failed.");

@@ -116,7 +116,7 @@ BOOST_AUTO_TEST_CASE(stealth)
     BOOST_REQUIRE(StealthSecret(sScan, vchEphemPK, sx.spend_pubkey, sShared, pkExtracted) == 0);
 
     NarrationCrypter crypter;
-    crypter.SetKey(sShared.begin(), &vchEphemPK[0]);
+    crypter.SetKey(UCharCast(sShared.begin()), &vchEphemPK[0]);
     std::vector<uint8_t> vchNarr;
     BOOST_REQUIRE(crypter.Decrypt(&vchENarr[0], vchENarr.size(), vchNarr));
     std::string sNarrRecovered = std::string(vchNarr.begin(), vchNarr.end());
@@ -170,7 +170,7 @@ BOOST_AUTO_TEST_CASE(stealth)
 
     BOOST_REQUIRE(StealthSecret(sScan, vchEphemPK, sx.spend_pubkey, sShared, pkExtracted) == 0);
 
-    crypter.SetKey(sShared.begin(), &vchEphemPK[0]);
+    crypter.SetKey(UCharCast(sShared.begin()), &vchEphemPK[0]);
     BOOST_REQUIRE(crypter.Decrypt(&vchENarr[0], vchENarr.size(), vchNarr));
     sNarrRecovered = std::string(vchNarr.begin(), vchNarr.end());
     BOOST_CHECK(sNarr == sNarrRecovered);
