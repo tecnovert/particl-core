@@ -235,6 +235,7 @@ public:
     // Particl
     size_t NumSelected();
     bool SetKeyFromInputData(const CKeyID &idk, CKey &key) const;
+    std::set<int> setSubtractFeeFromOutputs; // Pass through for FundTransaction
 
 //private:
     //! Selected inputs (inputs that will be used, regardless of whether they're optimal or not)

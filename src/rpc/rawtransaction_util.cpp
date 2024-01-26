@@ -13,6 +13,7 @@
 #include <primitives/transaction.h>
 #include <rpc/request.h>
 #include <rpc/util.h>
+#include <script/script.h>
 #include <script/sign.h>
 #include <script/signingprovider.h>
 #include <tinyformat.h>
@@ -71,7 +72,7 @@ void AddInputs(CMutableTransaction& rawTx, const UniValue& inputs_in, std::optio
     }
 }
 
-void AddOutputs(CMutableTransaction& rawTx, const UniValue& outputs_in)
+UniValue NormalizeOutputs(const UniValue& outputs_in)
 {
     if (outputs_in.isNull()) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, output argument must be non-null");
@@ -95,11 +96,15 @@ void AddOutputs(CMutableTransaction& rawTx, const UniValue& outputs_in)
         }
         outputs = std::move(outputs_dict);
     }
+    return outputs;
+}
 
+std::vector<std::pair<CTxDestination, CAmount>> ParseOutputs(const UniValue& outputs)
+{
     // Duplicate checking
     std::set<CTxDestination> destinations;
+    std::vector<std::pair<CTxDestination, CAmount>> parsed_outputs;
     bool has_data{false};
-
     for (const std::string& name_ : outputs.getKeys()) {
         if (name_ == "data") {
             if (has_data) {
@@ -107,19 +112,12 @@ void AddOutputs(CMutableTransaction& rawTx, const UniValue& outputs_in)
             }
             has_data = true;
             std::vector<unsigned char> data = ParseHexV(outputs[name_].getValStr(), "Data");
-
-            if (fParticlMode)
-            {
-                OUTPUT_PTR<CTxOutData> out = MAKE_OUTPUT<CTxOutData>();
-                out->vData = data;
-                rawTx.vpout.push_back(std::move(out));
-            } else
-            {
-                CTxOut out(0, CScript() << OP_RETURN << data);
-                rawTx.vout.push_back(out);
-            };
+            CTxDestination destination{CNoDestination{CScript() << OP_RETURN << data}};
+            CAmount amount{0};
+            parsed_outputs.emplace_back(destination, amount);
         } else {
-            CTxDestination destination = DecodeDestination(name_);
+            CTxDestination destination{DecodeDestination(name_)};
+            CAmount amount{AmountFromValue(outputs[name_])};
             if (!IsValidDestination(destination)) {
                 throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid Particl address: ") + name_);
             }
@@ -127,33 +125,57 @@ void AddOutputs(CMutableTransaction& rawTx, const UniValue& outputs_in)
             if (!destinations.insert(destination).second) {
                 throw JSONRPCError(RPC_INVALID_PARAMETER, std::string("Invalid parameter, duplicated address: ") + name_);
             }
-
-            CScript scriptPubKey = GetScriptForDestination(destination);
-            CAmount nAmount = AmountFromValue(outputs[name_]);
-
-            if (fParticlMode) {
-                OUTPUT_PTR<CTxOutStandard> out = MAKE_OUTPUT<CTxOutStandard>();
-                out->nValue = nAmount;
-                CStealthAddress *psx = std::get_if<CStealthAddress>(&destination);
-                if (psx) {
-                    OUTPUT_PTR<CTxOutData> outData = MAKE_OUTPUT<CTxOutData>();
-                    std::string sNarration, sError;
-                    if (0 != PrepareStealthOutput(*psx, sNarration, scriptPubKey, outData->vData, sError)) {
-                        throw JSONRPCError(RPC_INTERNAL_ERROR, std::string("PrepareStealthOutput failed: ") + sError);
-                    }
-
-                    out->scriptPubKey = scriptPubKey;
-                    rawTx.vpout.push_back(std::move(out));
-                    rawTx.vpout.push_back(std::move(outData));
-                } else {
-                    out->scriptPubKey = scriptPubKey;
-                    rawTx.vpout.push_back(std::move(out));
-                }
-            } else {
-                CTxOut out(nAmount, scriptPubKey);
-                rawTx.vout.push_back(out);
-            }
+            parsed_outputs.emplace_back(destination, amount);
         }
+    }
+    return parsed_outputs;
+}
+
+void AddOutputs(CMutableTransaction& rawTx, const UniValue& outputs_in)
+{
+    UniValue outputs(UniValue::VOBJ);
+    outputs = NormalizeOutputs(outputs_in);
+
+    std::vector<std::pair<CTxDestination, CAmount>> parsed_outputs = ParseOutputs(outputs);
+    for (const auto& [destination, nAmount] : parsed_outputs) {
+        CScript scriptPubKey = GetScriptForDestination(destination);
+
+        if (fParticlMode) {
+
+            // Strip data vector from script added in from ParseOutputs
+            if (std::get_if<CNoDestination>(&destination)) {
+                opcodetype opcode;
+                std::vector<unsigned char> data;
+                CScript::const_iterator it = scriptPubKey.begin();
+                if (scriptPubKey.size() > 1 && scriptPubKey.GetOp(it, opcode, data) && opcode == OP_RETURN) {
+                    OUTPUT_PTR<CTxOutData> outData = MAKE_OUTPUT<CTxOutData>();
+                    outData->vData = data;
+                    rawTx.vpout.push_back(std::move(outData));
+                }
+                continue;
+            }
+
+            OUTPUT_PTR<CTxOutStandard> out = MAKE_OUTPUT<CTxOutStandard>();
+            out->nValue = nAmount;
+            const CStealthAddress *psx = std::get_if<CStealthAddress>(&destination);
+            if (psx) {
+                OUTPUT_PTR<CTxOutData> outData = MAKE_OUTPUT<CTxOutData>();
+                std::string sNarration, sError;
+                if (0 != PrepareStealthOutput(*psx, sNarration, scriptPubKey, outData->vData, sError)) {
+                    throw JSONRPCError(RPC_INTERNAL_ERROR, std::string("PrepareStealthOutput failed: ") + sError);
+                }
+
+                out->scriptPubKey = scriptPubKey;
+                rawTx.vpout.push_back(std::move(out));
+                rawTx.vpout.push_back(std::move(outData));
+            } else {
+                out->scriptPubKey = scriptPubKey;
+                rawTx.vpout.push_back(std::move(out));
+            }
+            continue;
+        }
+        CTxOut out(nAmount, scriptPubKey);
+        rawTx.vout.push_back(out);
     }
 }
 

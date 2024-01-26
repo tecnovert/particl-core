@@ -148,7 +148,7 @@ BOOST_AUTO_TEST_CASE(rct_test)
     size_t ofs = 0, nb = 0;
     for (size_t k = 0; k < nSigInputs; ++k) {
         for (size_t i = 0; i < nSigRingSize; ++i) {
-            int64_t anon_index;
+            int64_t anon_index{0};
             BOOST_REQUIRE(0 == part::GetVarInt(vMI, ofs, (uint64_t&)anon_index, nb));
             ofs += nb;
             indices.push_back(anon_index);
@@ -249,7 +249,7 @@ BOOST_AUTO_TEST_CASE(rct_test)
     size_t ofs = 0, nB = 0;
     for (size_t k = 0; k < nInputs; ++k)
     for (size_t i = 0; i < nCols; ++i) {
-        int64_t nIndex;
+        int64_t nIndex{-1};
         BOOST_REQUIRE(0 == part::GetVarInt(vMI, ofs, (uint64_t&)nIndex, nB));
         ofs += nB;
 

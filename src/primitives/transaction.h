@@ -85,7 +85,7 @@ bool ExtractCoinStakeUint32(const std::vector<uint8_t> &vData, DataOutputTypes g
 
 inline bool IsParticlTxVersion(int nVersion)
 {
-    return (nVersion & 0xFF) >= PARTICL_TXN_VERSION;
+    return (nVersion & 0xFF) >= PARTICL_TXN_VERSION && (nVersion & 0xFF) <= MAX_PARTICL_TXN_VERSION;
 }
 
 /** An outpoint - a combination of a transaction hash and an index n into its vout */
@@ -729,7 +729,7 @@ void UnserializeTransaction(TxType& tx, Stream& s, const TransactionSerParams& p
     tx.nVersion = 0;
     s >> bv;
 
-    if (bv >= PARTICL_TXN_VERSION) {
+    if (bv >= PARTICL_TXN_VERSION && bv <= MAX_PARTICL_TXN_VERSION) {
         tx.nVersion = bv;
 
         s >> bv;

@@ -1492,7 +1492,8 @@ void PrecomputedTransactionData::Init(const T& txTo, std::vector<CTxOut>&& spent
     std::vector<CTxOutSign> spent_outputs_vec;
 
     for (const auto &txo : spent_outputs) {
-        std::vector<uint8_t> vchAmount(8);
+        std::vector<uint8_t> vchAmount;
+        vchAmount.resize(8);
         part::SetAmount(vchAmount, txo.nValue);
         spent_outputs_vec.emplace_back(vchAmount, txo.scriptPubKey);
     }

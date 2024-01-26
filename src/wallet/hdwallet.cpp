@@ -8612,7 +8612,7 @@ int CHDWallet::NewExtKeyFromAccount(CHDWalletDB *pwdb, const CKeyID &idAccount,
     }
 
     uint32_t nOldGen = sekAccount->GetCounter(fHardened);
-    uint32_t nNewChildNo;
+    uint32_t nNewChildNo{0};
 
     if (sekAccount->nFlags & EAF_HARDWARE_DEVICE) {
         if (vAccountPath.size() > 8) {
