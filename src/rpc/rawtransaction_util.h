@@ -11,9 +11,6 @@
 #include <string>
 #include <optional>
 
-// Particl
-#include <map>
-
 struct bilingual_str;
 class FillableSigningProvider;
 class UniValue;
