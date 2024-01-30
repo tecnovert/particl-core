@@ -75,6 +75,12 @@ MAX_OP_RETURN_RELAY = 83
 
 DEFAULT_MEMPOOL_EXPIRY_HOURS = 336  # hours
 
+MAGIC_BYTES = {
+    "mainnet": b"\xfb\xf2\xef\xb4",   # mainnet
+    "testnet3": b"\x08\x11\x05\x0b",  # testnet3
+    "regtest": b"\x09\x12\x06\x0c",   # regtest
+    "signet": b"\x0a\x03\xcf\x40",    # signet
+}
 
 PARTICL_BLOCK_VERSION = 0xa0
 PARTICL_TX_VERSION = 0xa0

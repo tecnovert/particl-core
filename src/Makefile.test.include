@@ -243,8 +243,8 @@ BITCOIN_TESTS += test/ipc_tests.cpp
 
 # Build ipc_test code in a separate library so it can be compiled with custom
 # LIBMULTIPROCESS_CFLAGS without those flags affecting other tests
-LIBBITCOIN_IPC_TEST=libparticl_ipc_test.a
-EXTRA_LIBRARIES += $(LIBBITCOIN_IPC_TEST)
+LIBPARTICL_IPC_TEST=libparticl_ipc_test.a
+EXTRA_LIBRARIES += $(LIBPARTICL_IPC_TEST)
 libparticl_ipc_test_a_SOURCES = \
   test/ipc_test.cpp \
   test/ipc_test.h
@@ -278,7 +278,7 @@ test_test_particl_LDADD += $(LIBPARTICL_WALLET)
 test_test_particl_CPPFLAGS += $(BDB_CPPFLAGS)
 endif
 if BUILD_MULTIPROCESS
-test_test_bitcoin_LDADD += $(LIBBITCOIN_IPC_TEST) $(LIBMULTIPROCESS_LIBS)
+test_test_particl_LDADD += $(LIBPARTICL_IPC_TEST) $(LIBMULTIPROCESS_LIBS)
 endif
 
 test_test_particl_LDADD += $(LIBPARTICL_NODE) $(LIBPARTICL_CLI) $(LIBPARTICL_COMMON) $(LIBPARTICL_UTIL) $(LIBPARTICL_CONSENSUS) $(LIBPARTICL_CRYPTO) $(LIBPARTICL_SMSG) $(LIBPARTICL_MNEMONIC) $(LIBUNIVALUE) \

@@ -56,6 +56,10 @@ LIBPARTICL_USBDEVICE=libparticl_usbdevice.a
 endif
 
 LIBPARTICL_CRYPTO = $(LIBPARTICL_CRYPTO_BASE)
+if USE_ASM
+LIBPARTICL_CRYPTO_SSE4 = crypto/libparticl_crypto_sse4.la
+LIBPARTICL_CRYPTO += $(LIBPARTICL_CRYPTO_SSE4)
+endif
 if ENABLE_SSE41
 LIBPARTICL_CRYPTO_SSE41 = crypto/libparticl_crypto_sse41.la
 LIBPARTICL_CRYPTO += $(LIBPARTICL_CRYPTO_SSE41)
@@ -641,6 +645,10 @@ libparticl_wallet_tool_a_SOURCES = \
 #
 
 # crypto #
+
+# crypto_base contains the unspecialized (unoptimized) versions of our
+# crypto functions. Functions that require custom compiler flags and/or
+# runtime opt-in are omitted.
 crypto_libparticl_crypto_base_la_CPPFLAGS = $(AM_CPPFLAGS)
 
 # Specify -static in both CXXFLAGS and LDFLAGS so libtool will only build a
@@ -681,9 +689,12 @@ crypto_libparticl_crypto_base_la_SOURCES = \
   crypto/siphash.cpp \
   crypto/siphash.h
 
-if USE_ASM
-crypto_libparticl_crypto_base_la_SOURCES += crypto/sha256_sse4.cpp
-endif
+# See explanation for -static in crypto_libbitcoin_crypto_base_la's LDFLAGS and
+# CXXFLAGS above
+crypto_libparticl_crypto_sse4_la_LDFLAGS = $(AM_LDFLAGS) -static
+crypto_libparticl_crypto_sse4_la_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS) -static
+crypto_libparticl_crypto_sse4_la_CPPFLAGS = $(AM_CPPFLAGS)
+crypto_libparticl_crypto_sse4_la_SOURCES = crypto/sha256_sse4.cpp
 
 # See explanation for -static in crypto_libparticl_crypto_base_la's LDFLAGS and
 # CXXFLAGS above
@@ -1084,8 +1095,8 @@ if BUILD_BITCOIN_KERNEL_LIB
 lib_LTLIBRARIES += $(LIBPARTICLKERNEL)
 
 libparticlkernel_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS) $(PTHREAD_FLAGS)
-libparticlkernel_la_LIBADD = $(LIBPARTICL_CRYPTO) $(LIBUNIVALUE) $(LIBLEVELDB) $(LIBMEMENV) $(LIBSECP256K1)
-libparticlkernel_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(builddir)/obj -I$(srcdir)/secp256k1/include -DBUILD_BITCOIN_INTERNAL $(BOOST_CPPFLAGS) $(LEVELDB_CPPFLAGS) -I$(srcdir)/$(UNIVALUE_INCLUDE_DIR_INT)
+libparticlkernel_la_LIBADD = $(LIBPARTICL_CRYPTO) $(LIBLEVELDB) $(LIBMEMENV) $(LIBSECP256K1)
+libparticlkernel_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(builddir)/obj -I$(srcdir)/secp256k1/include $(BOOST_CPPFLAGS) $(LEVELDB_CPPFLAGS)
 
 # libbitcoinkernel requires default symbol visibility, explicitly specify that
 # here so that things still work even when user configures with
@@ -1206,7 +1217,7 @@ libparticlconsensus_la_SOURCES = support/cleanse.cpp $(crypto_libparticl_crypto_
 
 libparticlconsensus_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS)
 libparticlconsensus_la_LIBADD = $(LIBSECP256K1)
-libparticlconsensus_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(builddir)/obj -I$(srcdir)/secp256k1/include -DBUILD_BITCOIN_INTERNAL
+libparticlconsensus_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(builddir)/obj -I$(srcdir)/secp256k1/include -DBUILD_BITCOIN_INTERNAL -DDISABLE_OPTIMIZED_SHA256
 libparticlconsensus_la_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 
 endif
