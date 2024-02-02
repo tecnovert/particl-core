@@ -92,7 +92,7 @@ int64_t GetAdjustedTimeInt();
 void AddTimeData(const CNetAddr& ip, int64_t nTime);
 
 /**
- * Reset the internal state of GetTimeOffset(), GetAdjustedTime() and AddTimeData().
+ * Reset the internal state of GetTimeOffset() and AddTimeData().
  */
 void TestOnlyResetTimeData();
 
