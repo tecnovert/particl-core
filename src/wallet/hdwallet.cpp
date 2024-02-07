@@ -985,7 +985,7 @@ bool CHDWallet::EncryptWallet(const SecureString &strWalletPassphrase)
 
         if (!Lock())
             WalletLogPrintf("%s: ERROR: Lock wallet failed!\n", __func__);
-        if (!Unlock(strWalletPassphrase, true))
+        if (!Unlock(strWalletPassphrase))
             WalletLogPrintf("%s: ERROR: Unlock wallet failed!\n", __func__);
         if (!Lock())
             WalletLogPrintf("%s: ERROR: Lock wallet failed!\n", __func__);
@@ -1022,7 +1022,7 @@ bool CHDWallet::Lock()
     return CWallet::Lock();
 }
 
-bool CHDWallet::Unlock(const SecureString &strWalletPassphrase, bool accept_no_keys)
+bool CHDWallet::Unlock(const SecureString &strWalletPassphrase)
 {
     LogPrint(BCLog::HDWALLET, "%s %s\n", GetDisplayName(), __func__);
 
@@ -1055,12 +1055,12 @@ bool CHDWallet::Unlock(const SecureString &strWalletPassphrase, bool accept_no_k
             if (!crypter.Decrypt(pMasterKey.second.vchCryptedKey, vMasterKeyNew)) {
                 continue; // try another master key
             }
-            if (!CWallet::Unlock(vMasterKeyNew, true)) {
+            if (!CWallet::Unlock(vMasterKeyNew)) {
                 return false;
             }
             if (0 != ExtKeyUnlock(vMasterKeyNew)) {
                 if (fWasUnlocked) {
-                    CWallet::Unlock(vMasterKeyOld, true);
+                    CWallet::Unlock(vMasterKeyOld);
                 }
                 return false;
             }

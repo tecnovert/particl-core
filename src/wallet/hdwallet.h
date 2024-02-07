@@ -98,7 +98,7 @@ public:
     bool EncryptWallet(const SecureString &strWalletPassphrase) override;
     bool Lock() override;
     using CWallet::Unlock;
-    bool Unlock(const SecureString &strWalletPassphrase, bool accept_no_keys = false) override;
+    bool Unlock(const SecureString &strWalletPassphrase) override;
     size_t CountKeys() const;
 
 

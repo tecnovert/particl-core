@@ -387,7 +387,7 @@ friend class CWalletTx;
 private:
     CKeyingMaterial vMasterKey GUARDED_BY(cs_wallet);
 
-    virtual bool Unlock(const CKeyingMaterial& vMasterKeyIn, bool accept_no_keys = false);
+    virtual bool Unlock(const CKeyingMaterial& vMasterKeyIn);
 
     std::atomic<bool> fAbortRescan{false};
     std::atomic<bool> fScanningWallet{false}; // controlled by WalletRescanReserver
@@ -669,7 +669,7 @@ public:
     RecursiveMutex m_relock_mutex;
 
     virtual int ExtKeyUnlock(const CKeyingMaterial &vMKey) {return 0;};
-    virtual bool Unlock(const SecureString& strWalletPassphrase, bool accept_no_keys = false);
+    virtual bool Unlock(const SecureString& strWalletPassphrase);
     bool ChangeWalletPassphrase(const SecureString& strOldWalletPassphrase, const SecureString& strNewWalletPassphrase);
     virtual bool EncryptWallet(const SecureString& strWalletPassphrase);
 
