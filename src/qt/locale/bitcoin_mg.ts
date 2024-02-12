@@ -234,14 +234,6 @@
         <source>&amp;Copy address</source>
         <translation type="unfinished">&amp;Adikao ny adiresy</translation>
     </message>
-    <message>
-        <source>yes</source>
-        <translation type="unfinished">eny</translation>
-    </message>
-    <message>
-        <source>no</source>
-        <translation type="unfinished">tsia</translation>
-    </message>
     </context>
 <context>
     <name>CreateWalletActivity</name>

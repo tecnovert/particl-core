@@ -1770,7 +1770,7 @@ bool CHDWallet::SetAddressBook(const CTxDestination &address, const std::string 
     return true;
 };
 
-bool CHDWallet::DelAddressBook(const CTxDestination &address)
+bool CHDWallet::DelAddressBookWithDB(WalletBatch& batch, const CTxDestination& address)
 {
     isminetype tIsMine;
     {
@@ -1807,7 +1807,7 @@ bool CHDWallet::DelAddressBook(const CTxDestination &address)
     {
         fErased = CHDWalletDB(*m_database).EraseAddressBookEntry(EncodeDestination(address)) ? true : fErased;
     }
-    fErased = CWallet::DelAddressBook(address) ? true : fErased;
+    fErased = CWallet::DelAddressBookWithDB(batch, address) ? true : fErased;
 
     return fErased;
 };

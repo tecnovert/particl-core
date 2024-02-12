@@ -97,6 +97,11 @@ Signing is only possible with addresses of the type 'legacy'.</source>
         <translation type="unfinished">અલ્પવિરામથી વિભાજિત ફાઇલ</translation>
     </message>
     <message>
+        <source>There was an error trying to save the address list to %1. Please try again.</source>
+        <extracomment>An error message. %1 is a stand-in argument for the name of the file we attempted to save to.</extracomment>
+        <translation type="unfinished">સરનામાં સૂચિને માં સાચવવાનો પ્રયાસ કરતી વખતે ભૂલ આવી હતી %1. મહેરબાની કરીને ફરીથી પ્રયતન કરો.</translation>
+    </message>
+    <message>
         <source>Exporting Failed</source>
         <translation type="unfinished">નિકાસ ની પ્ર્રાક્રિયા નિષ્ફળ ગયેલ છે</translation>
     </message>

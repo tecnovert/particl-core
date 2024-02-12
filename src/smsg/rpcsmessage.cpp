@@ -2048,8 +2048,8 @@ static RPCHelpMan smsgview()
                 int rv;
                 if ((rv = smsgModule.Decrypt(false, fInbox ? smsgStored.addrTo : smsgStored.addrOutbox,
                     smsgStored.vchMessage.data(), &smsgStored.vchMessage[smsg::SMSG_HDR_LEN], nPayload, msg)) == 0) {
-                    if ((tFrom > 0 && msg.timestamp < tFrom)
-                        || (tTo > 0 && msg.timestamp > tTo)) {
+                    if ((tFrom > 0 && msg.timestamp < tFrom) ||
+                        (tTo > 0 && msg.timestamp > tTo)) {
                         continue;
                     }
 

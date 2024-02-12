@@ -7,7 +7,7 @@
     </message>
     <message>
         <source>&amp;New</source>
-        <translation type="unfinished">&amp;Sabontawa</translation>
+        <translation type="unfinished">&amp;Sabonta</translation>
     </message>
     <message>
         <source>Copy the currently selected address to the system clipboard</source>
@@ -19,7 +19,7 @@
     </message>
     <message>
         <source>C&amp;lose</source>
-        <translation type="unfinished">C&amp;Rufe</translation>
+        <translation type="unfinished">C&amp;ɓatar</translation>
     </message>
     <message>
         <source>Delete the currently selected address from the list</source>

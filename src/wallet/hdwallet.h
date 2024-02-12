@@ -132,7 +132,7 @@ public:
     bool SetAddressBook(CHDWalletDB *pwdb, const CTxDestination &address, const std::string &strName,
                         const std::optional<AddressPurpose>& purpose, const std::vector<uint32_t> &vPath, bool fNotifyChanged=true, bool fBech32=false);
     bool SetAddressBook(const CTxDestination &address, const std::string &strName, const std::optional<AddressPurpose>& purpose, bool fBech32=false) override;
-    bool DelAddressBook(const CTxDestination &address) override;
+    bool DelAddressBookWithDB(WalletBatch& batch, const CTxDestination& address) override;
 
 
     int64_t GetOldestActiveAccountTime() const;
