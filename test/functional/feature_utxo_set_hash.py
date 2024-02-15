@@ -4,8 +4,6 @@
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test UTXO set hash value calculation in gettxoutsetinfo."""
 
-import struct
-
 from test_framework.messages import (
     CBlock,
     COutPoint,
@@ -58,8 +56,8 @@ class UTXOSetHashTest(BitcoinTestFramework):
                         continue
 
                     data = COutPoint(int(tx.rehash(), 16), n).serialize()
-                    data += struct.pack("<i", height * 2 + coinbase)
-                    data += struct.pack("<B", 1)
+                    data += (height * 2 + coinbase).to_bytes(4, "little")
+                    data += (1).to_bytes(1, "little")
                     data += tx_out.serialize()
 
                     muhash.insert(data)
