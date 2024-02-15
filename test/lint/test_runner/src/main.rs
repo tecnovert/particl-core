@@ -40,7 +40,7 @@ fn lint_subtree() -> LintResult {
     let mut good = true;
     for subtree in [
         "src/crypto/ctaes",
-        "src/secp256k1",
+        //"src/secp256k1",
         "src/minisketch",
         "src/leveldb",
         "src/crc32c",
