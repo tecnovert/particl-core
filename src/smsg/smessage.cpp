@@ -4117,8 +4117,7 @@ int CSMSG::Send(CKeyID &addressFrom, CKeyID &addressTo, std::string &message,
     }
 
     if (nRetention < SMSG_MIN_TTL || nRetention > SMSG_MAX_PAID_TTL) {
-        LogPrint(BCLog::SMSG, "TTL out of range %d.\n", nRetention);
-        return SMSG_GENERAL_ERROR;
+        return errorN(SMSG_GENERAL_ERROR, sError, __func__, "TTL out of range %d.\n", nRetention);
     }
 
     std::string sFromFile;
