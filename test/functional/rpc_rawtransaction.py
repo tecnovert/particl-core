@@ -419,7 +419,7 @@ class RawTransactionsTest(BitcoinTestFramework):
 
         # Test a transaction with a large fee.
         # Fee rate is 0.20000000 BTC/kvB
-        tx = self.wallet.create_self_transfer(fee_rate=Decimal("0.20000000"))
+        tx = self.wallet.create_self_transfer(fee_rate=Decimal("1.00000000"))
         # Thus, testmempoolaccept should reject
         testres = self.nodes[2].testmempoolaccept([tx['hex']])[0]
         assert_equal(testres['allowed'], False)
@@ -427,9 +427,9 @@ class RawTransactionsTest(BitcoinTestFramework):
         # and sendrawtransaction should throw
         assert_raises_rpc_error(-25, fee_exceeds_max, self.nodes[2].sendrawtransaction, tx['hex'])
         # and the following calls should both succeed
-        testres = self.nodes[2].testmempoolaccept(rawtxs=[tx['hex']], maxfeerate='0.20000000')[0]
+        testres = self.nodes[2].testmempoolaccept(rawtxs=[tx['hex']], maxfeerate='1.00000000')[0]
         assert_equal(testres['allowed'], True)
-        self.nodes[2].sendrawtransaction(hexstring=tx['hex'], maxfeerate='0.20000000')
+        self.nodes[2].sendrawtransaction(hexstring=tx['hex'], maxfeerate='1.00000000')
 
         self.log.info("Test sendrawtransaction/testmempoolaccept with tx already in the chain")
         self.generate(self.nodes[2], 1)
