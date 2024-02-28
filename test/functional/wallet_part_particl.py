@@ -662,9 +662,17 @@ class WalletParticlTest(ParticlTestFramework):
         assert(ro3['isstakeonly'] == True)
         assert(ro3['address'] == ro1['stakeonly_address'])
 
-        addr = nodes[0].getnewaddress('test validateaddressy p2pkh bech32', 'true')
-        ro = nodes[0].validateaddress(addr)
-        assert(ro['address'] == addr)
+        addr = nodes[0].getnewaddress('test validateaddress p2pkh bech32', 'true')
+        ro = nodes[0].validateaddress(addr, True)
+        assert (ro['address'] == addr)
+        assert (ro['base58_address'].startswith('p'))
+        assert (ro['scriptPubKey'] == nodes[0].validateaddress(ro['base58_address'])['scriptPubKey'])
+
+        addr = nodes[0].getnewaddress('test validateaddress p2wpkh bech32', False, False, False, 'bech32')
+        ro = nodes[0].validateaddress(addr, True)
+        assert (ro['witness_version'] == 0)
+        assert (ro['iswitness'] == True)
+        assert ('base58_address' not in ro)  # Direct conversion isn't possible, it wouldn't be a p2wpkh addr
 
         ro = nodes[0].getaddressinfo(addr)
         assert(ro['address'] == addr)
