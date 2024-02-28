@@ -22,51 +22,55 @@ Notes:
 
 */
 
+#if defined(HAVE_CONFIG_H)
+#include <config/bitcoin-config.h>
+#endif
+
 #include <smsg/smessage.h>
+
+#include <chain.h>
+#include <consensus/validation.h>
+#include <crypto/hmac_sha256.h>
+#include <crypto/sha512.h>
+#include <net.h>
+#include <netmessagemaker.h>
+#include <net_processing.h>
+#include <node/blockstorage.h>
+#include <node/context.h>
+#include <random.h>
+#include <smsg/crypter.h>
+#include <smsg/db.h>
+#include <streams.h>
+#include <support/allocators/secure.h>
+#include <timedata.h>
+#include <univalue.h>
+#include <util/strencodings.h>
+#include <util/string.h>
+#include <util/syserror.h>
+#include <util/system.h>
+#include <util/thread.h>
+#include <validation.h>
+#include <validationinterface.h>
+#include <wallet/types.h>
+
+#ifdef ENABLE_WALLET
+#include <interfaces/chain.h>
+#include <policy/policy.h>
+#include <wallet/coincontrol.h>
+#include <wallet/hdwallet.h>
+#endif
 
 #include <secp256k1.h>
 #include <secp256k1_ecdh.h>
-#include <crypto/hmac_sha256.h>
-#include <crypto/sha512.h>
-#include <wallet/types.h>
-#include <support/allocators/secure.h>
-#include <util/thread.h>
-#include <util/strencodings.h>
-#include <consensus/validation.h>
-#include <validation.h>
-#include <validationinterface.h>
-#include <smsg/crypter.h>
-#include <smsg/db.h>
-#include <random.h>
-#include <chain.h>
-#include <netmessagemaker.h>
-#include <net.h>
-#include <net_processing.h>
-#include <streams.h>
-#include <univalue.h>
-#include <node/context.h>
-#include <node/blockstorage.h>
-#include <util/string.h>
-#include <util/system.h>
-#include <util/syserror.h>
-#include <timedata.h>
-
-#ifdef ENABLE_WALLET
-#include <wallet/coincontrol.h>
-#include <wallet/hdwallet.h>
-#include <interfaces/chain.h>
-#include <policy/policy.h>
-#endif
-
-
-#include <stdint.h>
-#include <time.h>
-#include <map>
-#include <stdexcept>
-#include <errno.h>
-#include <limits>
 
 #include <xxhash/xxhash.h>
+
+#include <errno.h>
+#include <limits>
+#include <map>
+#include <stdexcept>
+#include <stdint.h>
+#include <time.h>
 
 smsg::CSMSG smsgModule;
 
