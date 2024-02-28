@@ -98,10 +98,16 @@ static RPCHelpMan validateaddress()
                 ret.pushKVs(detail);
 
                 if (!request.params[1].isNull() && GetBool(request.params[1])) {
-                    if (fBech32) {
-                        ret.pushKV("base58_address", EncodeDestination(dest, false));
+                    if (dest.index() == DI::_WitnessV0KeyHash ||
+                        dest.index() == DI::_WitnessV0ScriptHash ||
+                        dest.index() == DI::_WitnessV1Taproot) {
+                        // Use decodescript to see p2sh address
                     } else {
-                        ret.pushKV("bech32_address", EncodeDestination(dest, true));
+                        if (fBech32) {
+                            ret.pushKV("base58_address", EncodeDestination(dest, false));
+                        } else {
+                            ret.pushKV("bech32_address", EncodeDestination(dest, true));
+                        }
                     }
                     if (dest.index() == DI::_PKHash) {
                         ret.pushKV("stakeonly_address", EncodeDestination(dest, true, true));
