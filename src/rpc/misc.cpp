@@ -86,10 +86,15 @@ static UniValue validateaddress(const JSONRPCRequest& request)
         ret.pushKVs(detail);
 
         if (!request.params[1].isNull() && GetBool(request.params[1])) {
-            if (fBech32) {
-                ret.pushKV("base58_address", EncodeDestination(dest, false));
+             if (dest.type() == typeid(WitnessV0KeyHash) ||
+                dest.type() == typeid(WitnessV0ScriptHash)) {
+                // Use decodescript to see p2sh address
             } else {
-                ret.pushKV("bech32_address", EncodeDestination(dest, true));
+                if (fBech32) {
+                    ret.pushKV("base58_address", EncodeDestination(dest, false));
+                } else {
+                    ret.pushKV("bech32_address", EncodeDestination(dest, true));
+                }
             }
             if (dest.type() == typeid(PKHash)) {
                 ret.pushKV("stakeonly_address", EncodeDestination(dest, true, true));
