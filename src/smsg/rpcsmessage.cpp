@@ -3,33 +3,32 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#if defined(HAVE_CONFIG_H)
+#include <config/bitcoin-config.h>
+#endif
+
 #include <rpc/server.h>
 
-#include <algorithm>
-#include <string>
-
-#include <smsg/smessage.h>
-#include <smsg/db.h>
-#include <wallet/ismine.h>
-#include <util/strencodings.h>
-#include <node/blockstorage.h>
+#include <anon.h>
+#include <base58.h>
 #include <consensus/consensus.h>
 #include <core_io.h>
-#include <base58.h>
-#include <rpc/util.h>
-#include <rpc/server_util.h>
-#include <rpc/blockchain.h>
-#include <validation.h>
-#include <timedata.h>
-#include <anon.h>
 #include <fs.h>
-#include <validationinterface.h>
-#include <node/context.h>
 #include <interfaces/wallet.h>
+#include <node/blockstorage.h>
+#include <node/context.h>
+#include <rpc/blockchain.h>
+#include <rpc/server_util.h>
+#include <rpc/util.h>
+#include <smsg/db.h>
+#include <smsg/smessage.h>
+#include <timedata.h>
+#include <util/strencodings.h>
 #include <util/string.h>
 #include <util/time.h>
-
-#include <leveldb/db.h>
+#include <validation.h>
+#include <validationinterface.h>
+#include <wallet/ismine.h>
 
 #ifdef ENABLE_WALLET
 #include <wallet/hdwallet.h>
@@ -38,8 +37,12 @@ extern void EnsureWalletIsUnlocked(const CHDWallet *pwallet);
 extern void ParseCoinControlOptions(const UniValue &obj, const CHDWallet *pwallet, CCoinControl &coin_control);
 #endif
 
+#include <leveldb/db.h>
 #include <univalue.h>
+
+#include <algorithm>
 #include <fstream>
+#include <string>
 
 
 static void EnsureSMSGIsEnabled()
