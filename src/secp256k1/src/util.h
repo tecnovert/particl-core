@@ -177,12 +177,12 @@ SECP256K1_INLINE static int secp256k1_clz64_var(uint64_t x) {
     if (!x) {
         return 64;
     }
-# if defined(HAVE_BUILTIN_CLZLL)
+#if (defined(__clang__) || (defined(__GNUC__) && (__GNUC__>=3)))
     ret = __builtin_clzll(x);
-# else
+#else
     /*FIXME: debruijn fallback. */
     for (ret = 0; ((x & (1ULL << 63)) == 0); x <<= 1, ret++);
-# endif
+#endif
     return ret;
 }
 
