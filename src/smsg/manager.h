@@ -5,9 +5,9 @@
 #ifndef PARTICL_SMSG_MANAGER_H
 #define PARTICL_SMSG_MANAGER_H
 
-#include <sync.h>
-#include <smsg/types.h>
 #include <kernel/cs_main.h>
+#include <smsg/types.h>
+#include <sync.h>
 
 #include <utility>
 

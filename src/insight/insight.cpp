@@ -3,19 +3,19 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <insight/insight.h>
+
 #include <insight/addressindex.h>
 #include <insight/spentindex.h>
 #include <insight/timestampindex.h>
-#include <validation.h>
+#include <key_io.h>
+#include <primitives/transaction.h>
+#include <script/interpreter.h>
+#include <script/script.h>
+#include <script/solver.h>
 #include <txdb.h>
 #include <txmempool.h>
 #include <uint256.h>
-#include <script/script.h>
-#include <script/solver.h>
-#include <key_io.h>
-
-#include <primitives/transaction.h>
-#include <script/interpreter.h>
+#include <validation.h>
 
 bool fAddressIndex = false;
 bool fTimestampIndex = false;

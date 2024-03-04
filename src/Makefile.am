@@ -56,10 +56,6 @@ LIBPARTICL_USBDEVICE=libparticl_usbdevice.a
 endif
 
 LIBPARTICL_CRYPTO = $(LIBPARTICL_CRYPTO_BASE)
-if USE_ASM
-LIBPARTICL_CRYPTO_SSE4 = crypto/libparticl_crypto_sse4.la
-LIBPARTICL_CRYPTO += $(LIBPARTICL_CRYPTO_SSE4)
-endif
 if ENABLE_SSE41
 LIBPARTICL_CRYPTO_SSE41 = crypto/libparticl_crypto_sse41.la
 LIBPARTICL_CRYPTO += $(LIBPARTICL_CRYPTO_SSE41)
@@ -684,6 +680,7 @@ crypto_libparticl_crypto_base_la_SOURCES = \
   crypto/sha1.h \
   crypto/sha256.cpp \
   crypto/sha256.h \
+  crypto/sha256_sse4.cpp \
   crypto/sha3.cpp \
   crypto/sha3.h \
   crypto/sha512.cpp \
@@ -692,13 +689,6 @@ crypto_libparticl_crypto_base_la_SOURCES = \
   crypto/siphash.h
 
 # See explanation for -static in crypto_libbitcoin_crypto_base_la's LDFLAGS and
-# CXXFLAGS above
-crypto_libparticl_crypto_sse4_la_LDFLAGS = $(AM_LDFLAGS) -static
-crypto_libparticl_crypto_sse4_la_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS) -static
-crypto_libparticl_crypto_sse4_la_CPPFLAGS = $(AM_CPPFLAGS)
-crypto_libparticl_crypto_sse4_la_SOURCES = crypto/sha256_sse4.cpp
-
-# See explanation for -static in crypto_libparticl_crypto_base_la's LDFLAGS and
 # CXXFLAGS above
 crypto_libparticl_crypto_sse41_la_LDFLAGS = $(AM_LDFLAGS) -static
 crypto_libparticl_crypto_sse41_la_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS) -static

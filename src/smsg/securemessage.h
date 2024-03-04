@@ -5,9 +5,8 @@
 #ifndef PARTICL_SMSG_SECUREMESSAGE_H
 #define PARTICL_SMSG_SECUREMESSAGE_H
 
-#include <string.h>
 #include <inttypes.h>
-
+#include <string.h>
 
 namespace smsg {
 

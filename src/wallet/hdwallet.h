@@ -5,15 +5,14 @@
 #ifndef PARTICL_WALLET_HDWALLET_H
 #define PARTICL_WALLET_HDWALLET_H
 
-#include <wallet/wallet.h>
+#include <key/extkey.h>
+#include <key_io.h>
+#include <key/stealth.h>
 #include <wallet/hdwalletdb.h>
 #include <wallet/hdwallettypes.h>
-#include <wallet/spend.h>
 #include <wallet/receive.h>
-
-#include <key_io.h>
-#include <key/extkey.h>
-#include <key/stealth.h>
+#include <wallet/spend.h>
+#include <wallet/wallet.h>
 
 using namespace wallet;
 

@@ -5,8 +5,8 @@
 #ifndef PARTICL_SMSG_TYPES_H
 #define PARTICL_SMSG_TYPES_H
 
-#include <uint256.h>
 #include <inttypes.h>
+#include <uint256.h>
 #include <vector>
 
 namespace smsg {

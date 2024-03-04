@@ -6,12 +6,12 @@
 #include <test/data/bip39_vectors_english.json.h>
 #include <test/data/bip39_vectors_japanese.json.h>
 
-#include <key/mnemonic.h>
 #include <key/extkey.h>
 #include <key_io.h>
-#include <util/strencodings.h>
+#include <key/mnemonic.h>
 #include <random.h>
 #include <univalue.h>
+#include <util/strencodings.h>
 
 #include <string>
 

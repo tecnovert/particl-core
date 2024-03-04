@@ -4,22 +4,20 @@
 
 #include <blind.h>
 
-#include <assert.h>
-#include <secp256k1_rangeproof.h>
-
-#include <support/allocators/secure.h>
-#include <random.h>
-#include <serialize.h>
-#include <streams.h>
-#include <logging.h>
-
-#include <common/bloom.h>
-#include <common/args.h>
 #include <chain/ct_tainted.h>
 #include <chain/tx_blacklist.h>
 #include <chain/tx_whitelist.h>
+#include <common/args.h>
+#include <common/bloom.h>
+#include <logging.h>
+#include <random.h>
+#include <serialize.h>
+#include <streams.h>
+#include <support/allocators/secure.h>
 
+#include <secp256k1_rangeproof.h>
 
+#include <assert.h>
 #include <set>
 
 

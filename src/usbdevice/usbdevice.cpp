@@ -4,13 +4,14 @@
 
 #include <usbdevice/usbdevice.h>
 
+#include <chainparams.h>
+#include <common/args.h>
 #include <key/extkey.h>
+#include <univalue.h>
 #include <usbdevice/debugdevice.h>
 #include <usbdevice/ledgerdevice.h>
 #include <usbdevice/trezordevice.h>
 #include <usbdevice/usbwrapper.h>
-#include <common/args.h>
-
 #ifdef ENABLE_WALLET
 #include <wallet/hdwallet.h>
 #endif
@@ -18,8 +19,6 @@
 #include <hidapi/hidapi.h>
 
 #include <stdint.h>
-#include <univalue.h>
-#include <chainparams.h>
 
 #include <google/protobuf/stubs/common.h>
 

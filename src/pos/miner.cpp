@@ -4,23 +4,21 @@
 
 #include <pos/miner.h>
 
-#include <pos/kernel.h>
-#include <node/miner.h>
 #include <chainparams.h>
-#include <util/thread.h>
-#include <util/syserror.h>
-#include <util/moneystr.h>
 #include <common/args.h>
+#include <consensus/validation.h>
+#include <net.h>
+#include <node/blockstorage.h>
+#include <node/miner.h>
+#include <pos/kernel.h>
 #include <primitives/block.h>
 #include <primitives/transaction.h>
-
 #include <sync.h>
-#include <net.h>
 #include <timedata.h>
-#include <consensus/validation.h>
-#include <node/blockstorage.h>
+#include <util/moneystr.h>
+#include <util/syserror.h>
+#include <util/thread.h>
 #include <validation.h>
-
 #include <wallet/hdwallet.h>
 #include <wallet/spend.h>
 

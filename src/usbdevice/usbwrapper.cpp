@@ -4,10 +4,11 @@
 
 #include <usbdevice/usbwrapper.h>
 
+#include <logging.h>
+
 #include <cstdlib>
 #include <stdio.h>
 #include <string.h>
-#include <logging.h>
 
 namespace usb_device {
 

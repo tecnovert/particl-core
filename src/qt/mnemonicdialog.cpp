@@ -4,18 +4,15 @@
 
 #include <qt/mnemonicdialog.h>
 #include <qt/forms/ui_mnemonicdialog.h>
-
 #include <qt/guiutil.h>
-
 #include <qt/walletmodel.h>
 
-#include <interfaces/wallet.h>
 #include <interfaces/node.h>
-
-#include <util/any.h>
-#include <rpc/rpcutil.h>
-#include <key/mnemonic.h>
+#include <interfaces/wallet.h>
 #include <key/extkey.h>
+#include <key/mnemonic.h>
+#include <rpc/rpcutil.h>
+#include <util/any.h>
 
 #include <QDebug>
 

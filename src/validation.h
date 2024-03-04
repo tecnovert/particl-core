@@ -53,6 +53,7 @@ class DisconnectedBlockTransactions;
 struct PrecomputedTransactionData;
 struct LockPoints;
 struct AssumeutxoData;
+typedef int64_t NodeId;
 namespace node {
 class SnapshotMetadata;
 } // namespace node
@@ -94,34 +95,6 @@ extern uint256 g_best_block;
 
 /** Documentation for argument 'checklevel'. */
 extern const std::vector<std::string> CHECKLEVEL_DOC;
-
-typedef int64_t NodeId;
-namespace particl {
-static constexpr size_t MAX_STAKE_SEEN_SIZE = 1000;
-inline int64_t FutureDrift(int64_t nTime) { return nTime + 15; } // FutureDriftV2
-
-static constexpr unsigned int DEFAULT_BLOCKTREE_DB_MAX_OPEN_FILES = 1000;
-static constexpr bool DEFAULT_BLOCKTREE_DB_COMPRESSION = false; // set to true for insight
-static constexpr bool DEFAULT_ACCEPT_ANON_TX = true;
-static constexpr bool DEFAULT_ACCEPT_BLIND_TX = true;
-
-/** Return the median number of connected nodes */
-int GetNumPeers();
-/** Return the median number of blocks that other nodes claim to have */
-int GetNumBlocksOfPeers();
-/** Set the median number of blocks that other nodes claim to have - debug only */
-void SetNumBlocksOfPeers(int num_blocks);
-
-unsigned int GetNextTargetRequired(const CBlockIndex *pindexLast, const Consensus::Params &consensus);
-
-/** Return the current utxo sum */
-CAmount GetUTXOSum(Chainstate &chainstate);
-/** Update num blocks of peers vector */
-void UpdateNumBlocksOfPeers(ChainstateManager &chainman, NodeId id, int height);
-extern bool fVerifyingDB;
-extern std::atomic_bool fSkipRangeproof;
-extern std::atomic_bool fBusyImporting;
-} // namespace particl
 
 CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams);
 
@@ -424,6 +397,9 @@ bool TestBlockValidity(BlockValidationState& state,
 
 /** Check with the proof of work on each blockheader matches the value in nBits */
 bool HasValidProofOfWork(const std::vector<CBlockHeader>& headers, const Consensus::Params& consensusParams);
+
+/** Check if a block has been mutated (with respect to its merkle root and witness commitments). */
+bool IsBlockMutated(const CBlock& block, bool check_witness_root);
 
 /** Return the sum of the work on a given set of headers */
 arith_uint256 CalculateHeadersWork(const std::vector<CBlockHeader>& headers);
@@ -1355,8 +1331,33 @@ bool IsBIP30Repeat(const CBlockIndex& block_index);
 /** Identifies blocks which coinbase output was subsequently overwritten in the UTXO set (see BIP30) */
 bool IsBIP30Unspendable(const CBlockIndex& block_index);
 
-
 namespace particl {
+static constexpr size_t MAX_STAKE_SEEN_SIZE = 1000;
+inline int64_t FutureDrift(int64_t nTime) { return nTime + 15; } // FutureDriftV2
+
+static constexpr unsigned int DEFAULT_BLOCKTREE_DB_MAX_OPEN_FILES = 1000;
+static constexpr bool DEFAULT_BLOCKTREE_DB_COMPRESSION = false; // set to true for insight
+static constexpr bool DEFAULT_ACCEPT_ANON_TX = true;
+static constexpr bool DEFAULT_ACCEPT_BLIND_TX = true;
+
+/** Return the median number of connected nodes */
+int GetNumPeers();
+/** Return the median number of blocks that other nodes claim to have */
+int GetNumBlocksOfPeers();
+/** Set the median number of blocks that other nodes claim to have - debug only */
+void SetNumBlocksOfPeers(int num_blocks);
+
+unsigned int GetNextTargetRequired(const CBlockIndex *pindexLast, const Consensus::Params &consensus);
+
+/** Return the current utxo sum */
+CAmount GetUTXOSum(Chainstate &chainstate);
+/** Check block signature is valid */
+bool CheckBlockSignature(const CBlock &block);
+/** Update num blocks of peers vector */
+void UpdateNumBlocksOfPeers(ChainstateManager &chainman, NodeId id, int height);
+extern bool fVerifyingDB;
+extern std::atomic_bool fSkipRangeproof;
+extern std::atomic_bool fBusyImporting;
 
 class StakeConflict
 {
@@ -1389,8 +1390,6 @@ extern std::list<COutPoint> listStakeSeen;
 
 bool RemoveUnreceivedHeader(ChainstateManager &chainman, const uint256 &hash) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 size_t CountDelayedBlocks() EXCLUSIVE_LOCKS_REQUIRED(cs_main);
-
-
 
 bool AddToMapStakeSeen(const COutPoint &kernel, const uint256 &blockHash) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 bool CheckStakeUnused(const COutPoint &kernel);

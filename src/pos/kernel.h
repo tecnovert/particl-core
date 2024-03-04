@@ -8,8 +8,8 @@
 #define PARTICL_POS_KERNEL_H
 
 #include <consensus/amount.h>
-#include <sync.h>
 #include <kernel/cs_main.h>
+#include <sync.h>
 
 class CScript;
 class uint256;

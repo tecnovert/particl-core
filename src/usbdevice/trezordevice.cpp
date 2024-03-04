@@ -4,16 +4,16 @@
 
 #include <usbdevice/trezordevice.h>
 
+#include <base58.h>
 #include <chainparams.h>
 #include <coins.h>
-#include <pubkey.h>
 #include <key_io.h>
-#include <base58.h>
+#include <pubkey.h>
+#include <script/solver.h>
+#include <streams.h>
+#include <univalue.h>
 #include <usbdevice/usbwrapper.h>
 #include <util/strencodings.h>
-#include <script/solver.h>
-#include <univalue.h>
-#include <streams.h>
 
 #include <string>
 

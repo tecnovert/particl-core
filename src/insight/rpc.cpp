@@ -2,24 +2,23 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <rpc/server.h>
-#include <rpc/util.h>
-#include <rpc/server_util.h>
-#include <rpc/blockchain.h>
-
-#include <util/strencodings.h>
-#include <insight/insight.h>
-#include <insight/csindex.h>
-#include <index/txindex.h>
-#include <node/blockstorage.h>
-#include <validation.h>
-#include <txmempool.h>
-#include <key_io.h>
 #include <core_io.h>
-#include <node/context.h>
-#include <script/solver.h>
-#include <pos/kernel.h>
+#include <index/txindex.h>
 #include <init.h>
+#include <insight/csindex.h>
+#include <insight/insight.h>
+#include <key_io.h>
+#include <node/blockstorage.h>
+#include <node/context.h>
+#include <pos/kernel.h>
+#include <rpc/blockchain.h>
+#include <rpc/server.h>
+#include <rpc/server_util.h>
+#include <rpc/util.h>
+#include <script/solver.h>
+#include <txmempool.h>
+#include <util/strencodings.h>
+#include <validation.h>
 
 #include <univalue.h>
 

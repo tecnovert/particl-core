@@ -4,11 +4,11 @@
 
 #include <usbdevice/debugdevice.h>
 
+#include <hash.h>
 #include <key_io.h>
 #include <univalue.h>
-#include <validation.h>
-#include <hash.h>
 #include <util/message.h>
+#include <validation.h>
 
 namespace usb_device {
 

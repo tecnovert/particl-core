@@ -5,14 +5,14 @@
 
 #include <rpc/server.h>
 
-#include <util/strencodings.h>
-#include <rpc/util.h>
-#include <key_io.h>
-#include <key/extkey.h>
-#include <random.h>
 #include <chainparams.h>
-#include <support/cleanse.h>
+#include <key/extkey.h>
+#include <key_io.h>
 #include <key/mnemonic.h>
+#include <random.h>
+#include <rpc/util.h>
+#include <support/cleanse.h>
+#include <util/strencodings.h>
 
 #include <string>
 #include <univalue.h>

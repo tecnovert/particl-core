@@ -3,22 +3,22 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <wallet/test/hdwallet_test_fixture.h>
+
 #include <bench/bench.h>
-#include <wallet/hdwallet.h>
-#include <wallet/coincontrol.h>
+#include <blind.h>
 #include <interfaces/chain.h>
 #include <interfaces/wallet.h>
-
-#include <validation.h>
-#include <blind.h>
-#include <rpc/rpcutil.h>
-#include <rpc/blockchain.h>
-#include <timedata.h>
 #include <node/miner.h>
 #include <pos/miner.h>
-#include <util/string.h>
+#include <rpc/blockchain.h>
+#include <rpc/rpcutil.h>
+#include <timedata.h>
 #include <util/any.h>
+#include <util/string.h>
 #include <util/translation.h>
+#include <validation.h>
+#include <wallet/coincontrol.h>
+#include <wallet/hdwallet.h>
 
 CTransactionRef CreateTxn(CHDWallet *pwallet, CBitcoinAddress &address, CAmount amount, int type_in, int type_out, int nRingSize = 5)
 {

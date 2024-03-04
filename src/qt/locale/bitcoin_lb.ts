@@ -7,7 +7,7 @@
     </message>
     <message>
         <source>Create a new address</source>
-        <translation type="unfinished">Erschaf een nei adress</translation>
+        <translation type="unfinished">Eng nei Adress erstellen</translation>
     </message>
     <message>
         <source>&amp;New</source>
@@ -44,7 +44,7 @@
     <message>
         <source>These are your Particl addresses for receiving payments. Use the 'Create new receiving address' button in the receive tab to create new addresses.
 Signing is only possible with addresses of the type 'legacy'.</source>
-        <translation type="unfinished">Dat sinn är Particl-Adressen fir Zuelungen ze erhuelen. Benotzt de 'Nei Erhaltsadress erstellen' Knäppchen am 'Erhalts'-Tab, fir nei Adressen ze erstellen. 
+        <translation type="unfinished">Dat sinn är Particl-Adressen fir Zuelungen ze erhuelen. Benotzt de 'Nei Erhaltsadress erstellen' Knäppchen am 'Erhalts'-Tab, fir nei Adressen ze erstellen.
 D'Signatur ass nëmmen mat Adressen vum Typ 'legacy' méiglech.</translation>
     </message>
     <message>
@@ -57,7 +57,7 @@ D'Signatur ass nëmmen mat Adressen vum Typ 'legacy' méiglech.</translation>
     <name>AskPassphraseDialog</name>
     <message>
         <source>Warning: If you encrypt your wallet and lose your passphrase, you will &lt;b&gt;LOSE ALL OF YOUR PARTICL&lt;/b&gt;!</source>
-        <translation type="unfinished">Warnung: Wann Dir Är Portemonnaie verschlësselt an Äert Passwort verléiert, da verléiert Dir 1ALLE ÄRE PARTICL1!</translation>
+        <translation type="unfinished">Warnung: Wann Dir Är Portemonnaie verschlësselt an Äert Passwort verléiert, &lt;b&gt;DA VERLÉIERT DIR ALLE ÄRE PARTICL&lt;/b&gt;!</translation>
     </message>
     <message>
         <source>Are you sure you wish to encrypt your wallet?</source>

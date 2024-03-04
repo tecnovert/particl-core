@@ -10,12 +10,13 @@
 #include <threadsafety.h>
 
 #include <consensus/amount.h>
-#include <sync.h>
-#include <stdint.h>
-#include <vector>
-#include <string>
-#include <utility>
 #include <kernel/cs_main.h>
+
+#include <stdint.h>
+#include <string>
+#include <sync.h>
+#include <utility>
+#include <vector>
 
 extern bool fAddressIndex;
 extern bool fSpentIndex;

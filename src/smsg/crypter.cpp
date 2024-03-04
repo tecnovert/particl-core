@@ -1,13 +1,13 @@
-// Copyright (c) 2017-2019 The Particl Core developers
+// Copyright (c) 2017-2024 The Particl Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
-
-#include <smsg/crypter.h>
-#include <crypto/aes.h>
 
 #if defined(HAVE_CONFIG_H)
 #include <config/bitcoin-config.h>
 #endif
+
+#include <smsg/crypter.h>
+#include <crypto/aes.h>
 
 #include <string.h>
 #include <stdint.h>

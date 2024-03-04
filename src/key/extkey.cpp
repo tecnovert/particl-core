@@ -5,8 +5,8 @@
 
 #include <key/extkey.h>
 
-#include <key_io.h>
 #include <crypto/hmac_sha512.h>
+#include <key_io.h>
 #include <util/strencodings.h>
 
 #include <stdint.h>

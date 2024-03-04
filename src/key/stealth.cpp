@@ -5,19 +5,19 @@
 
 #include <key/stealth.h>
 
+#include <key/crypter.h>
 #include <key_io.h>
 #include <key/keyutil.h>
-#include <key/crypter.h>
 #include <pubkey.h>
 #include <random.h>
 #include <script/script.h>
 #include <serialize.h>
-
 #include <support/allocators/secure.h>
 
-#include <cmath>
 #include <secp256k1.h>
 #include <secp256k1_ecdh.h>
+
+#include <cmath>
 
 secp256k1_context *secp256k1_ctx_stealth = nullptr;
 

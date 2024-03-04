@@ -4,10 +4,9 @@
 
 #include <key/keyutil.h>
 
-#include <string.h>
 #include <crypto/sha256.h>
 #include <serialize.h>
-
+#include <string.h>
 
 static uint32_t BitcoinChecksum(uint8_t *p, uint32_t nBytes)
 {

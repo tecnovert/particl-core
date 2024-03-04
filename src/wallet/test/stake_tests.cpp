@@ -2,23 +2,22 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <wallet/hdwallet.h>
-#include <wallet/coincontrol.h>
-#include <interfaces/chain.h>
-
-#include <wallet/test/hdwallet_test_fixture.h>
+#include <blind.h>
 #include <chainparams.h>
 #include <coins.h>
+#include <consensus/validation.h>
+#include <interfaces/chain.h>
 #include <net.h>
-#include <validation.h>
-#include <blind.h>
+#include <node/blockstorage.h>
+#include <pos/kernel.h>
 #include <rpc/rpcutil.h>
 #include <util/any.h>
 #include <util/string.h>
 #include <util/translation.h>
-#include <node/blockstorage.h>
-#include <consensus/validation.h>
-#include <pos/kernel.h>
+#include <validation.h>
+#include <wallet/coincontrol.h>
+#include <wallet/hdwallet.h>
+#include <wallet/test/hdwallet_test_fixture.h>
 
 #include <chrono>
 #include <thread>

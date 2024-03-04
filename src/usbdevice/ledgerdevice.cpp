@@ -4,13 +4,15 @@
 
 #include <usbdevice/ledgerdevice.h>
 
-#include <hidapi/hidapi.h>
-#include <stdio.h>
-#include <coins.h>
-#include <pubkey.h>
-#include <crypto/common.h>
 #include <chainparams.h>
+#include <coins.h>
+#include <crypto/common.h>
+#include <pubkey.h>
 #include <univalue.h>
+
+#include <hidapi/hidapi.h>
+
+#include <stdio.h>
 
 namespace usb_device {
 

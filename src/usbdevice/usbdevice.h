@@ -5,15 +5,15 @@
 #ifndef PARTICL_USBDEVICE_USBDEVICE_H
 #define PARTICL_USBDEVICE_USBDEVICE_H
 
-#include <string.h>
-#include <assert.h>
-#include <vector>
-#include <string>
-
 #include <pubkey.h>
 #include <script/sign.h>
 #include <script/signingprovider.h>
+
+#include <assert.h>
 #include <memory>
+#include <string>
+#include <string.h>
+#include <vector>
 
 struct CExtPubKey;
 class UniValue;

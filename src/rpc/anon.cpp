@@ -2,16 +2,14 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <rpc/server.h>
-#include <rpc/util.h>
-#include <rpc/server_util.h>
-#include <rpc/blockchain.h>
-#include <util/strencodings.h>
-
-#include <validation.h>
-#include <txdb.h>
 #include <anon.h>
-
+#include <rpc/blockchain.h>
+#include <rpc/server.h>
+#include <rpc/server_util.h>
+#include <rpc/util.h>
+#include <txdb.h>
+#include <util/strencodings.h>
+#include <validation.h>
 
 static bool IsDigits(const std::string &str)
 {

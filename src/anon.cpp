@@ -4,26 +4,26 @@
 
 #include <anon.h>
 
-#include <assert.h>
+#include <blind.h>
+#include <chainparams.h>
+#include <common/args.h>
+#include <consensus/validation.h>
+#include <key.h>
+#include <logging.h>
+#include <node/blockstorage.h>
+#include <primitives/transaction.h>
+#include <rctindex.h>
+#include <txdb.h>
+#include <txmempool.h>
+#include <util/strencodings.h>
+#include <validation.h>
+#include <validationinterface.h>
+
 #include <secp256k1.h>
 #include <secp256k1_rangeproof.h>
 #include <secp256k1_mlsag.h>
 
-#include <key.h>
-#include <blind.h>
-#include <rctindex.h>
-#include <txdb.h>
-#include <primitives/transaction.h>
-#include <validation.h>
-#include <validationinterface.h>
-#include <consensus/validation.h>
-#include <chainparams.h>
-#include <txmempool.h>
-#include <node/blockstorage.h>
-#include <common/args.h>
-#include <util/strencodings.h>
-#include <logging.h>
-
+#include <assert.h>
 
 bool CheckAnonInputMempoolConflicts(const CTxIn &txin, const uint256 txhash, CTxMemPool *pmempool, TxValidationState &state)
 {

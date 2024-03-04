@@ -4,17 +4,17 @@
 
 #include <wallet/test/hdwallet_test_fixture.h>
 
-#include <rpc/server.h>
-#include <wallet/db.h>
-#include <wallet/hdwallet.h>
-#include <wallet/rpc/wallet.h>
-#include <wallet/coincontrol.h>
-#include <wallet/test/util.h>
-#include <validation.h>
 #include <blind.h>
 #include <node/miner.h>
 #include <pos/miner.h>
+#include <rpc/server.h>
 #include <timedata.h>
+#include <validation.h>
+#include <wallet/coincontrol.h>
+#include <wallet/db.h>
+#include <wallet/hdwallet.h>
+#include <wallet/rpc/wallet.h>
+#include <wallet/test/util.h>
 
 #include <boost/test/unit_test.hpp>
 

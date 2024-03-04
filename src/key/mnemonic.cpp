@@ -16,19 +16,19 @@
 
 #include <key/mnemonic.h>
 
-#include <logging.h>
-#include <util/string.h>
-#include <util/strencodings.h>
 #include <crypto/hmac_sha512.h>
 #include <crypto/sha256.h>
+#include <logging.h>
 #include <random.h>
+#include <util/strencodings.h>
+#include <util/string.h>
 
 #include <unilib/uninorms.h>
 #include <unilib/utf8.h>
 
-#include <map>
 #include <atomic>
 #include <cmath>
+#include <map>
 
 #ifdef ENABLE_BIP39_ENGLISH
 #include <key/wordlists/english.h>

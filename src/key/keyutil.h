@@ -5,8 +5,8 @@
 #ifndef PARTICL_KEY_KEYUTIL_H
 #define PARTICL_KEY_KEYUTIL_H
 
-#include <vector>
 #include <stdint.h>
+#include <vector>
 
 inline bool IsHardened(uint32_t n)              { return (n & ((uint32_t)1 << 31)); };
 inline uint32_t &SetHardenedBit(uint32_t &n)    { return (n |= ((uint32_t)1 << 31)); };

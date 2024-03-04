@@ -5,17 +5,17 @@
 #include <test/util/setup_common.h>
 #include <test/util/random.h>
 
+#include <blind.h>
 #include <crypto/sha256.h>
+#include <util/strencodings.h>
 
 #include <secp256k1.h>
 #include <secp256k1_rangeproof.h>
 #include <secp256k1_bulletproofs.h>
-#include <stdint.h>
-#include <util/strencodings.h>
 
 #include <boost/test/unit_test.hpp>
 
-#include <blind.h>
+#include <stdint.h>
 
 BOOST_FIXTURE_TEST_SUITE(ct_tests, BasicTestingSetup)
 

@@ -2,34 +2,34 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <usbdevice/usbdevice.h>
-#include <rpc/util.h>
-#include <rpc/server.h>
-#include <rpc/server_util.h>
+#include <chainparams.h>
+#include <core_io.h>
+#include <key/extkey.h>
+#include <key_io.h>
+#include <node/context.h>
+#include <node/interface_ui.h>
+#include <policy/policy.h>
+#include <primitives/transaction.h>
 #include <rpc/blockchain.h>
 #include <rpc/rawtransaction_util.h>
-#include <util/strencodings.h>
-#include <key_io.h>
-#include <key/extkey.h>
-#include <chainparams.h>
-#include <validation.h>
-#include <core_io.h>
-#include <primitives/transaction.h>
-#include <policy/policy.h>
-#include <script/script.h>
+#include <rpc/server.h>
+#include <rpc/server_util.h>
+#include <rpc/util.h>
 #include <script/script_error.h>
+#include <script/script.h>
 #include <script/sign.h>
 #include <script/signingprovider.h>
 #include <script/solver.h>
 #include <txmempool.h>
-#include <node/interface_ui.h>
-#include <node/context.h>
+#include <usbdevice/usbdevice.h>
+#include <util/strencodings.h>
+#include <validation.h>
 
 #ifdef ENABLE_WALLET
 #include <wallet/hdwallet.h>
-#include <wallet/rpc/wallet.h>
 #include <wallet/rpchdwallet.h>
 #include <wallet/rpc/util.h>
+#include <wallet/rpc/wallet.h>
 #endif
 
 #include <univalue.h>

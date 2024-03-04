@@ -38,6 +38,7 @@
 // Particl
 #include <util/strencodings.h>
 #include <smsg/securemessage.h>
+#include <compat/endian.h>
 
 
 namespace Consensus {
@@ -356,7 +357,7 @@ bool CZMQPublishSMSGNotifier::NotifySecureMessage(const smsg::SecureMessage *psm
     DataStream ss;
     ss << psmsg->version[0];
     ss << psmsg->version[1];
-    int64_t timestamp_be = bswap_64(psmsg->timestamp);
+    int64_t timestamp_be = (int64_t)htobe64(psmsg->timestamp);
     ss << timestamp_be;
     ss << hash;
     return SendZmqMessage(MSG_SMSG, &(*ss.begin()), ss.size());

@@ -101,8 +101,10 @@ public:
     // pos block signature - signed by one of the coin stake txout[N]'s owner
     std::vector<uint8_t> vchBlockSig;
 
-    // memory only
-    mutable bool fChecked;
+    // Memory-only flags for caching expensive checks
+    mutable bool fChecked;                            // CheckBlock()
+    mutable bool m_checked_witness_commitment{false}; // CheckWitnessCommitment()
+    mutable bool m_checked_merkle_root{false};        // CheckMerkleRoot()
 
     CBlock()
     {
@@ -138,6 +140,8 @@ public:
         CBlockHeader::SetNull();
         vtx.clear();
         fChecked = false;
+        m_checked_witness_commitment = false;
+        m_checked_merkle_root = false;
     }
 
     CBlockHeader GetBlockHeader() const

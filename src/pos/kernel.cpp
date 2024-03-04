@@ -7,19 +7,19 @@
 #include <pos/kernel.h>
 
 #include <chainparams.h>
-#include <serialize.h>
-#include <streams.h>
+#include <coins.h>
+#include <consensus/validation.h>
 #include <hash.h>
+#include <insight/insight.h>
+#include <logging.h>
+#include <node/transaction.h>
+#include <policy/policy.h>
 #include <script/interpreter.h>
 #include <script/script.h>
-#include <policy/policy.h>
-#include <consensus/validation.h>
-#include <coins.h>
-#include <insight/insight.h>
+#include <serialize.h>
+#include <streams.h>
 #include <txmempool.h>
-#include <node/transaction.h>
 #include <validation.h>
-#include <logging.h>
 
 /* Calculate the difficulty for a given block index.
  * Duplicated from rpc/blockchain.cpp for linking

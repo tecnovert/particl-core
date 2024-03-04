@@ -6,13 +6,13 @@
 #ifndef PARTICL_KEY_EXTKEY_H
 #define PARTICL_KEY_EXTKEY_H
 
-#include <logging.h>
 #include <key.h>
+#include <key/keyutil.h>
 #include <key/stealth.h>
 #include <key/types.h>
-#include <key/keyutil.h>
-#include <sync.h>
+#include <logging.h>
 #include <script/ismine.h>
+#include <sync.h>
 
 static const uint32_t MAX_DERIVE_TRIES = 16;
 static const uint32_t BIP32_KEY_LEN = 82;       // Raw, 74 + 4 bytes id + 4 checksum

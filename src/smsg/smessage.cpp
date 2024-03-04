@@ -1,5 +1,5 @@
 // Copyright (c) 2014-2016 The ShadowCoin developers
-// Copyright (c) 2017-2023 The Particl Core developers
+// Copyright (c) 2017-2024 The Particl Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -22,52 +22,57 @@ Notes:
 
 */
 
+#if defined(HAVE_CONFIG_H)
+#include <config/bitcoin-config.h>
+#endif
+
 #include <smsg/smessage.h>
 
-#include <secp256k1.h>
-#include <secp256k1_ecdh.h>
+#include <chain.h>
+#include <common/args.h>
+#include <consensus/validation.h>
 #include <crypto/hmac_sha256.h>
 #include <crypto/sha512.h>
-#include <wallet/types.h>
-#include <support/allocators/secure.h>
-#include <util/thread.h>
-#include <util/strencodings.h>
-#include <consensus/validation.h>
-#include <validation.h>
-#include <validationinterface.h>
+#include <dbwrapper.h>
+#include <logging.h>
+#include <net.h>
+#include <netmessagemaker.h>
+#include <net_processing.h>
+#include <node/blockstorage.h>
+#include <node/context.h>
+#include <random.h>
+#include <secp256k1_ecdh.h>
+#include <secp256k1.h>
 #include <smsg/crypter.h>
 #include <smsg/db.h>
-#include <random.h>
-#include <chain.h>
-#include <netmessagemaker.h>
-#include <net.h>
-#include <net_processing.h>
 #include <streams.h>
-#include <dbwrapper.h>
+#include <support/allocators/secure.h>
+#include <timedata.h>
 #include <univalue.h>
-#include <node/context.h>
-#include <node/blockstorage.h>
+#include <util/strencodings.h>
 #include <util/string.h>
 #include <util/syserror.h>
-#include <timedata.h>
-#include <logging.h>
-#include <common/args.h>
+#include <util/thread.h>
+#include <validation.h>
+#include <validationinterface.h>
+#include <wallet/types.h>
+
 
 #ifdef ENABLE_WALLET
-#include <wallet/coincontrol.h>
-#include <wallet/hdwallet.h>
 #include <interfaces/chain.h>
 #include <policy/policy.h>
+#include <wallet/coincontrol.h>
+#include <wallet/hdwallet.h>
 #endif
 
 #include <xxhash/xxhash.h>
 
-#include <stdint.h>
-#include <time.h>
-#include <map>
-#include <stdexcept>
 #include <errno.h>
 #include <limits>
+#include <map>
+#include <stdexcept>
+#include <stdint.h>
+#include <time.h>
 
 
 smsg::CSMSG smsgModule;

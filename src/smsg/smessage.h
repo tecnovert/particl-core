@@ -6,19 +6,19 @@
 #ifndef PARTICL_SMSG_SMESSAGE_H
 #define PARTICL_SMSG_SMESSAGE_H
 
-#include <sync.h>
-#include <util/threadinterrupt.h>
-#include <key_io.h>
-#include <serialize.h>
-#include <lz4/lz4.h>
-#include <smsg/keystore.h>
 #include <interfaces/handler.h>
 #include <interfaces/node.h>
-#include <util/ui_change_type.h>
-#include <smsg/db.h>
-#include <smsg/types.h>
-#include <smsg/securemessage.h>
 #include <kernel/cs_main.h>
+#include <key_io.h>
+#include <lz4/lz4.h>
+#include <serialize.h>
+#include <smsg/db.h>
+#include <smsg/keystore.h>
+#include <smsg/securemessage.h>
+#include <smsg/types.h>
+#include <sync.h>
+#include <util/threadinterrupt.h>
+#include <util/ui_change_type.h>
 
 #include <atomic>
 #include <boost/signals2/signal.hpp>

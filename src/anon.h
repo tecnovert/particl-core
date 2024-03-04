@@ -5,12 +5,12 @@
 #ifndef PARTICL_ANON_H
 #define PARTICL_ANON_H
 
-#include <sync.h>
-#include <pubkey.h>
 #include <consensus/amount.h>
-#include <set>
 #include <kernel/cs_main.h>
+#include <pubkey.h>
+#include <sync.h>
 
+#include <set>
 
 class uint256;
 class CTxIn;
