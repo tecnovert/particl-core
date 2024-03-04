@@ -1,18 +1,23 @@
 // Copyright (c) 2014-2015 The ShadowCoin developers
-// Copyright (c) 2017-2022 The Particl Core developers
+// Copyright (c) 2017-2024 The Particl Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef PARTICL_KEY_EXTKEY_H
 #define PARTICL_KEY_EXTKEY_H
 
-#include <util/system.h>
+#if defined(HAVE_CONFIG_H)
+#include <config/bitcoin-config.h>
+#endif
+
 #include <key.h>
+#include <key/keyutil.h>
 #include <key/stealth.h>
 #include <key/types.h>
-#include <key/keyutil.h>
-#include <sync.h>
+#include <logging.h>
 #include <script/ismine.h>
+#include <sync.h>
+#include <util/system.h>
 
 static const uint32_t MAX_DERIVE_TRIES = 16;
 static const uint32_t BIP32_KEY_LEN = 82;       // Raw, 74 + 4 bytes id + 4 checksum

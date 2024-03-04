@@ -1,15 +1,20 @@
-// Copyright (c) 2017-2020 The Particl Core developers
+// Copyright (c) 2017-2024 The Particl Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <smsg/smessage.h>
+#if defined(HAVE_CONFIG_H)
+#include <config/bitcoin-config.h>
+#endif
 
 #include <test/util/setup_common.h>
+
 #include <net.h>
-#include <xxhash/xxhash.h>
+#include <smsg/smessage.h>
 #ifdef ENABLE_WALLET
 #include <wallet/hdwallet.h>
 #endif
+
+#include <xxhash/xxhash.h>
 
 #include <boost/test/unit_test.hpp>
 
