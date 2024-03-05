@@ -1,6 +1,10 @@
-// Copyright (c) 2018-2023 The Particl Core developers
+// Copyright (c) 2018-2024 The Particl Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#if defined(HAVE_CONFIG_H)
+#include <config/bitcoin-config.h>
+#endif
 
 #include <chainparams.h>
 #include <core_io.h>
