@@ -2056,8 +2056,8 @@ bool CSMSG::ScanBlock(const CBlock &block)
         LOCK(cs_smsgDB);
 
         SecMsgDB addrpkdb;
-        if (!addrpkdb.Open("cw")
-            || !addrpkdb.TxnBegin()) {
+        if (!addrpkdb.Open("cw") ||
+            !addrpkdb.TxnBegin()) {
             return false;
         }
 
@@ -2651,10 +2651,11 @@ int CSMSG::ScanMessage(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t
                 std::thread t(runCommand, strCmd);
                 t.detach(); // thread runs free
             }
-
-            GetMainSignals().NewSecureMessage(&smsg, hash);
         }
 #endif
+        if (m_node->chainman->m_options.signals) {
+            m_node->chainman->m_options.signals->NewSecureMessage(&smsg, hash);
+        }
     }
 
     return SMSG_NO_ERROR;

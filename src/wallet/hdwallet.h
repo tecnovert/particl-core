@@ -58,6 +58,8 @@ public:
     static void AddOptions(ArgsManager& argsman);
 
     bool ShouldRescan() override;
+    void TransactionAddedToWallet(const CTransactionRef& ptx) override;
+    void SyncWithValidationInterfaceQueue();
 
     const uint256 &LastBlockProcessed() const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet)
     {

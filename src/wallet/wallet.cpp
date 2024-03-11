@@ -1194,8 +1194,7 @@ CWalletTx* CWallet::AddToWallet(CTransactionRef tx, const TxState& state, const 
     }
 #endif
 
-    std::string sName = GetName();
-    GetMainSignals().TransactionAddedToWallet(sName, wtx.tx);
+    TransactionAddedToWallet(wtx.tx);
     ClearCachedBalances();
 
     return &wtx;

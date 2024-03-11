@@ -47,7 +47,7 @@ static void AddTxn(CHDWallet *pwallet, CTxDestination &dest, OutputTypes output_
 
     BOOST_REQUIRE(pwallet->SubmitTxMemoryPoolAndRelay(wtx, sError, true));
     }
-    SyncWithValidationInterfaceQueue();
+    pwallet->SyncWithValidationInterfaceQueue();
 }
 
 static void TryAddBadTxn(CHDWallet *pwallet, CTxDestination &dest, OutputTypes output_type, CAmount amount)
@@ -80,7 +80,7 @@ static void TryAddBadTxn(CHDWallet *pwallet, CTxDestination &dest, OutputTypes o
     BOOST_REQUIRE(!pwallet->SubmitTxMemoryPoolAndRelay(wtx, sError, true));
     BOOST_REQUIRE(sError == "bad-commitment-sum");
     }
-    SyncWithValidationInterfaceQueue();
+    pwallet->SyncWithValidationInterfaceQueue();
 }
 
 static void DisconnectTip(Chainstate &chainstate_active, CTxMemPool* mempool, CBlock &block, CBlockIndex *pindexDelete, CCoinsViewCache &view, const CChainParams &chainparams) EXCLUSIVE_LOCKS_REQUIRED(cs_main, mempool->cs)

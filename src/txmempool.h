@@ -46,6 +46,7 @@
 
 class CBlockIndex;
 class CChain;
+class ValidationSignals;
 
 enum eMemPoolFlags
 {
@@ -471,6 +472,8 @@ public:
     const bool m_persist_v1_dat;
 
     const Limits m_limits;
+
+    ValidationSignals* const m_signals;
 
     // Particl
     std::map<CCmpPubKey, uint256> mapKeyImages;

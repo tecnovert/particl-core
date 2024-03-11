@@ -81,7 +81,9 @@ void StakeNBlocks(CHDWallet *pwallet, size_t nBlocks)
         std::this_thread::sleep_for(std::chrono::milliseconds(250));
     }
     BOOST_REQUIRE(k < nTries);
-    SyncWithValidationInterfaceQueue();
+    if (pchainman->m_options.signals) {
+        pchainman->m_options.signals->SyncWithValidationInterfaceQueue();
+    }
 }
 
 bool CreateValidBlock(CHDWallet *pwallet, CBlock &block_out)
@@ -150,8 +152,8 @@ uint256 AddTxn(CHDWallet *pwallet, CTxDestination &dest, OutputTypes input_type,
     }
 
     txid = wtx.GetHash();
-    }
-    SyncWithValidationInterfaceQueue();
+    } // cs_wallet
+    pwallet->SyncWithValidationInterfaceQueue();
 
     return txid;
 }

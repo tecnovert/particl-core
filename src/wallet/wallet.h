@@ -1170,6 +1170,7 @@ public:
     std::vector<uint256> ResendWalletTransactionsBefore(int64_t nTime);
 
     virtual bool ShouldRescan() { return true; };
+    virtual void TransactionAddedToWallet(const CTransactionRef& ptx) {};
 };
 
 /**

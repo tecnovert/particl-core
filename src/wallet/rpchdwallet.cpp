@@ -6953,7 +6953,7 @@ static RPCHelpMan debugwallet()
             break;
         }
         }
-        SyncWithValidationInterfaceQueue();
+        pwallet->SyncWithValidationInterfaceQueue();
         return result;
     }
 

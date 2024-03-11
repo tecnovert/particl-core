@@ -2673,6 +2673,7 @@ static RPCHelpMan smsgzmqpush()
         [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
     EnsureSMSGIsEnabled();
+    ChainstateManager &chainman = EnsureAnyChainman(request.context);
 
     bool unreadonly = true;
     int64_t timefrom = 0;
@@ -2726,8 +2727,9 @@ static RPCHelpMan smsgzmqpush()
             vchUint160.resize(20);
             memcpy(vchUint160.data(), &chKey[10], 20);
             uint160 hash(vchUint160);
-
-            GetMainSignals().NewSecureMessage(psmsg, hash);
+            if (chainman.m_options.signals) {
+                chainman.m_options.signals->NewSecureMessage(psmsg, hash);
+            }
             num_sent++;
         }
         delete it;

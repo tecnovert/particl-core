@@ -53,6 +53,14 @@ CTransactionRef CreateTxn(CHDWallet *pwallet, CBitcoinAddress &address, CAmount 
 
 static void AddAnonTxn(CHDWallet *pwallet, CBitcoinAddress &address, CAmount amount, OutputTypes output_type)
 {
+    ChainstateManager *pchainman{nullptr};
+    if (pwallet->HaveChain()) {
+        pchainman = pwallet->chain().getChainman();
+    }
+    if (!pchainman) {
+        LogPrintf("Error: Chainstate manager not found.\n");
+        return;
+    }
     {
     LOCK(pwallet->cs_wallet);
 
@@ -74,7 +82,9 @@ static void AddAnonTxn(CHDWallet *pwallet, CBitcoinAddress &address, CAmount amo
     assert(0 == pwallet->AddStandardInputs(wtx, rtx, vecSend, true, nFee, &coinControl, sError));
     assert(pwallet->SubmitTxMemoryPoolAndRelay(wtx, sError, true));
     }
-    SyncWithValidationInterfaceQueue();
+    if (pchainman->m_options.signals) {
+        pchainman->m_options.signals->SyncWithValidationInterfaceQueue();
+    }
 }
 
 void StakeNBlocks(CHDWallet *pwallet, size_t nBlocks)
@@ -117,8 +127,10 @@ void StakeNBlocks(CHDWallet *pwallet, size_t nBlocks)
         std::this_thread::sleep_for(std::chrono::milliseconds(250));
     }
     assert(k < nTries);
-    SyncWithValidationInterfaceQueue();
-};
+    if (pchainman->m_options.signals) {
+        pchainman->m_options.signals->SyncWithValidationInterfaceQueue();
+    }
+}
 
 static std::shared_ptr<CHDWallet> CreateTestWallet(wallet::WalletContext& wallet_context, std::string wallet_name)
 {
