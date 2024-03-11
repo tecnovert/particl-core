@@ -98,6 +98,7 @@ struct Params {
      * This prevents us from warning about the CSV and segwit activations. */
     int MinBIP9WarningHeight;
 
+    bool m_particl_mode = true;
     /** Time at which OP_ISCOINSTAKE becomes active */
     int64_t OpIsCoinstakeTime;
     bool fAllowOpIsCoinstakeWithP2PKH;

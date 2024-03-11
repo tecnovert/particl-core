@@ -22,6 +22,7 @@ struct CompressedHeader {
     // header
     int32_t nVersion{0};
     uint256 hashMerkleRoot;
+    uint256 hashWitnessMerkleRoot;
     uint32_t nTime{0};
     uint32_t nBits{0};
     uint32_t nNonce{0};
@@ -29,12 +30,14 @@ struct CompressedHeader {
     CompressedHeader()
     {
         hashMerkleRoot.SetNull();
+        hashWitnessMerkleRoot.SetNull();
     }
 
     CompressedHeader(const CBlockHeader& header)
     {
         nVersion = header.nVersion;
         hashMerkleRoot = header.hashMerkleRoot;
+        hashWitnessMerkleRoot = header.hashWitnessMerkleRoot;
         nTime = header.nTime;
         nBits = header.nBits;
         nNonce = header.nNonce;
@@ -45,6 +48,7 @@ struct CompressedHeader {
         ret.nVersion = nVersion;
         ret.hashPrevBlock = hash_prev_block;
         ret.hashMerkleRoot = hashMerkleRoot;
+        ret.hashWitnessMerkleRoot = hashWitnessMerkleRoot;
         ret.nTime = nTime;
         ret.nBits = nBits;
         ret.nNonce = nNonce;
