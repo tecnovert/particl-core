@@ -2648,10 +2648,9 @@ int CSMSG::ScanMessage(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t
                 std::thread t(runCommand, strCmd);
                 t.detach(); // thread runs free
             }
-
-            GetMainSignals().NewSecureMessage(&smsg, hash);
         }
 #endif
+        GetMainSignals().NewSecureMessage(&smsg, hash);
     }
 
     return SMSG_NO_ERROR;
