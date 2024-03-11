@@ -27,6 +27,7 @@ CreateWalletDialog::CreateWalletDialog(QWidget* parent) :
 
     if (fParticlMode) {
         ui->blank_wallet_checkbox->setChecked(true);
+        ui->blank_wallet_checkbox->setEnabled(false);
         ui->descriptor_checkbox->setChecked(false);
         ui->descriptor_checkbox->setEnabled(false);
     }
@@ -56,6 +57,7 @@ CreateWalletDialog::CreateWalletDialog(QWidget* parent) :
 
     connect(ui->external_signer_checkbox, &QCheckBox::toggled, [this](bool checked) {
         ui->encrypt_wallet_checkbox->setEnabled(!checked);
+        if (!fParticlMode)
         ui->blank_wallet_checkbox->setEnabled(!checked);
         ui->disable_privkeys_checkbox->setEnabled(!checked);
         ui->descriptor_checkbox->setEnabled(!checked);
@@ -69,6 +71,7 @@ CreateWalletDialog::CreateWalletDialog(QWidget* parent) :
         // The blank check box is ambiguous. This flag is always true for a
         // watch-only wallet, even though we immedidately fetch keys from the
         // external signer.
+        if (!fParticlMode)
         ui->blank_wallet_checkbox->setChecked(checked);
     });
 
@@ -77,9 +80,11 @@ CreateWalletDialog::CreateWalletDialog(QWidget* parent) :
         // set to true, enable it when isDisablePrivateKeysChecked is false.
         ui->encrypt_wallet_checkbox->setEnabled(!checked);
 
-        // Wallets without private keys start out blank
-        if (checked) {
-            ui->blank_wallet_checkbox->setChecked(true);
+        // Wallets without private keys cannot set blank
+        if (!fParticlMode) {
+            if (checked) {
+                ui->blank_wallet_checkbox->setChecked(true);
+            }
         }
 
         // When the encrypt_wallet_checkbox is disabled, uncheck it.
