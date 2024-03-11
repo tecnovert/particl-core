@@ -2869,7 +2869,8 @@ arith_uint256 PeerManagerImpl::GetAntiDoSWorkThreshold()
         const CBlockIndex *tip = m_chainman.ActiveChain().Tip();
         // Use a 144 block buffer, so that we'll accept headers that fork from
         // near our tip.
-        near_chaintip_work = tip->nChainWork - std::min<arith_uint256>(144*GetBlockProof(*tip), tip->nChainWork);
+        int block_buffer = fParticlMode ? 1440 : 144;
+        near_chaintip_work = tip->nChainWork - std::min<arith_uint256>(block_buffer*GetBlockProof(*tip), tip->nChainWork);
     }
     return std::max(near_chaintip_work, m_chainman.MinimumChainWork());
 }
@@ -5098,10 +5099,6 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
 
             // Check work on this block against our anti-dos thresholds.
             const CBlockIndex* prev_block = m_chainman.m_blockman.LookupBlockIndex(pblock->hashPrevBlock);
-            if (fParticlMode) {
-                // TODO: Add limit
-                min_pow_checked = true;
-            } else
             if (prev_block && prev_block->nChainWork + CalculateHeadersWork({pblock->GetBlockHeader()}) >= GetAntiDoSWorkThreshold()) {
                 min_pow_checked = true;
             }
