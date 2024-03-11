@@ -426,6 +426,7 @@ static CBlock CreateGenesisBlock(uint32_t nTime, uint32_t nNonce, uint32_t nBits
 
 void CChainParams::SetOld()
 {
+    consensus.m_particl_mode = false;
     if (NetworkID() == CBaseChainParams::MAIN) {
         consensus.script_flag_exceptions.clear();
         consensus.script_flag_exceptions.emplace( // BIP16 exception
