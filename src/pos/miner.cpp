@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2023 The Particl Core developers
+// Copyright (c) 2017-2024 The Particl Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -42,11 +42,13 @@ bool CheckStake(ChainstateManager &chainman, const CBlock *pblock)
     uint256 hashBlock = pblock->GetHash();
 
     if (!pblock->IsProofOfStake()) {
-        return error("%s: %s is not a proof-of-stake block.", __func__, hashBlock.GetHex());
+        LogError("%s: %s is not a proof-of-stake block.", __func__, hashBlock.GetHex());
+        return false;
     }
 
     if (!particl::CheckStakeUnique(*pblock, false)) { // Check in SignBlock also
-        return error("%s: %s CheckStakeUnique failed.", __func__, hashBlock.GetHex());
+        LogError("%s: %s CheckStakeUnique failed.", __func__, hashBlock.GetHex());
+        return false;
     }
 
     // Verify hash target and signature of coinstake tx
@@ -55,19 +57,23 @@ bool CheckStake(ChainstateManager &chainman, const CBlock *pblock)
 
         node::BlockMap::const_iterator mi = chainman.BlockIndex().find(pblock->hashPrevBlock);
         if (mi == chainman.BlockIndex().end()) {
-            return error("%s: %s prev block not found: %s.", __func__, hashBlock.GetHex(), pblock->hashPrevBlock.GetHex());
+            LogError("%s: %s prev block not found: %s.", __func__, hashBlock.GetHex(), pblock->hashPrevBlock.GetHex());
+            return false;
         }
 
         if (!chainman.ActiveChain().Contains(&mi->second)) {
-            return error("%s: %s prev block in active chain: %s.", __func__, hashBlock.GetHex(), pblock->hashPrevBlock.GetHex());
+            LogError("%s: %s prev block in active chain: %s.", __func__, hashBlock.GetHex(), pblock->hashPrevBlock.GetHex());
+            return false;
         }
 
         BlockValidationState state;
         if (!CheckProofOfStake(chainman.ActiveChainstate(), state, &mi->second, *pblock->vtx[0], pblock->nTime, pblock->nBits, proofHash, hashTarget)) {
-            return error("%s: proof-of-stake checking failed.", __func__);
+            LogError("%s: proof-of-stake checking failed.", __func__);
+            return false;
         }
         if (pblock->hashPrevBlock != chainman.ActiveChain().Tip()->GetBlockHash()) { // hashbestchain
-            return error("%s: Generated block is stale.", __func__);
+            LogError("%s: Generated block is stale.", __func__);
+            return false;
         }
     }
 
@@ -80,7 +86,8 @@ bool CheckStake(ChainstateManager &chainman, const CBlock *pblock)
 
     std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(*pblock);
     if (!chainman.ProcessNewBlock(shared_pblock, true, /*min_pow_checked=*/true, nullptr)) {
-        return error("%s: Block not accepted.", __func__);
+        LogError("%s: Block not accepted.", __func__);
+        return false;
     }
 
     return true;
@@ -92,19 +99,22 @@ bool ImportOutputs(node::CBlockTemplate *pblocktemplate, int nHeight)
 
     CBlock *pblock = &pblocktemplate->block;
     if (pblock->vtx.size() < 1) {
-        return error("%s: Malformed block.", __func__);
+        LogError("%s: Malformed block.", __func__);
+        return false;
     }
 
     fs::path fPath = gArgs.GetDataDirNet() / "genesisOutputs.txt";
     if (!fs::exists(fPath)) {
-        return error("%s: File not found 'genesisOutputs.txt'.", __func__);
+        LogError("%s: File not found 'genesisOutputs.txt'.", __func__);
+        return false;
     }
 
     const int nMaxOutputsPerTxn = 80;
     FILE *fp;
     errno = 0;
     if (!(fp = fopen(fs::PathToString(fPath).c_str(), "rb"))) {
-        return error("%s - Can't open file, error: %s.", __func__, SysErrorString(errno));
+        LogError("%s - Can't open file, error: %s.", __func__, SysErrorString(errno));
+        return false;
     }
 
     CMutableTransaction txn;
@@ -170,7 +180,8 @@ bool ImportOutputs(node::CBlockTemplate *pblocktemplate, int nHeight)
 
     uint256 hash = txn.GetHash();
     if (!Params().CheckImportCoinbase(nHeight, hash)) {
-        return error("%s - Incorrect outputs hash.", __func__);
+        LogError("%s - Incorrect outputs hash.", __func__);
+        return false;
     }
 
     pblock->vtx.insert(pblock->vtx.begin()+1, MakeTransactionRef(txn));

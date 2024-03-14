@@ -220,7 +220,7 @@ static inline bool LogAcceptCategory(BCLog::LogFlags category, BCLog::Level leve
 /** Return true if str parses as a log category and set the flag */
 bool GetLogCategory(BCLog::LogFlags& flag, const std::string& str);
 
-// Be conservative when using LogPrintf/error or other things which
+// Be conservative when using functions that
 // unconditionally log to debug.log! It should not be the case that an inbound
 // peer can fill up a user's disk with debug.log entries.
 
@@ -271,14 +271,14 @@ static inline void LogPrintf_(const std::string& logging_function, const std::st
 template <typename... Args>
 bool error(const char* fmt, const Args&... args)
 {
-    LogPrintf("ERROR: %s\n", tfm::format(fmt, args...));
+    LogError("%s\n", tfm::format(fmt, args...));
     return false;
 }
 
 template<typename... Args>
 int errorN(int n, const char *fmt, const Args&... args)
 {
-    LogPrintf("ERROR: %s\n", tfm::format(fmt, args...));
+    LogError("%s\n", tfm::format(fmt, args...));
     return n;
 }
 
@@ -286,7 +286,7 @@ template<typename... Args>
 int errorN(int n, std::string &s, const char *func, const char *fmt, const Args&... args)
 {
     s = tfm::format(fmt, args...);
-    LogPrintf("ERROR: %s\n", std::string(func) + ": " + s);
+    LogError("%s\n", std::string(func) + ": " + s);
     return n;
 }
 

@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2013 The PPCoin developers
 // Copyright (c) 2014 The BlackCoin developers
-// Copyright (c) 2017-2023 The Particl Core developers
+// Copyright (c) 2017-2024 The Particl Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -130,7 +130,8 @@ bool CheckStakeKernelHash(const CBlockIndex *pindexPrev,
     // CheckStakeKernelHashV2
 
     if (nTime < nBlockFromTime) {  // Transaction timestamp violation
-        return error("%s: nTime violation", __func__);
+        LogError("%s: nTime violation", __func__);
+        return false;
     }
 
     arith_uint256 bnTarget;
@@ -139,7 +140,8 @@ bool CheckStakeKernelHash(const CBlockIndex *pindexPrev,
 
     bnTarget.SetCompact(nBits, &fNegative, &fOverflow);
     if (fNegative || fOverflow || bnTarget == 0) {
-        return error("%s: SetCompact failed.", __func__);
+        LogError("%s: SetCompact failed.", __func__);
+        return false;
     }
 
     // Weighted target
@@ -370,14 +372,17 @@ bool CheckKernel(Chainstate &chain_state, const CBlockIndex *pindexPrev, unsigne
     {
         LOCK(::cs_main);
         if (!chain_state.CoinsTip().GetCoin(prevout, coin)) {
-            return error("%s: prevout not found", __func__);
+            LogError("%s: prevout not found", __func__);
+            return false;
         }
     }
     if (coin.nType != OUTPUT_STANDARD) {
-        return error("%s: prevout not standard output", __func__);
+        LogError("%s: prevout not standard output", __func__);
+        return false;
     }
     if (coin.IsSpent()) {
-        return error("%s: prevout is spent", __func__);
+        LogError("%s: prevout is spent", __func__);
+        return false;
     }
 
     CBlockIndex *pindex = chain_state.m_chain[coin.nHeight];

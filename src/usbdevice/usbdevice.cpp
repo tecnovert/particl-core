@@ -235,7 +235,8 @@ bool DeviceSignatureCreator::CreateSig(const SigningProvider &provider, std::vec
             if (pak) {
                 LOCK(pw->cs_wallet);
                 if (!pw->GetFullChainPath(pa, pak->nParent, vPath)) {
-                    return error("%s: GetFullAccountPath failed.", __func__);
+                    LogError("%s: GetFullAccountPath failed.", __func__);
+                    return false;
                 }
 
                 vPath.push_back(pak->nKey);
@@ -243,12 +244,14 @@ bool DeviceSignatureCreator::CreateSig(const SigningProvider &provider, std::vec
             if (pasc) {
                 AccStealthKeyMap::const_iterator miSk = pa->mapStealthKeys.find(pasc->idStealthKey);
                 if (miSk == pa->mapStealthKeys.end()) {
-                    return error("%s: CEKASCKey Stealth key not found.", __func__);
+                    LogError("%s: CEKASCKey Stealth key not found.", __func__);
+                    return false;
                 }
                 {
                     LOCK(pw->cs_wallet);
                     if (!pw->GetFullChainPath(pa, miSk->second.akSpend.nParent, vPath)) {
-                        return error("%s: GetFullAccountPath failed.", __func__);
+                        LogError("%s: GetFullAccountPath failed.", __func__);
+                        return false;
                     }
                 }
 
@@ -256,10 +259,12 @@ bool DeviceSignatureCreator::CreateSig(const SigningProvider &provider, std::vec
                 vSharedSecret.resize(32);
                 memcpy(vSharedSecret.data(), pasc->sShared.begin(), 32);
             } else {
-                return error("%s: HaveKey error.", __func__);
+                LogError("%s: HaveKey error.", __func__);
+                return false;
             }
             if (0 != pDevice->SignTransaction(vPath, vSharedSecret, txTo, nIn, scriptCode, nHashType, amount, sigversion, vchSig, pDevice->m_error)) {
-                return error("%s: SignTransaction failed.", __func__);
+                LogError("%s: SignTransaction failed.", __func__);
+                return false;
             }
             return true;
         }
@@ -274,7 +279,8 @@ bool DeviceSignatureCreator::CreateSig(const SigningProvider &provider, std::vec
 
         std::vector<uint8_t> vSharedSecret;
         if (0 != pDevice->SignTransaction(pathkey.vPath, vSharedSecret, txTo, nIn, scriptCode, nHashType, amount, sigversion, vchSig, pDevice->m_error)) {
-            return error("%s: SignTransaction failed.", __func__);
+            LogError("%s: SignTransaction failed.", __func__);
+            return false;
         }
         return true;
     }
@@ -286,7 +292,8 @@ bool DeviceSignatureCreator::CreateSchnorrSig(const SigningProvider& provider, s
 {
     assert(sigversion == SigVersion::TAPROOT || sigversion == SigVersion::TAPSCRIPT);
 
-    return error("%s: TODO.", __func__);
+    LogError("%s: TODO.", __func__);
+    return false;
 }
 
 } // usb_device

@@ -13,6 +13,7 @@
 #include <functional>
 #include <list>
 #include <memory>
+#include <vector>
 #include <thread>
 #include <atomic>
 
@@ -31,7 +32,7 @@ public:
 
     std::list<const CZMQAbstractNotifier*> GetActiveNotifiers() const;
 
-    static std::unique_ptr<CZMQNotificationInterface> Create(std::function<bool(CBlock&, const CBlockIndex&)> get_block_by_index);
+    static std::unique_ptr<CZMQNotificationInterface> Create(std::function<bool(std::vector<uint8_t>&, const CBlockIndex&)> get_block_by_index);
 
 protected:
     bool Initialize();

@@ -1,5 +1,5 @@
 // Copyright (c) 2014 The ShadowCoin developers
-// Copyright (c) 2017-2020 The Particl Core developers
+// Copyright (c) 2017-2024 The Particl Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
@@ -49,7 +49,7 @@ bool CStealthAddress::SetEncoded(const std::string &encodedAddress)
     }
 
     return 0 == FromRaw(p, raw.size()-1);
-};
+}
 
 int CStealthAddress::FromRaw(const uint8_t *p, size_t nSize)
 {
@@ -98,11 +98,11 @@ int CStealthAddress::ToRaw(std::vector<uint8_t> &raw) const
 
     size_t nPrefixBytes = std::ceil((float)prefix.number_bits / 8.0);
     size_t nPkSpend = spend_pubkey.size() / EC_COMPRESSED_SIZE;
-    if (scan_pubkey.size() != EC_COMPRESSED_SIZE
-        || spend_pubkey.size() < EC_COMPRESSED_SIZE
-        || spend_pubkey.size() % EC_COMPRESSED_SIZE != 0
-        || nPkSpend > MAX_STEALTH_SPEND_KEYS
-        || nPrefixBytes > MAX_STEALTH_PREFIX_BYTES) {
+    if (scan_pubkey.size() != EC_COMPRESSED_SIZE ||
+        spend_pubkey.size() < EC_COMPRESSED_SIZE ||
+        spend_pubkey.size() % EC_COMPRESSED_SIZE != 0 ||
+        nPkSpend > MAX_STEALTH_SPEND_KEYS ||
+        nPrefixBytes > MAX_STEALTH_PREFIX_BYTES) {
         LogPrintf("%s: sanity checks failed.\n", __func__);
         return 1;
     }
@@ -122,29 +122,29 @@ int CStealthAddress::ToRaw(std::vector<uint8_t> &raw) const
     }
 
     return 0;
-};
+}
 
 std::string CStealthAddress::Encoded(bool fBech32) const
 {
     return CBitcoinAddress(*this, fBech32).ToString();
-};
+}
 
 int CStealthAddress::SetScanPubKey(CPubKey pk)
 {
     scan_pubkey.resize(pk.size());
     memcpy(&scan_pubkey[0], pk.begin(), pk.size());
     return 0;
-};
+}
 
 CKeyID CStealthAddress::GetSpendKeyID() const
 {
     return CKeyID(Hash160(spend_pubkey));
-};
+}
 
 CKeyID CStealthAddress::GetScanKeyID() const
 {
     return CKeyID(Hash160(scan_pubkey));
-};
+}
 
 int SecretToPublicKey(const CKey &secret, ec_point &out)
 {
@@ -154,14 +154,14 @@ int SecretToPublicKey(const CKey &secret, ec_point &out)
     out.resize(EC_COMPRESSED_SIZE);
     memcpy(&out[0], pkTemp.begin(), EC_COMPRESSED_SIZE);
     return 0;
-};
+}
 
 int SetPublicKey(const CPubKey &pk, ec_point &out)
 {
     out.resize(EC_COMPRESSED_SIZE);
     memcpy(&out[0], pk.begin(), EC_COMPRESSED_SIZE);
     return 0;
-};
+}
 
 int StealthShared(const CKey &secret, const ec_point &pubkey, CKey &sharedSOut)
 {
@@ -182,7 +182,7 @@ int StealthShared(const CKey &secret, const ec_point &pubkey, CKey &sharedSOut)
     }
 
     return 0;
-};
+}
 
 int StealthSecret(const CKey &secret, const ec_point &pubkey, const ec_point &pkSpend, CKey &sharedSOut, ec_point &pkOut)
 {
@@ -255,7 +255,6 @@ int StealthSecret(const CKey &secret, const ec_point &pubkey, const ec_point &pk
     return 0;
 }
 
-
 int StealthSecretSpend(const CKey &scanSecret, const ec_point &ephemPubkey, const CKey &spendSecret, CKey &secretOut)
 {
     /*
@@ -285,8 +284,7 @@ int StealthSecretSpend(const CKey &scanSecret, const ec_point &ephemPubkey, cons
     }
 
     return 0;
-};
-
+}
 
 int StealthSharedToSecretSpend(const CKey &sharedS, const CKey &spendSecret, CKey &secretOut)
 {
@@ -300,7 +298,7 @@ int StealthSharedToSecretSpend(const CKey &sharedS, const CKey &spendSecret, CKe
     }
 
     return 0;
-};
+}
 
 int StealthSharedToPublicKey(const ec_point &pkSpend, const CKey &sharedS, ec_point &pkOut)
 {
@@ -321,13 +319,13 @@ int StealthSharedToPublicKey(const ec_point &pkSpend, const CKey &sharedS, ec_po
         pkOut.resize(EC_COMPRESSED_SIZE);
     } catch (std::exception &e) {
         return errorN(8, "%s: pkOut.resize %u threw: %s.", __func__, EC_COMPRESSED_SIZE);
-    };
+    }
 
     size_t len = 33;
     secp256k1_ec_pubkey_serialize(secp256k1_ctx_stealth, &pkOut[0], &len, &R, SECP256K1_EC_COMPRESSED); // Returns: 1 always.
 
     return 0;
-};
+}
 
 bool IsStealthAddress(const std::string &encodedAddress)
 {
@@ -357,7 +355,7 @@ bool IsStealthAddress(const std::string &encodedAddress)
     }
 
     return true;
-};
+}
 
 uint32_t FillStealthPrefix(uint8_t nBits, uint32_t nBitfield)
 {
@@ -367,7 +365,7 @@ uint32_t FillStealthPrefix(uint8_t nBits, uint32_t nBitfield)
     prefix &= (~mask);
     prefix |= nBitfield & mask;
     return prefix;
-};
+}
 
 bool ExtractStealthPrefix(const char *pPrefix, uint32_t &nPrefix)
 {
@@ -390,10 +388,11 @@ bool ExtractStealthPrefix(const char *pPrefix, uint32_t &nPrefix)
     nPrefix = strtol(pPrefix, &pend, base);
 
     if (errno != 0 || !pend || *pend != '\0') {
-        return error("%s strtol failed.", __func__);
+        LogError("%s strtol failed.", __func__);
+        return false;
     }
     return true;
-};
+}
 
 int MakeStealthData(const std::string &sNarration, stealth_prefix prefix, const CKey &sShared, const CPubKey &pkEphem,
     std::vector<uint8_t> &vData, uint32_t &nStealthPrefix, std::string &sError)
@@ -436,7 +435,7 @@ int MakeStealthData(const std::string &sNarration, stealth_prefix prefix, const 
     }
 
     return 0;
-};
+}
 
 int PrepareStealthOutput(const CStealthAddress &sx, const std::string &sNarration,
     CScript &scriptPubKey, std::vector<uint8_t> &vData, std::string &sError)
@@ -461,7 +460,7 @@ int PrepareStealthOutput(const CStealthAddress &sx, const std::string &sNarratio
         return 1;
     }
     return 0;
-};
+}
 
 namespace particl {
 void ECC_Start_Stealth()

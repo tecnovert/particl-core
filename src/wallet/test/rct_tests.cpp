@@ -50,12 +50,14 @@ bool ProcessNewBlock(const std::shared_ptr<const CBlock> pblock, BlockValidation
             ret = state.m_chainman->AcceptBlock(pblock, state, &pindex, fForceProcessing, nullptr, nullptr, /*min_pow_checked=*/true);
         }
         if (!ret) {
-            return error("%s: AcceptBlock FAILED (%s)", __func__, state.ToString());
+            LogError("%s: AcceptBlock FAILED (%s)", __func__, state.ToString());
+            return false;
         }
     }
     state.m_preserve_state = true; // else would be cleared
     if (!state.m_chainman->ActiveChainstate().ActivateBestChain(state, pblock) || !state.IsValid()) {
-        return error("%s: ActivateBestChain failed (%s)", __func__, state.ToString());
+        LogError("%s: ActivateBestChain failed (%s)", __func__, state.ToString());
+        return false;
     }
     return true;
 }

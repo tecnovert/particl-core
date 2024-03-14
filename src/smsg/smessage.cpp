@@ -843,9 +843,9 @@ int CSMSG::WriteIni()
         return SMSG_GENERAL_ERROR;
     }
 
-    if (fprintf(fp, "newAddressRecv=%s\n", options.fNewAddressRecv ? "true" : "false") < 0
-        || fprintf(fp, "newAddressAnon=%s\n", options.fNewAddressAnon ? "true" : "false") < 0
-        || fprintf(fp, "scanIncoming=%s\n", options.fScanIncoming ? "true" : "false") < 0) {
+    if (fprintf(fp, "newAddressRecv=%s\n", options.fNewAddressRecv ? "true" : "false") < 0 ||
+        fprintf(fp, "newAddressAnon=%s\n", options.fNewAddressAnon ? "true" : "false") < 0 ||
+        fprintf(fp, "scanIncoming=%s\n", options.fScanIncoming ? "true" : "false") < 0) {
         LogPrintf("fprintf error: %s\n", SysErrorString(errno));
         fclose(fp);
         return SMSG_GENERAL_ERROR;
@@ -889,7 +889,8 @@ bool CSMSG::Start(std::shared_ptr<wallet::CWallet> pwalletIn, std::vector<std::s
     LogPrintf("Secure messaging starting.\n");
 
     if (fSecMsgEnabled) {
-        return error("%s: Secure messaging is already started.", __func__);
+        LogError("%s: Secure messaging is already started.", __func__);
+        return false;
     }
     if (Params().GetChainType() == ChainType::REGTEST &&
         gArgs.GetBoolArg("-smsgsregtestadjust", true)) {
@@ -937,15 +938,18 @@ bool CSMSG::Start(std::shared_ptr<wallet::CWallet> pwalletIn, std::vector<std::s
     }
 
     if (LoadKeyStore() != 0) {
-        return error("%s: LoadKeyStore failed.", __func__);
+        LogError("%s: LoadKeyStore failed.", __func__);
+        return false;
     }
 
     if (secp256k1_context_smsg) {
-        return error("%s: secp256k1_context_smsg already exists.", __func__);
+        LogError("%s: secp256k1_context_smsg already exists.", __func__);
+        return false;
     }
 
     if (!(secp256k1_context_smsg = secp256k1_context_create(SECP256K1_CONTEXT_SIGN))) {
-        return error("%s: secp256k1_context_create failed.", __func__);
+        LogError("%s: secp256k1_context_create failed.", __func__);
+        return false;
     }
 
     {
@@ -962,12 +966,14 @@ bool CSMSG::Start(std::shared_ptr<wallet::CWallet> pwalletIn, std::vector<std::s
 
     if (BuildBucketSet() != 0) {
         Disable();
-        return error("%s: Could not load bucket sets, secure messaging disabled.", __func__);
+        LogError("%s: Could not load bucket sets, secure messaging disabled.", __func__);
+        return false;
     }
 
     if (BuildPurgedSets() != 0) {
         Disable();
-        return error("%s: Could not load purged sets, secure messaging disabled.", __func__);
+        LogError("%s: Could not load purged sets, secure messaging disabled.", __func__);
+        return false;
     }
 
     start_time = GetAdjustedTimeInt();
@@ -1048,7 +1054,8 @@ bool CSMSG::Enable(std::shared_ptr<wallet::CWallet> pactive_wallet, std::vector<
         buckets.clear(); // should be empty already
 
         if (!Start(pactive_wallet, vpwallets, false)) {
-            return error("%s: SecureMsgStart failed.\n", __func__);
+            LogError("%s: SecureMsgStart failed.\n", __func__);
+            return false;
         }
     }
 
@@ -1075,14 +1082,16 @@ bool CSMSG::Enable(std::shared_ptr<wallet::CWallet> pactive_wallet, std::vector<
 bool CSMSG::Disable()
 {
     if (!fSecMsgEnabled) {
-        return error("%s: Secure messaging is already disabled.", __func__);
+        LogError("%s: Secure messaging is already disabled.", __func__);
+        return false;
     }
 
     {
         LOCK(cs_smsg);
 
         if (!Shutdown()) {
-            return error("%s: SecureMsgShutdown failed.\n", __func__);
+            LogError("%s: SecureMsgShutdown failed.\n", __func__);
+            return false;
         }
 
         // Clear buckets
@@ -2127,7 +2136,8 @@ bool CSMSG::ScanBlockChain()
     if (lockMain) {
         CBlockIndex *pindexScan = m_node->chainman->ActiveChain().Genesis();
         if (pindexScan == nullptr) {
-            return error("%s: pindexGenesisBlock not set.", __func__);
+            LogError("%s: pindexGenesisBlock not set.", __func__);
+            return false;
         }
 
         try { // In try to catch errors opening db,
@@ -2135,10 +2145,12 @@ bool CSMSG::ScanBlockChain()
                 return false;
             }
         } catch (std::exception &e) {
-            return error("%s: threw: %s.", __func__, e.what());
+            LogError("%s: threw: %s.", __func__, e.what());
+            return false;
         }
     } else {
-        return error("%s: Could not lock main.", __func__);
+        LogError("%s: Could not lock main.", __func__);
+        return false;
     }
 
     return true;
@@ -2149,7 +2161,8 @@ bool CSMSG::ScanBuckets(bool scan_all)
     LogPrint(BCLog::SMSG, "%s\n", __func__);
 
     if (!fSecMsgEnabled) {
-        return error("%s: SMSG is disabled.\n", __func__);
+        LogError("%s: SMSG is disabled.\n", __func__);
+        return false;
     }
 
     int64_t  mStart         = GetTimeMillis();
@@ -2878,7 +2891,8 @@ bool CSMSG::SetWalletAddressOption(const CKeyID &idk, std::string sOption, bool 
     if (sOption == "receive") {
         it->fReceiveEnabled = fValue;
     } else {
-        return error("%s: Unknown option %s.\n", __func__, sOption);
+        LogError("%s: Unknown option %s.\n", __func__, sOption);
+        return false;
     }
 
     return true;
@@ -2890,7 +2904,8 @@ bool CSMSG::SetSmsgAddressOption(const CKeyID &idk, std::string sOption, bool fV
 
     SecMsgDB db;
     if (!db.Open("cr+")) {
-        return error("%s: Failed to open db.\n", __func__);
+        LogError("%s: Failed to open db.\n", __func__);
+        return false;
     }
 
     SecMsgKey key;
@@ -2912,7 +2927,8 @@ bool CSMSG::SetSmsgAddressOption(const CKeyID &idk, std::string sOption, bool fV
             key.nFlags &= ~SMK_RECEIVE_ON;
         }
     } else {
-        return error("%s: Unknown option %s.\n", __func__, sOption);
+        LogError("%s: Unknown option %s.\n", __func__, sOption);
+        return false;
     }
 
     if (!db.WriteKey(idk, key)) {

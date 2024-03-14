@@ -153,7 +153,8 @@ bool TxIndex::DisconnectBlock(const CBlock& block)
     }
 
     if (!m_db->WriteBatch(batch)) {
-        return error("%s: WriteBatch failed.", __func__);
+        LogError("%s: WriteBatch failed.", __func__);
+        return false;
     }
 
     return true;
@@ -166,7 +167,8 @@ bool TxIndex::IndexCSOutputs(const interfaces::BlockInfo& block)
     std::map<ColdStakeIndexLinkKey, std::vector<ColdStakeIndexOutputKey> > newCSLinks;
 
     if (!block.data) {
-        return error("%s: Block data missing.", __func__);
+        LogError("%s: Block data missing.", __func__);
+        return false;
     }
 
     for (const auto &tx : block.data->vtx) {
@@ -264,7 +266,8 @@ bool TxIndex::IndexCSOutputs(const interfaces::BlockInfo& block)
     batch.Write(DB_TXINDEX_CSBESTBLOCK, GetLocator(*m_chain, block.hash));
 
     if (!m_db->WriteBatch(batch)) {
-        return error("%s: WriteBatch failed.", __func__);
+        LogError("%s: WriteBatch failed.", __func__);
+        return false;
     }
 
     return true;
@@ -281,20 +284,24 @@ bool TxIndex::FindTx(const uint256& tx_hash, uint256& block_hash, CTransactionRe
 
     AutoFile file{m_chainstate->m_blockman.OpenBlockFile(postx, true)};
     if (file.IsNull()) {
-        return error("%s: OpenBlockFile failed", __func__);
+        LogError("%s: OpenBlockFile failed\n", __func__);
+        return false;
     }
     CBlockHeader header;
     try {
         file >> header;
         if (fseek(file.Get(), postx.nTxOffset, SEEK_CUR)) {
-            return error("%s: fseek(...) failed", __func__);
+            LogError("%s: fseek(...) failed\n", __func__);
+            return false;
         }
         file >> TX_WITH_WITNESS(tx);
     } catch (const std::exception& e) {
-        return error("%s: Deserialize or I/O error - %s", __func__, e.what());
+        LogError("%s: Deserialize or I/O error - %s\n", __func__, e.what());
+        return false;
     }
     if (tx->GetHash() != tx_hash) {
-        return error("%s: txid mismatch", __func__);
+        LogError("%s: txid mismatch\n", __func__);
+        return false;
     }
     block_hash = header.GetHash();
     return true;
@@ -309,19 +316,23 @@ bool TxIndex::FindTx(const uint256& tx_hash, CBlockHeader& header, CTransactionR
 
     AutoFile file{m_chainstate->m_blockman.OpenBlockFile(postx, true)};
     if (file.IsNull()) {
-        return error("%s: OpenBlockFile failed", __func__);
+        LogError("%s: OpenBlockFile failed", __func__);
+        return false;
     }
     try {
         file >> header;
         if (fseek(file.Get(), postx.nTxOffset, SEEK_CUR)) {
-            return error("%s: fseek(...) failed", __func__);
+            LogError("%s: fseek(...) failed", __func__);
+            return false;
         }
         file >> TX_WITH_WITNESS(tx);
     } catch (const std::exception& e) {
-        return error("%s: Deserialize or I/O error - %s", __func__, e.what());
+        LogError("%s: Deserialize or I/O error - %s", __func__, e.what());
+        return false;
     }
     if (tx->GetHash() != tx_hash) {
-        return error("%s: txid mismatch", __func__);
+        LogError("%s: txid mismatch", __func__);
+        return false;
     }
     return true;
 }
@@ -348,5 +359,6 @@ bool TxIndex::AppendCSAddress(std::string addr)
         return true;
     }
 
-    return error("%s: Failed to parse address %s.", __func__, addr);
+    LogError("%s: Failed to parse address %s.", __func__, addr);
+    return false;
 }

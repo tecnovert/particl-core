@@ -115,10 +115,10 @@ void MnemonicDialog::on_btnImport_clicked()
 
 void MnemonicDialog::on_btnGenerate_clicked()
 {
-    int nBytesEntropy = ui->spinEntropy->value();
-    QString sLanguage = ui->cbxLanguage->itemData(ui->cbxLanguage->currentIndex()).toString();
+    int bytes_entropy = ui->spinEntropy->value();
+    QString language = ui->cbxLanguage->itemData(ui->cbxLanguage->currentIndex()).toString();
 
-    QString sCommand = "mnemonic new  \"\" " + sLanguage + " " + QString::number(nBytesEntropy);
+    QString sCommand = "mnemonic new  \"\" " + language + " " + QString::number(bytes_entropy);
 
     UniValue rv;
     if (walletModel->tryCallRpc(sCommand, rv)) {

@@ -1,5 +1,5 @@
 // Copyright (c) 2014-2015 The ShadowCoin developers
-// Copyright (c) 2017-2023 The Particl Core developers
+// Copyright (c) 2017-2024 The Particl Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -22,7 +22,7 @@ CExtPubKey MakeExtPubKey(const CExtKeyPair &kp)
     memcpy(pk.chaincode, kp.chaincode, sizeof(pk.chaincode));
     pk.pubkey = kp.pubkey;
     return pk;
-};
+}
 
 const char *ExtKeyGetString(int ind)
 {
@@ -43,7 +43,7 @@ const char *ExtKeyGetString(int ind)
         case 16:    return "Invalid params pointer";
         default:    return "Unknown error, check log";
     }
-};
+}
 
 std::vector<uint8_t> &SetCompressedInt64(std::vector<uint8_t> &v, uint64_t n)
 {
@@ -54,7 +54,7 @@ std::vector<uint8_t> &SetCompressedInt64(std::vector<uint8_t> &v, uint64_t n)
         memcpy(&v[0], (uint8_t*) &n, b);
     }
     return v;
-};
+}
 
 int64_t GetCompressedInt64(const std::vector<uint8_t> &v, uint64_t &n)
 {
@@ -68,14 +68,14 @@ int64_t GetCompressedInt64(const std::vector<uint8_t> &v, uint64_t &n)
         n = le64toh(n);
     }
     return (int64_t)n;
-};
+}
 
 std::vector<uint8_t> &SetCKeyID(std::vector<uint8_t> &v, CKeyID n)
 {
     v.resize(20);
     memcpy(&v[0], (uint8_t*) &n, 20);
     return v;
-};
+}
 
 bool GetCKeyID(const std::vector<uint8_t> &v, CKeyID &n)
 {
@@ -84,7 +84,7 @@ bool GetCKeyID(const std::vector<uint8_t> &v, CKeyID &n)
     }
     memcpy((uint8_t*) &n, &v[0], 20);
     return true;
-};
+}
 
 std::vector<uint8_t> &SetString(std::vector<uint8_t> &v, const char *s)
 {
@@ -92,14 +92,14 @@ std::vector<uint8_t> &SetString(std::vector<uint8_t> &v, const char *s)
     v.resize(len);
     memcpy(&v[0], (uint8_t*) &s, len);
     return v;
-};
+}
 
 std::vector<uint8_t> &SetChar(std::vector<uint8_t> &v, const uint8_t c)
 {
     v.resize(1);
     v[0] = c;
     return v;
-};
+}
 
 std::vector<uint8_t> &PushUInt32(std::vector<uint8_t> &v, const uint32_t i)
 {
@@ -107,7 +107,7 @@ std::vector<uint8_t> &PushUInt32(std::vector<uint8_t> &v, const uint32_t i)
     v.resize(o+4);
     memcpy(&v[o], (uint8_t*) &i, 4);
     return v;
-};
+}
 
 #define _UINT32_MAX (0xffffffff)
 static uint32_t strtou32max(const char *nptr, int base)
@@ -176,7 +176,7 @@ noconv:
     } else if (neg)
         acc = -acc;
     return (acc);
-};
+}
 
 static inline int validDigit(char c, int base)
 {
@@ -187,7 +187,7 @@ static inline int validDigit(char c, int base)
         default: errno = EINVAL;
     }
     return 0;
-};
+}
 
 int ExtractExtKeyPath(const std::string &sPath, std::vector<uint32_t> &vPath)
 {
@@ -277,7 +277,7 @@ int ExtractExtKeyPath(const std::string &sPath, std::vector<uint32_t> &vPath)
     }
 
     return 0;
-};
+}
 
 void CExtPubKey::Encode(unsigned char code[74]) const
 {
@@ -288,7 +288,7 @@ void CExtPubKey::Encode(unsigned char code[74]) const
     memcpy(code+9, chaincode, 32);
     assert(pubkey.size() == 33);
     memcpy(code+41, pubkey.begin(), 33);
-};
+}
 
 void CExtPubKey::Decode(const unsigned char code[74])
 {
@@ -298,7 +298,7 @@ void CExtPubKey::Decode(const unsigned char code[74])
     memcpy(chaincode, code+9, 32);
     pubkey.Set(code+41, code+74);
     if ((nDepth == 0 && (nChild != 0 || ReadLE32(vchFingerprint) != 0)) || !pubkey.IsFullyValid()) pubkey = CPubKey();
-};
+}
 
 bool CExtPubKey::Derive(CExtPubKey &out, unsigned int nChild) const
 {
@@ -309,7 +309,7 @@ bool CExtPubKey::Derive(CExtPubKey &out, unsigned int nChild) const
     memcpy(&out.vchFingerprint[0], &id, 4);
     out.nChild = nChild;
     return pubkey.Derive(out.pubkey, out.chaincode, nChild, chaincode);
-};
+}
 
 bool CExtKey::Derive(CExtKey &out, unsigned int nChild) const
 {
@@ -331,7 +331,7 @@ void CExtKey::SetSeed(const unsigned char *seed, unsigned int nSeedLen)
     nDepth = 0;
     nChild = 0;
     memset(vchFingerprint, 0, sizeof(vchFingerprint));
-};
+}
 
 void CExtKey::SetSeed(Span<const uint8_t> seed)
 {
@@ -364,7 +364,7 @@ void CExtKey::SetKeyCode(const unsigned char *pkey, const unsigned char *pcode)
     nDepth = 0;
     nChild = 0;
     memset(vchFingerprint, 0, sizeof(vchFingerprint));
-};
+}
 
 CExtPubKey CExtKey::Neutered() const
 {
@@ -375,7 +375,7 @@ CExtPubKey CExtKey::Neutered() const
     ret.pubkey = key.GetPubKey();
     memcpy(&ret.chaincode[0], &chaincode[0], 32);
     return ret;
-};
+}
 
 void CExtKey::Encode(unsigned char code[74]) const
 {
@@ -387,7 +387,7 @@ void CExtKey::Encode(unsigned char code[74]) const
     code[41] = 0;
     assert(key.size() == 32);
     memcpy(code+42, key.begin(), 32);
-};
+}
 
 void CExtKey::Decode(const unsigned char code[74])
 {
@@ -397,7 +397,7 @@ void CExtKey::Decode(const unsigned char code[74])
     memcpy(chaincode, code+9, 32);
     key.Set(code+42, code+74, true);
     if ((nDepth == 0 && (nChild != 0 || ReadLE32(vchFingerprint) != 0)) || code[41] != 0) key = CKey();
-};
+}
 
 void CExtPubKey::EncodeWithVersion(unsigned char code[BIP32_EXTKEY_WITH_VERSION_SIZE]) const
 {
@@ -435,7 +435,7 @@ void CExtKeyPair::DecodeV(const unsigned char code[74])
         key = CKey();
         pubkey = CPubKey();
     }
-};
+}
 
 void CExtKeyPair::EncodeP(unsigned char code[74]) const
 {
@@ -446,7 +446,7 @@ void CExtKeyPair::EncodeP(unsigned char code[74]) const
     memcpy(code+9, chaincode, 32);
     assert(pubkey.size() == 33);
     memcpy(code+41, pubkey.begin(), 33);
-};
+}
 
 void CExtKeyPair::DecodeP(const unsigned char code[74])
 {
@@ -457,7 +457,7 @@ void CExtKeyPair::DecodeP(const unsigned char code[74])
     pubkey.Set(code+41, code+74);
     key.ClearKeyData();
     if ((nDepth == 0 && (nChild != 0 || ReadLE32(vchFingerprint) != 0)) || !pubkey.IsFullyValid()) pubkey = CPubKey();
-};
+}
 
 bool CExtKeyPair::Derive(CExtKey &out, unsigned int nChild) const
 {
@@ -469,7 +469,7 @@ bool CExtKeyPair::Derive(CExtKey &out, unsigned int nChild) const
     memcpy(&out.vchFingerprint[0], &id, 4);
     out.nChild = nChild;
     return key.Derive(out.key, out.chaincode, nChild, chaincode);
-};
+}
 
 bool CExtKeyPair::Derive(CExtPubKey &out, unsigned int nChild) const
 {
@@ -494,7 +494,7 @@ bool CExtKeyPair::Derive(CExtPubKey &out, unsigned int nChild) const
     }
     out.pubkey = tkey.GetPubKey();
     return true;
-};
+}
 
 bool CExtKeyPair::Derive(CKey &out, unsigned int nChild) const
 {
@@ -504,7 +504,7 @@ bool CExtKeyPair::Derive(CKey &out, unsigned int nChild) const
 
     unsigned char temp[32];
     return key.Derive(out, temp, nChild, chaincode);
-};
+}
 
 bool CExtKeyPair::Derive(CPubKey &out, unsigned int nChild) const
 {
@@ -522,7 +522,7 @@ bool CExtKeyPair::Derive(CPubKey &out, unsigned int nChild) const
     }
     out = tkey.GetPubKey();
     return true;
-};
+}
 
 CExtPubKey CExtKeyPair::GetExtPubKey() const
 {
@@ -533,7 +533,7 @@ CExtPubKey CExtKeyPair::GetExtPubKey() const
     ret.pubkey = pubkey;
     memcpy(&ret.chaincode[0], &chaincode[0], 32);
     return ret;
-};
+}
 
 CExtKeyPair CExtKeyPair::Neutered() const
 {
@@ -560,7 +560,7 @@ void CExtKeyPair::SetSeed(const unsigned char *seed, unsigned int nSeedLen)
     nDepth = 0;
     nChild = 0;
     memset(vchFingerprint, 0, sizeof(vchFingerprint));
-};
+}
 
 void CExtKeyPair::SetKeyCode(const unsigned char *pkey, const unsigned char *pcode)
 {
@@ -570,8 +570,7 @@ void CExtKeyPair::SetKeyCode(const unsigned char *pkey, const unsigned char *pco
     nDepth = 0;
     nChild = 0;
     memset(vchFingerprint, 0, sizeof(vchFingerprint));
-};
-
+}
 
 std::string CEKAStealthKey::ToStealthAddress() const
 {
@@ -580,8 +579,7 @@ std::string CEKAStealthKey::ToStealthAddress() const
     CStealthAddress sxAddr;
     SetSxAddr(sxAddr);
     return sxAddr.Encoded();
-};
-
+}
 
 int CEKAStealthKey::SetSxAddr(CStealthAddress &sxAddr) const
 {
@@ -591,7 +589,7 @@ int CEKAStealthKey::SetSxAddr(CStealthAddress &sxAddr) const
     sxAddr.spend_pubkey = pkSpend;
     sxAddr.scan_secret.Set(UCharCast(skScan.begin()), true);
     return 0;
-};
+}
 
 int CEKAStealthKey::ToRaw(std::vector<uint8_t> &raw) const
 {
@@ -599,12 +597,12 @@ int CEKAStealthKey::ToRaw(std::vector<uint8_t> &raw) const
     CStealthAddress sxAddr;
     SetSxAddr(sxAddr);
     return sxAddr.ToRaw(raw);
-};
+}
 
 std::string CStoredExtKey::GetIDString58() const
 {
     return HDKeyIDToString(kp.GetID());
-};
+}
 
 int CStoredExtKey::SetPath(const std::vector<uint32_t> &vPath_)
 {
@@ -615,7 +613,7 @@ int CStoredExtKey::SetPath(const std::vector<uint32_t> &vPath_)
     memcpy(vPath.data(), vPath_.data(), vPath.size());
     mapValue[EKVT_PATH] = vPath;
     return 0;
-};
+}
 
 std::string CExtKeyAccount::GetIDString58() const
 {
@@ -625,7 +623,7 @@ std::string CExtKeyAccount::GetIDString58() const
     }
 
     return HDAccIDToString(vExtKeyIDs[0]);
-};
+}
 
 int CExtKeyAccount::HaveSavedKey(const CKeyID &id)
 {
@@ -636,7 +634,7 @@ int CExtKeyAccount::HaveSavedKey(const CKeyID &id)
         return HK_YES;
     }
     return HK_NO;
-};
+}
 
 int CExtKeyAccount::HaveKey(const CKeyID &id, bool fUpdate, const CEKAKey *&pak, const CEKASCKey *&pasc, wallet::isminetype &ismine)
 {
@@ -663,7 +661,7 @@ int CExtKeyAccount::HaveKey(const CKeyID &id, bool fUpdate, const CEKAKey *&pak,
 
     pak = nullptr;
     return HaveStealthKey(id, pasc, ismine);
-};
+}
 
 int CExtKeyAccount::HaveStealthKey(const CKeyID &id, const CEKASCKey *&pasc, wallet::isminetype &ismine)
 {
@@ -682,27 +680,29 @@ int CExtKeyAccount::HaveStealthKey(const CKeyID &id, const CEKASCKey *&pasc, wal
     }
     ismine = wallet::ISMINE_NO;
     return HK_NO;
-};
+}
 
 bool CExtKeyAccount::GetKey(const CKeyID &id, CKey &keyOut) const
 {
     CEKAKey ak;
     CKeyID idStealth;
     return GetKey(id, keyOut, ak, idStealth);
-};
+}
 
 bool CExtKeyAccount::GetKey(const CEKAKey &ak, CKey &keyOut) const
 {
     LOCK(cs_account);
 
     if (ak.nParent >= vExtKeys.size()) {
-        return error("%s: Account key invalid parent ext key %d, account %s.", __func__, ak.nParent, GetIDString58());
+        LogError("%s: Account key invalid parent ext key %d, account %s.", __func__, ak.nParent, GetIDString58());
+        return false;
     }
 
     const CStoredExtKey *chain = vExtKeys[ak.nParent];
 
     if (chain->fLocked) {
-        return error("%s: Chain locked, account %s.", __func__, GetIDString58());
+        LogError("%s: Chain locked, account %s.", __func__, GetIDString58());
+        return false;
     }
 
     if (!chain->kp.Derive(keyOut, ak.nKey)) {
@@ -710,7 +710,7 @@ bool CExtKeyAccount::GetKey(const CEKAKey &ak, CKey &keyOut) const
     }
 
     return true;
-};
+}
 
 bool CExtKeyAccount::GetKey(const CEKASCKey &asck, CKey &keyOut) const
 {
@@ -718,11 +718,12 @@ bool CExtKeyAccount::GetKey(const CEKASCKey &asck, CKey &keyOut) const
 
     AccStealthKeyMap::const_iterator miSk = mapStealthKeys.find(asck.idStealthKey);
     if (miSk == mapStealthKeys.end()) {
-        return error("%s: CEKASCKey Stealth key not found.", __func__);
+        LogError("%s: CEKASCKey Stealth key not found.", __func__);
+        return false;
     }
 
     return (0 == ExpandStealthChildKey(&miSk->second, asck.sShared, keyOut));
-};
+}
 
 int CExtKeyAccount::GetKey(const CKeyID &id, CKey &keyOut, CEKAKey &ak, CKeyID &idStealth) const
 {
@@ -749,10 +750,11 @@ int CExtKeyAccount::GetKey(const CKeyID &id, CKey &keyOut, CEKAKey &ak, CKeyID &
     }
 
     if (LogAcceptCategory(BCLog::HDWALLET, BCLog::Level::Debug) && keyOut.GetPubKey().GetID() != id) {
-        return error("Stored key mismatch.");
+        LogError("Stored key mismatch.");
+        return false;
     }
     return rv;
-};
+}
 
 bool CExtKeyAccount::GetPubKey(const CKeyID &id, CPubKey &pkOut) const
 {
@@ -779,20 +781,22 @@ bool CExtKeyAccount::GetPubKey(const CKeyID &id, CPubKey &pkOut) const
     }
 
     return true;
-};
+}
 
 bool CExtKeyAccount::GetPubKey(const CEKAKey &ak, CPubKey &pkOut) const
 {
     LOCK(cs_account);
 
     if (ak.nParent >= vExtKeys.size()) {
-        return error("%s: Account key invalid parent ext key %d, account %s.", __func__, ak.nParent, GetIDString58());
+        LogError("%s: Account key invalid parent ext key %d, account %s.", __func__, ak.nParent, GetIDString58());
+        return false;
     }
 
     const CStoredExtKey *chain = GetChain(ak.nParent);
 
     if (!chain) {
-        return error("%s: Chain unknown, account %s.", __func__, GetIDString58());
+        LogError("%s: Chain unknown, account %s.", __func__, GetIDString58());
+        return false;
     }
 
     if (!chain->kp.Derive(pkOut, ak.nKey)) {
@@ -800,7 +804,7 @@ bool CExtKeyAccount::GetPubKey(const CEKAKey &ak, CPubKey &pkOut) const
     }
 
     return true;
-};
+}
 
 bool CExtKeyAccount::GetPubKey(const CEKASCKey &asck, CPubKey &pkOut) const
 {
@@ -808,11 +812,12 @@ bool CExtKeyAccount::GetPubKey(const CEKASCKey &asck, CPubKey &pkOut) const
 
     AccStealthKeyMap::const_iterator miSk = mapStealthKeys.find(asck.idStealthKey);
     if (miSk == mapStealthKeys.end()) {
-        return error("%s: CEKASCKey Stealth key not in this account!", __func__);
+        LogError("%s: CEKASCKey Stealth key not in this account!", __func__);
+        return false;
     }
 
     return (0 == ExpandStealthChildPubKey(&miSk->second, asck.sShared, pkOut));
-};
+}
 
 bool CExtKeyAccount::SaveKey(const CKeyID &id, const CEKAKey &keyIn)
 {
@@ -870,18 +875,20 @@ bool CExtKeyAccount::SaveKey(const CKeyID &id, const CEKAKey &keyIn)
         // Check match
         CStoredExtKey *pa;
         if ((pa = GetChain(keyIn.nParent)) != nullptr) {
-            if ((keyIn.nKey >> 31) == 1
-                && pa->fLocked == 1) {
+            if ((keyIn.nKey >> 31) == 1 &&
+                pa->fLocked == 1) {
                 LogPrintf("Can't check hardened key when wallet locked.\n");
                 return true;
             }
 
             CPubKey pk;
             if (!GetPubKey(keyIn, pk)) {
-                return error("GetPubKey failed.");
+                LogError("GetPubKey failed.");
+                return false;
             }
             if (pk.GetID() != id) {
-                return error("Key mismatch!");
+                LogError("Key mismatch!");
+                return false;
             }
 
             LogPrintf("Key match verified.\n");
@@ -891,19 +898,20 @@ bool CExtKeyAccount::SaveKey(const CKeyID &id, const CEKAKey &keyIn)
     }
 
     return true;
-};
+}
 
 bool CExtKeyAccount::SaveKey(const CKeyID &id, const CEKASCKey &keyIn)
 {
     LOCK(cs_account);
     AccKeySCMap::const_iterator mi = mapStealthChildKeys.find(id);
     if (mi != mapStealthChildKeys.end()) {
-        return false; // already saved
+        return false; // Already saved
     }
 
     AccStealthKeyMap::const_iterator miSk = mapStealthKeys.find(keyIn.idStealthKey);
     if (miSk == mapStealthKeys.end()) {
-        return error("SaveKey(): CEKASCKey Stealth key not in this account!");
+        LogError("SaveKey(): CEKASCKey Stealth key not in this account!");
+        return false;
     }
 
     mapStealthChildKeys[id] = keyIn;
@@ -913,7 +921,7 @@ bool CExtKeyAccount::SaveKey(const CKeyID &id, const CEKASCKey &keyIn)
     }
 
     return true;
-};
+}
 
 bool CExtKeyAccount::IsLocked(const CEKAStealthKey &aks) const
 {
@@ -923,8 +931,7 @@ bool CExtKeyAccount::IsLocked(const CEKAStealthKey &aks) const
         return false;
     }
     return true;
-};
-
+}
 
 int CExtKeyAccount::AddLookBehind(uint32_t nChain, uint32_t nKeys)
 {
@@ -991,7 +998,7 @@ int CExtKeyAccount::AddLookBehind(uint32_t nChain, uint32_t nKeys)
     }
 
     return 0;
-};
+}
 
 int CExtKeyAccount::AddLookAhead(uint32_t nChain, uint32_t nKeys)
 {
@@ -1053,7 +1060,7 @@ int CExtKeyAccount::AddLookAhead(uint32_t nChain, uint32_t nKeys)
     }
 
     return 0;
-};
+}
 
 int CExtKeyAccount::ClearLookAhead()
 {
@@ -1064,7 +1071,7 @@ int CExtKeyAccount::ClearLookAhead()
     mapLookAhead.clear();
 
     return 0;
-};
+}
 
 int CExtKeyAccount::ExpandStealthChildKey(const CEKAStealthKey *aks, const CKey &sShared, CKey &kOut) const
 {
@@ -1086,7 +1093,7 @@ int CExtKeyAccount::ExpandStealthChildKey(const CEKAStealthKey *aks, const CKey 
     }
 
     return 0;
-};
+}
 
 int CExtKeyAccount::ExpandStealthChildPubKey(const CEKAStealthKey *aks, const CKey &sShared, CPubKey &pkOut) const
 {
@@ -1111,7 +1118,7 @@ int CExtKeyAccount::ExpandStealthChildPubKey(const CEKAStealthKey *aks, const CK
     }
 
     return 0;
-};
+}
 
 int CExtKeyAccount::WipeEncryption()
 {
@@ -1130,10 +1137,9 @@ int CExtKeyAccount::WipeEncryption()
     }
 
     return 0;
-};
+}
 
-
-inline void AppendPathLink(std::string &s, uint32_t n, char cH)
+static inline void AppendPathLink(std::string &s, uint32_t n, char cH)
 {
     s += "/";
     bool fHardened = false;
@@ -1145,7 +1151,7 @@ inline void AppendPathLink(std::string &s, uint32_t n, char cH)
     if (fHardened) {
         s += cH;
     }
-};
+}
 
 int ConvertPath(const std::vector<uint8_t> &path_in, std::vector<uint32_t> &path_out)
 {
@@ -1159,7 +1165,7 @@ int ConvertPath(const std::vector<uint8_t> &path_in, std::vector<uint32_t> &path
         path_out.push_back(n);
     }
     return 0;
-};
+}
 
 int PathToString(const std::vector<uint8_t> &vPath, std::string &sPath, char cH, size_t nStart)
 {
@@ -1176,7 +1182,7 @@ int PathToString(const std::vector<uint8_t> &vPath, std::string &sPath, char cH,
     }
 
     return 0;
-};
+}
 
 int PathToString(const std::vector<uint32_t> &vPath, std::string &sPath, char cH, size_t nStart)
 {
@@ -1185,7 +1191,7 @@ int PathToString(const std::vector<uint32_t> &vPath, std::string &sPath, char cH
         AppendPathLink(sPath, vPath[o], cH);
     }
     return 0;
-};
+}
 
 bool IsBIP32(const char *base58)
 {
@@ -1208,7 +1214,7 @@ bool IsBIP32(const char *base58)
     }
 
     return false;
-};
+}
 
 int AppendChainPath(const CStoredExtKey *pc, std::vector<uint32_t> &vPath)
 {
@@ -1227,7 +1233,7 @@ int AppendChainPath(const CStoredExtKey *pc, std::vector<uint32_t> &vPath)
     }
 
     return 0;
-};
+}
 
 int AppendChainPath(const CStoredExtKey *pc, std::vector<uint8_t> &vPath)
 {
@@ -1246,7 +1252,7 @@ int AppendChainPath(const CStoredExtKey *pc, std::vector<uint8_t> &vPath)
     }
 
     return 0;
-};
+}
 
 int AppendPath(const CStoredExtKey *pc, std::vector<uint32_t> &vPath)
 {
@@ -1264,21 +1270,21 @@ int AppendPath(const CStoredExtKey *pc, std::vector<uint32_t> &vPath)
     }
 
     return 0;
-};
+}
 
 std::string HDAccIDToString(const CKeyID &id)
 {
     CBitcoinAddress addr;
     addr.Set(id, CChainParams::EXT_ACC_HASH);
     return addr.ToString();
-};
+}
 
 std::string HDKeyIDToString(const CKeyID &id)
 {
     CBitcoinAddress addr;
     addr.Set(id, CChainParams::EXT_KEY_HASH);
     return addr.ToString();
-};
+}
 
 std::string GetDefaultAccountPath()
 {
@@ -1296,4 +1302,4 @@ std::string GetDefaultAccountPath()
         return rv;
     }
     return "";
-};
+}

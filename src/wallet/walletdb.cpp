@@ -1399,7 +1399,8 @@ bool WalletBatch::EraseAllByPrefix(std::string sPrefix)
 {
     // Must be in transaction to call pcursor->del
     if (!TxnBegin()) {
-        return error("%s: TxnBegin failed.\n", __func__);
+        LogError("%s: TxnBegin failed.\n", __func__);
+        return false;
     }
 
     BerkeleyBatch *bb = static_cast<BerkeleyBatch*>(m_batch.get());
@@ -1407,7 +1408,8 @@ bool WalletBatch::EraseAllByPrefix(std::string sPrefix)
     Dbc *pcursor = nullptr;
     int ret = bb->pdb->cursor(bb->activeTxn, &pcursor, 0);
     if (ret != 0 || !pcursor) {
-        return error("%s: GetCursor failed.\n", __func__);
+        LogError("%s: GetCursor failed.\n", __func__);
+        return false;
     }
 
     DataStream ssKey{}, ssValue{};

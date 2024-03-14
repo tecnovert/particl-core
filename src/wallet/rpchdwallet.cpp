@@ -4703,7 +4703,8 @@ static RPCHelpMan getcoldstakinginfo()
         std::string sAddress;
         try { sAddress = jsonSettings["coldstakingaddress"].get_str();
         } catch (std::exception &e) {
-            return error("%s: Get coldstakingaddress failed %s.", __func__, e.what());
+            LogError("%s: Get coldstakingaddress failed %s.", __func__, e.what());
+            return false;
         }
 
         addrColdStaking = CBitcoinAddress(sAddress);
@@ -9647,7 +9648,8 @@ static bool PruneBlockFile(const JSONRPCRequest& request, ChainstateManager &cha
 
     FILE *fpt = fopen(fs::PathToString(tmp_filepath).c_str(), "w");
     if (!fpt) {
-        return error("%s: Couldn't open temp file.\n", __func__);
+        LogError("%s: Couldn't open temp file.\n", __func__);
+        return false;
     }
     AutoFile fileout{fpt};
 
@@ -9701,7 +9703,8 @@ static bool PruneBlockFile(const JSONRPCRequest& request, ChainstateManager &cha
                 fileout << TX_WITH_WITNESS(block);
             }
         } catch (const std::exception& e) {
-            return error("%s: Deserialize or I/O error - %s\n", __func__, e.what());
+            LogError("%s: Deserialize or I/O error - %s\n", __func__, e.what());
+            return false;
         }
     }
 

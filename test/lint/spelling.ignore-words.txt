@@ -37,4 +37,3 @@ crypted
 ro
 Collet
 fpt
-sLanguage

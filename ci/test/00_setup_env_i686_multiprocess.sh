@@ -12,6 +12,7 @@ export CI_IMAGE_NAME_TAG="docker.io/amd64/ubuntu:22.04"
 export PACKAGES="llvm clang g++-multilib libudev-dev"
 export DEP_OPTS="DEBUG=1 MULTIPROCESS=1"
 export GOAL="install"
+export TEST_RUNNER_EXTRA="--v2transport"
 export BITCOIN_CONFIG="--enable-debug CC='clang -m32' CXX='clang++ -m32' \
 CPPFLAGS='-DBOOST_MULTI_INDEX_ENABLE_SAFE_MODE'"
 export BITCOIND=particl-node  # Used in functional tests

@@ -66,12 +66,13 @@ bool ExtractIndexInfo(const CScript *pScript, int &scriptType, std::vector<uint8
     }
 
     return true;
-};
+}
 
 bool ExtractIndexInfo(const CTxOutBase *out, int &scriptType, std::vector<uint8_t> &hashBytes, CAmount &nValue, const CScript *&pScript)
 {
     if (!(pScript = out->GetPScriptPubKey())) {
-        return error("%s: Expected script pointer.", __func__);
+        LogError("%s: Expected script pointer.", __func__);
+        return false;
     }
 
     nValue = out->IsType(OUTPUT_STANDARD) ? out->GetValue() : 0;
@@ -79,7 +80,7 @@ bool ExtractIndexInfo(const CTxOutBase *out, int &scriptType, std::vector<uint8_
     ExtractIndexInfo(pScript, scriptType, hashBytes);
 
     return true;
-};
+}
 
 static bool HashOnchainActive(ChainstateManager &chainman, const uint256 &hash) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
 {
@@ -90,16 +91,18 @@ static bool HashOnchainActive(ChainstateManager &chainman, const uint256 &hash) 
     }
 
     return true;
-};
+}
 
 bool GetTimestampIndex(ChainstateManager &chainman, const unsigned int &high, const unsigned int &low, const bool fActiveOnly, std::vector<std::pair<uint256, unsigned int> > &hashes)
 {
     auto& pblocktree{chainman.m_blockman.m_block_tree_db};
     if (!fTimestampIndex) {
-        return error("Timestamp index not enabled");
+        LogError("Timestamp index not enabled");
+        return false;
     }
     if (!pblocktree->ReadTimestampIndex(high, low, hashes)) {
-        return error("Unable to get hashes for timestamps");
+        LogError("Unable to get hashes for timestamps");
+        return false;
     }
 
     if (fActiveOnly) {
@@ -113,7 +116,7 @@ bool GetTimestampIndex(ChainstateManager &chainman, const unsigned int &high, co
     }
 
     return true;
-};
+}
 
 bool GetSpentIndex(ChainstateManager &chainman, const CSpentIndexKey &key, CSpentIndexValue &value, const CTxMemPool *pmempool)
 {
@@ -129,48 +132,54 @@ bool GetSpentIndex(ChainstateManager &chainman, const CSpentIndexKey &key, CSpen
     }
 
     return true;
-};
+}
 
 bool GetAddressIndex(ChainstateManager &chainman, const uint256 &addressHash, int type,
                      std::vector<std::pair<CAddressIndexKey, CAmount> > &addressIndex, int start, int end)
 {
     auto& pblocktree{chainman.m_blockman.m_block_tree_db};
     if (!fAddressIndex) {
-        return error("Address index not enabled");
+        LogError("Address index not enabled");
+        return false;
     }
     if (!pblocktree->ReadAddressIndex(addressHash, type, addressIndex, start, end)) {
-        return error("Unable to get txids for address");
+        LogError("Unable to get txids for address");
+        return false;
     }
 
     return true;
-};
+}
 
 bool GetAddressUnspent(ChainstateManager &chainman, const uint256 &addressHash, int type,
                        std::vector<std::pair<CAddressUnspentKey, CAddressUnspentValue> > &unspentOutputs)
 {
     auto& pblocktree{chainman.m_blockman.m_block_tree_db};
     if (!fAddressIndex) {
-        return error("Address index not enabled");
+        LogError("Address index not enabled");
+        return false;
     }
     if (!pblocktree->ReadAddressUnspentIndex(addressHash, type, unspentOutputs)) {
-        return error("Unable to get txids for address");
+        LogError("Unable to get txids for address");
+        return false;
     }
 
     return true;
-};
+}
 
 bool GetBlockBalances(ChainstateManager &chainman, const uint256 &block_hash, BlockBalances &balances)
 {
     auto& pblocktree{chainman.m_blockman.m_block_tree_db};
     if (!fBalancesIndex) {
-        return error("Balances index not enabled");
+        LogError("Balances index not enabled");
+        return false;
     }
     if (!pblocktree->ReadBlockBalancesIndex(block_hash, balances)) {
-        return error("Unable to get balances for block %s", block_hash.ToString());
+        LogError("Unable to get balances for block %s", block_hash.ToString());
+        return false;
     }
 
     return true;
-};
+}
 
 bool getAddressFromIndex(const int &type, const uint256 &hash, std::string &address)
 {
@@ -193,3 +202,4 @@ bool getAddressFromIndex(const int &type, const uint256 &hash, std::string &addr
     }
     return true;
 }
+

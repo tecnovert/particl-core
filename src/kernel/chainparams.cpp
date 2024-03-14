@@ -51,7 +51,7 @@ int64_t CChainParams::GetCoinYearReward(int64_t nTime) const
         }
     }
     return nCoinYearReward;
-};
+}
 
 bool CChainParams::PushTreasuryFundSettings(int64_t time_from, particl::TreasuryFundSettings &settings)
 {
@@ -60,13 +60,13 @@ bool CChainParams::PushTreasuryFundSettings(int64_t time_from, particl::Treasury
     }
     vTreasuryFundSettings.emplace_back(time_from, settings);
     return true;
-};
+}
 
 int64_t CChainParams::GetMaxSmsgFeeRateDelta(int64_t smsg_fee_prev, int64_t time) const
 {
     int64_t max_delta = (smsg_fee_prev * consensus.smsg_fee_max_delta_percent) / 1000000;
     return std::max((int64_t)1, max_delta);
-};
+}
 
 bool CChainParams::CheckImportCoinbase(int nHeight, uint256 &hash) const
 {
@@ -77,10 +77,12 @@ bool CChainParams::CheckImportCoinbase(int nHeight, uint256 &hash) const
         if (hash == cth.hash) {
             return true;
         }
-        return error("%s - Hash mismatch at height %d: %s, expect %s.", __func__, nHeight, hash.ToString(), cth.hash.ToString());
+        LogError("%s - Hash mismatch at height %d: %s, expect %s.", __func__, nHeight, hash.ToString(), cth.hash.ToString());
+        return false;
     }
-    return error("%s - Unknown height.", __func__);
-};
+    LogError("%s - Unknown height.", __func__);
+    return false;
+}
 
 const particl::TreasuryFundSettings *CChainParams::GetTreasuryFundSettings(int64_t nTime) const
 {
@@ -90,7 +92,7 @@ const particl::TreasuryFundSettings *CChainParams::GetTreasuryFundSettings(int64
         }
     }
     return nullptr;
-};
+}
 
 bool CChainParams::IsBech32Prefix(const std::vector<unsigned char> &vchPrefixIn) const
 {
@@ -100,7 +102,7 @@ bool CChainParams::IsBech32Prefix(const std::vector<unsigned char> &vchPrefixIn)
         }
     }
     return false;
-};
+}
 
 bool CChainParams::IsBech32Prefix(const std::vector<unsigned char> &vchPrefixIn, CChainParams::Base58Type &rtype) const
 {
@@ -112,7 +114,7 @@ bool CChainParams::IsBech32Prefix(const std::vector<unsigned char> &vchPrefixIn,
         }
     }
     return false;
-};
+}
 
 bool CChainParams::IsBech32Prefix(const char *ps, size_t slen, CChainParams::Base58Type &rtype) const
 {
@@ -127,7 +129,7 @@ bool CChainParams::IsBech32Prefix(const char *ps, size_t slen, CChainParams::Bas
         }
     }
     return false;
-};
+}
 
 namespace particl {
 static const std::pair<const char*, CAmount> regTestOutputs[] = {
