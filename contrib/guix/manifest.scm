@@ -92,7 +92,7 @@ chain for " target " development."))
       (home-page (package-home-page xgcc))
       (license (package-license xgcc)))))
 
-(define base-gcc gcc-10)
+(define base-gcc gcc-12)
 (define base-linux-kernel-headers linux-libre-headers-6.1)
 
 (define* (make-bitcoin-cross-toolchain target
@@ -507,9 +507,6 @@ inspecting signatures in Mach-O binaries.")
         automake
         pkg-config
         bison
-        ;; Native GCC 10 toolchain
-        gcc-toolchain-10
-        (list gcc-toolchain-10 "static")
         ;; Scripting
         python-minimal ;; (3.10)
         ;; Git
@@ -518,21 +515,35 @@ inspecting signatures in Mach-O binaries.")
         python-lief)
   (let ((target (getenv "HOST")))
     (cond ((string-suffix? "x86_64-w64-mingw32" target)
-           ;; Windows
-           (list zip
+           (list ;; Native GCC 12 toolchain
+                 gcc-toolchain-12
+                 (list gcc-toolchain-12 "static")
+                 zip
                  (make-mingw-pthreads-cross-toolchain "x86_64-w64-mingw32")
                  nsis-x86_64
                  nss-certs
                  osslsigncode))
           ((string-suffix? "i686-w64-mingw32" target)
-           ;; Windows
-           (list zip
+           (list ;; Native GCC 12 toolchain
+                 gcc-toolchain-12
+                 (list gcc-toolchain-12 "static")
+                 zip
                  (make-mingw-pthreads-cross-toolchain "i686-w64-mingw32")
                  nsis-i686
                  nss-certs
                  osslsigncode))
           ((string-contains target "-linux-")
-           (list (make-bitcoin-cross-toolchain target)))
+           (list ;; Native GCC 12 toolchain
+                 gcc-toolchain-12
+                 (list gcc-toolchain-12 "static")
+                 (make-bitcoin-cross-toolchain target)))
           ((string-contains target "darwin")
-           (list clang-toolchain-17 binutils cmake-minimal python-signapple zip))
+           (list ;; Native GCC 10 toolchain
+                 gcc-toolchain-10
+                 (list gcc-toolchain-10 "static")
+                 binutils
+                 clang-toolchain-17
+                 cmake-minimal
+                 python-signapple
+                 zip))
           (else '())))))
