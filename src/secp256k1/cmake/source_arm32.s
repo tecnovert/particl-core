@@ -6,4 +6,4 @@
 main:
 	ldr	r0, =0x002A
 	mov	r7, #1
-	swi	0   
+	swi	0

@@ -22,7 +22,7 @@ AC_DEFUN([SECP_ARM32_ASM_CHECK], [
     main:
       ldr r0, =0x002A
       mov r7, #1
-      swi 0   
+      swi 0
     ]])], [has_arm32_asm=yes], [has_arm32_asm=no])
   AC_MSG_RESULT([$has_arm32_asm])
   CFLAGS="$SECP_ARM32_ASM_CHECK_CFLAGS_saved_CFLAGS"

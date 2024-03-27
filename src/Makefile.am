@@ -336,6 +336,7 @@ BITCOIN_CORE_H = \
   util/error.h \
   util/exception.h \
   util/fastrange.h \
+  util/feefrac.h \
   util/fees.h \
   util/fs.h \
   util/fs_helpers.h \
@@ -847,6 +848,7 @@ libparticl_util_a_SOURCES = \
   util/check.cpp \
   util/error.cpp \
   util/exception.cpp \
+  util/feefrac.cpp \
   util/fees.cpp \
   util/fs.cpp \
   util/fs_helpers.cpp \
@@ -1176,6 +1178,7 @@ libparticlkernel_la_SOURCES = \
   util/batchpriority.cpp \
   util/chaintype.cpp \
   util/check.cpp \
+  util/feefrac.cpp \
   util/fs.cpp \
   util/fs_helpers.cpp \
   util/hasher.cpp \

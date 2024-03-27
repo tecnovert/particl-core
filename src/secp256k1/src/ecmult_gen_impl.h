@@ -51,7 +51,7 @@ static void secp256k1_ecmult_gen(const secp256k1_ecmult_gen_context *ctx, secp25
     secp256k1_ge_storage adds;
     secp256k1_scalar gnb;
     int i, j, n_i;
-    
+
     memset(&adds, 0, sizeof(adds));
     *r = ctx->initial;
     /* Blind scalar/point multiplication by computing (n-b)G + bG instead of nG. */

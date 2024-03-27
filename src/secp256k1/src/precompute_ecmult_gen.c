@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
                         SECP256K1_GE_STORAGE_CONST_GET(table[outer * g + inner]));
                 if (inner != g - 1) {
                     fprintf(fp,",\n");
-                } 
+                }
             }
             if (outer != n - 1) {
                 fprintf(fp,"},\n");

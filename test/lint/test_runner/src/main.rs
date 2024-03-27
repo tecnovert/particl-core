@@ -120,6 +120,7 @@ fn get_pathspecs_exclude_whitespace() -> Vec<String> {
             "src/univalue/include/univalue_escapes.h",
             "src/univalue/test/object.cpp",
             "test/lint/git-subtree-check.sh",
+            "src/usbdevice/ledger",
         ]
         .iter()
         .map(|s| format!(":(exclude){}", s)),
