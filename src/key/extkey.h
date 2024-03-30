@@ -144,6 +144,13 @@ struct CExtKey {
                memcmp(&a.chaincode[0], &b.chaincode[0], 32) == 0 && a.key == b.key;
     }
 
+    CExtKey() = default;
+    CExtKey(const CExtPubKey& xpub, const CKey& key_in) : nDepth(xpub.nDepth), nChild(xpub.nChild), key(key_in)
+    {
+        std::copy(xpub.vchFingerprint, xpub.vchFingerprint + sizeof(xpub.vchFingerprint), vchFingerprint);
+        std::copy(xpub.chaincode, xpub.chaincode + sizeof(xpub.chaincode), chaincode);
+    }
+
     bool IsValid() const { return key.IsValid(); }
 
     void Encode(unsigned char code[74]) const;
