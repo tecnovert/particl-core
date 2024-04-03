@@ -42,9 +42,6 @@ LIBPARTICL_MNEMONIC=libparticl_mnemonic.a
 if ENABLE_ZMQ
 LIBPARTICL_ZMQ=libparticl_zmq.a
 endif
-if BUILD_BITCOIN_LIBS
-LIBPARTICLCONSENSUS=libparticlconsensus.la
-endif
 if BUILD_BITCOIN_KERNEL_LIB
 LIBPARTICLKERNEL=libparticlkernel.la
 endif
@@ -749,7 +746,6 @@ libparticl_consensus_a_SOURCES = \
   primitives/transaction.h \
   pubkey.cpp \
   pubkey.h \
-  script/bitcoinconsensus.cpp \
   script/interpreter.cpp \
   script/interpreter.h \
   script/script.cpp \
@@ -1202,21 +1198,6 @@ libparticlkernel_la_SOURCES = \
 # More details: https://www.gnu.org/software/automake/manual/html_node/Built-Sources-Example.html
 libparticlkernel_la-clientversion.l$(OBJEXT): obj/build.h
 endif # BUILD_BITCOIN_KERNEL_LIB
-#
-
-# bitcoinconsensus library #
-if BUILD_BITCOIN_LIBS
-lib_LTLIBRARIES += $(LIBPARTICLCONSENSUS)
-
-include_HEADERS = script/particlconsensus.h
-libparticlconsensus_la_SOURCES = support/cleanse.cpp $(crypto_libparticl_crypto_base_la_SOURCES) $(libparticl_consensus_a_SOURCES)
-
-libparticlconsensus_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS)
-libparticlconsensus_la_LIBADD = $(LIBSECP256K1)
-libparticlconsensus_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(builddir)/obj -I$(srcdir)/secp256k1/include -DBUILD_BITCOIN_INTERNAL -DDISABLE_OPTIMIZED_SHA256
-libparticlconsensus_la_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-
-endif
 #
 
 CTAES_DIST =  crypto/ctaes/bench.c
