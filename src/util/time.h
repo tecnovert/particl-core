@@ -118,9 +118,6 @@ struct timeval MillisToTimeval(int64_t nTimeout);
  */
 struct timeval MillisToTimeval(std::chrono::milliseconds ms);
 
-/** Sanity check epoch match normal Unix epoch */
-bool ChronoSanityCheck();
-
 /** Returns the system time (not mockable) */
 int64_t GetTimeMillis();
 

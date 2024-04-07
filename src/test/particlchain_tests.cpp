@@ -1,25 +1,25 @@
-// Copyright (c) 2017-2023 The Particl Core developers
+// Copyright (c) 2017-2024 The Particl Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <test/util/setup_common.h>
 #include <test/util/random.h>
 
-#include <net.h>
-#include <script/signingprovider.h>
-#include <script/script.h>
-#include <consensus/validation.h>
+#include <blind.h>
+#include <chainparams.h>
 #include <consensus/merkle.h>
 #include <consensus/tx_check.h>
 #include <consensus/tx_verify.h>
+#include <consensus/validation.h>
 #include <key/extkey.h>
-#include <pos/kernel.h>
-#include <chainparams.h>
-#include <blind.h>
-#include <validation.h>
-
-#include <script/sign.h>
+#include <net.h>
 #include <policy/policy.h>
+#include <pos/kernel.h>
+#include <script/script.h>
+#include <script/sign.h>
+#include <script/signingprovider.h>
+#include <util/time.h>
+#include <validation.h>
 
 #include <boost/test/unit_test.hpp>
 
@@ -30,7 +30,6 @@ bool CheckInputScripts(const CTransaction& tx, TxValidationState& state,
 
 
 BOOST_FIXTURE_TEST_SUITE(particlchain_tests, ParticlBasicTestingSetup)
-
 
 BOOST_AUTO_TEST_CASE(oldversion_test)
 {

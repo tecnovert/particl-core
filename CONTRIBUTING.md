@@ -23,7 +23,6 @@ with the web client, [riot.im](https://riot.im/app/). Desktop downloads also ava
 Discussion about codebase improvements happens in GitHub issues and pull
 requests.
 
-
 Contributor Workflow
 --------------------
 

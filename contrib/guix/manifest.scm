@@ -502,6 +502,7 @@ inspecting signatures in Mach-O binaries.")
         xz
         gperf
         ;; Build tools
+        cmake-minimal
         gnu-make
         libtool
         autoconf-2.71
@@ -539,12 +540,10 @@ inspecting signatures in Mach-O binaries.")
                  (list gcc-toolchain-12 "static")
                  (make-bitcoin-cross-toolchain target)))
           ((string-contains target "darwin")
-           (list ;; Native GCC 10 toolchain
-                 gcc-toolchain-10
-                 (list gcc-toolchain-10 "static")
+           (list ;; Native GCC 11 toolchain
+                 gcc-toolchain-11
                  binutils
                  clang-toolchain-17
-                 cmake-minimal
                  python-signapple
                  zip))
           (else '())))))
