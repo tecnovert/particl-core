@@ -98,6 +98,7 @@ bool PermitsUncompressed(IsMineSigVersion sigversion)
 //! @param recurse_scripthash  whether to recurse into nested p2sh and p2wsh
 //!                            scripts or simply treat any script that has been
 //!                            stored in the keystore as spendable
+// NOLINTNEXTLINE(misc-no-recursion)
 isminetype IsMineInner(const LegacyScriptPubKeyMan& keystore, const CScript& scriptPubKey, bool& isInvalid, IsMineSigVersion sigversion, bool recurse_scripthash=true)
 {
     if (HasIsCoinstakeOp(scriptPubKey)) {

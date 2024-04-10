@@ -167,6 +167,7 @@ struct RPCArgOptions {
                                          //!< methods set the also_positional flag and read values from both positions.
 };
 
+// NOLINTNEXTLINE(misc-no-recursion)
 struct RPCArg {
     enum class Type {
         OBJ,
@@ -276,6 +277,7 @@ struct RPCArg {
     std::string ToDescriptionString(bool is_named_arg) const;
 };
 
+// NOLINTNEXTLINE(misc-no-recursion)
 struct RPCResult {
     enum class Type {
         OBJ,

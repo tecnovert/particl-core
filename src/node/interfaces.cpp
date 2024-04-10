@@ -413,6 +413,7 @@ public:
     }
 };
 
+// NOLINTNEXTLINE(misc-no-recursion)
 bool FillBlock(const CBlockIndex* index, const FoundBlock& block, UniqueLock<RecursiveMutex>& lock, const CChain& active, const BlockManager& blockman)
 {
     if (!index) return false;
