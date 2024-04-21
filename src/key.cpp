@@ -358,19 +358,16 @@ bool CKey::Derive(CKey& keyChild, unsigned char ccChild[32], unsigned int nChild
     assert(IsValid());
     assert(IsCompressed());
     std::vector<unsigned char, secure_allocator<unsigned char>> vout(64);
-    if ((nChild >> 31) == 0)
-    {
+    if ((nChild >> 31) == 0) {
         CPubKey pubkey = GetPubKey();
         assert(pubkey.begin() + 33 == pubkey.end());
         BIP32Hash(cc, nChild, *pubkey.begin(), pubkey.begin()+1, vout.data());
-    } else
-    {
+    } else {
         assert(begin() + 32 == end());
         BIP32Hash(cc, nChild, 0, UCharCast(begin()), vout.data());
     }
 
     memcpy(ccChild, vout.data()+32, 32);
-    //bool ret = TweakSecret((unsigned char*)keyChild.begin(), begin(), out);
     keyChild.Set(begin(), begin() + 32, true);
     bool ret = secp256k1_ec_seckey_tweak_add(secp256k1_context_sign, (unsigned char*)keyChild.begin(), vout.data());
     keyChild.fCompressed = true;

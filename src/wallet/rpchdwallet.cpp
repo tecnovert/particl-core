@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2023 The Particl Core developers
+// Copyright (c) 2017-2024 The Particl Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -288,9 +288,9 @@ static int AccountInfo(CHDWallet *pwallet, CExtKeyAccount *pa, int nShowKeys, bo
         }
     }
     // TODO: separate passwords for accounts
-    if (pa->nFlags & EAF_HAVE_SECRET
-        && nShowKeys > 1
-        && pwallet->ExtKeyUnlock(sekAccount) == 0) {
+    if (pa->nFlags & EAF_HAVE_SECRET &&
+        nShowKeys > 1 &&
+        pwallet->ExtKeyUnlock(sekAccount) == 0) {
         eKey58.SetKeyV(sekAccount->kp);
         obj.pushKV("evkey", eKey58.ToString());
     }
@@ -347,8 +347,8 @@ static int AccountInfo(CHDWallet *pwallet, CExtKeyAccount *pa, int nShowKeys, bo
             objC.pushKV("num_derives", strprintf("%u", sek->nGenerated));
             objC.pushKV("num_derives_h", strprintf("%u", sek->nHGenerated));
 
-            if (nShowKeys > 2 // dumpwallet
-                && pa->nFlags & EAF_HAVE_SECRET) {
+            if (nShowKeys > 2 &&  // dumpwallet
+                pa->nFlags & EAF_HAVE_SECRET) {
                 if (pwallet->ExtKeyUnlock(sek) == 0) {
                     eKey58.SetKeyV(sek->kp);
                     objC.pushKV("evkey", eKey58.ToString());
@@ -490,8 +490,8 @@ static int KeyInfo(CHDWallet *pwallet, CKeyID &idMaster, CKeyID &idKey, CStoredE
     addr.Set(idKey, CChainParams::EXT_KEY_HASH);
     obj.pushKV("id", addr.ToString());
 
-    if (nShowKeys > 1
-        && pwallet->ExtKeyUnlock(&sek) == 0) {
+    if (nShowKeys > 1 &&
+        pwallet->ExtKeyUnlock(&sek) == 0) {
         std::string sKey;
         if (sek.kp.IsValidV()) {
             if (fBip44Root) {
@@ -750,9 +750,9 @@ static int ExtractExtKeyId(const std::string &sInKey, CKeyID &keyId, CChainParam
     CExtKeyPair ekp;
     CBitcoinAddress addr;
 
-    if (addr.SetString(sInKey)
-        && addr.IsValid(prefix)
-        && addr.GetKeyID(keyId, prefix)) {
+    if (addr.SetString(sInKey) &&
+        addr.IsValid(prefix) &&
+        addr.GetKeyID(keyId, prefix)) {
         // keyId is set
     } else
     if (eKey58.Set58(sInKey.c_str()) == 0) {
@@ -1133,8 +1133,8 @@ static RPCHelpMan extkey()
 
         result.pushKV("result", "No keys to list.");
     } else
-    if (mode == "account"
-        || mode == "key") {
+    if (mode == "account" ||
+        mode == "key") {
         CKeyID keyId;
         if (request.params.size() > nParamOffset) {
             sInKey = request.params[nParamOffset].get_str();
@@ -1412,9 +1412,9 @@ static RPCHelpMan extkey()
         CKeyID idOldDefault = pwallet->idDefaultAccount;
         CBitcoinAddress addr;
 
-        if (addr.SetString(sInKey)
-            && addr.IsValid(CChainParams::EXT_ACC_HASH)
-            && addr.GetKeyID(idNewDefault, CChainParams::EXT_ACC_HASH)) {
+        if (addr.SetString(sInKey) &&
+            addr.IsValid(CChainParams::EXT_ACC_HASH) &&
+            addr.GetKeyID(idNewDefault, CChainParams::EXT_ACC_HASH)) {
             // idNewDefault is set
         }
 
@@ -1524,13 +1524,13 @@ static RPCHelpMan extkey()
 
         bool fAccount = false;
         bool fKey = false;
-        if (addr.IsValid(CChainParams::EXT_KEY_HASH)
-            && addr.GetKeyID(id, CChainParams::EXT_KEY_HASH)) {
+        if (addr.IsValid(CChainParams::EXT_KEY_HASH) &&
+            addr.GetKeyID(id, CChainParams::EXT_KEY_HASH)) {
             // id is set
             fKey = true;
         } else
-        if (addr.IsValid(CChainParams::EXT_ACC_HASH)
-            && addr.GetKeyID(id, CChainParams::EXT_ACC_HASH)) {
+        if (addr.IsValid(CChainParams::EXT_ACC_HASH) &&
+            addr.GetKeyID(id, CChainParams::EXT_ACC_HASH)) {
             // id is set
             fAccount = true;
         } else
@@ -1577,8 +1577,8 @@ static RPCHelpMan extkey()
                     throw std::runtime_error("Error: " + sError);
                 }
 
-                if (sOptValue.length() > 0
-                    && !wdb.WriteExtKey(id, *pSek)) {
+                if (sOptValue.length() > 0 &&
+                    !wdb.WriteExtKey(id, *pSek)) {
                     wdb.TxnAbort();
                     throw JSONRPCError(RPC_MISC_ERROR, "WriteExtKey failed.");
                 }
@@ -1603,8 +1603,8 @@ static RPCHelpMan extkey()
                     throw std::runtime_error("Error: " + sError);
                 }
 
-                if (sOptValue.length() > 0
-                    && !wdb.WriteExtAccount(id, *pSea)) {
+                if (sOptValue.length() > 0 &&
+                    !wdb.WriteExtAccount(id, *pSea)) {
                     wdb.TxnAbort();
                     throw JSONRPCError(RPC_WALLET_ERROR,"WriteExtAccount failed.");
                 }
@@ -2790,9 +2790,9 @@ static RPCHelpMan deriverangekeys()
                     akStealth.SetSxAddr(sxAddr);
                     result.push_back(sxAddr.ToString());
 
-                    if (fSave
-                        && !pwallet->HaveStealthAddress(sxAddr)
-                        && 0 != pwallet->SaveStealthAddress(&wdb, sea, akStealth, false)) {
+                    if (fSave &&
+                        !pwallet->HaveStealthAddress(sxAddr) &&
+                        0 != pwallet->SaveStealthAddress(&wdb, sea, akStealth, false)) {
                         throw JSONRPCError(RPC_WALLET_ERROR, "SaveStealthAddress failed.");
                     }
                 }
@@ -2805,9 +2805,9 @@ static RPCHelpMan deriverangekeys()
                     akStealth.SetSxAddr(sxAddr);
                     result.push_back(sxAddr.ToString(true));  // V2 stealth addresses are always formatted in bech32
 
-                    if (fSave
-                        && !pwallet->HaveStealthAddress(sxAddr)
-                        && 0 != pwallet->SaveStealthAddress(&wdb, sea, akStealth, true)) {
+                    if (fSave &&
+                        !pwallet->HaveStealthAddress(sxAddr) &&
+                        0 != pwallet->SaveStealthAddress(&wdb, sea, akStealth, true)) {
                         throw JSONRPCError(RPC_WALLET_ERROR, "SaveStealthAddress failed");
                     }
                 }
@@ -5677,8 +5677,8 @@ static UniValue SendToInner(const JSONRPCRequest &request, OutputTypes typeIn, O
         UniValue objChangedOutputs(UniValue::VOBJ);
         std::map<std::string, CAmount> mapChanged; // Blinded outputs are split, join the values for display
         for (const auto &r : vecSend) {
-            if (!r.fChange
-                && r.nAmount != r.nAmountSelected) {
+            if (!r.fChange &&
+                r.nAmount != r.nAmountSelected) {
                 std::string sAddr = CBitcoinAddress(r.address).ToString();
 
                 if (mapChanged.count(sAddr)) {
