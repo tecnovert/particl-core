@@ -12,7 +12,6 @@
 #include <common/args.h>
 #include <common/init.h>
 #include <common/system.h>
-#include <common/url.h>
 #include <compat/compat.h>
 #include <init.h>
 #include <interfaces/chain.h>
@@ -35,7 +34,6 @@
 using node::NodeContext;
 
 const std::function<std::string(const char*)> G_TRANSLATION_FUN = nullptr;
-UrlDecodeFn* const URL_DECODE = urlDecode;
 
 #if ENABLE_ZMQ
 extern int GetNewZMQKeypair(char *server_public_key, char *server_secret_key);

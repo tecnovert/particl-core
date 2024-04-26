@@ -10,10 +10,9 @@
 #include <chainparamsbase.h>
 #include <clientversion.h>
 #include <common/args.h>
-#include <common/system.h>
-#include <common/globals.h>
-#include <common/url.h>
 #include <compat/compat.h>
+#include <common/globals.h>
+#include <common/system.h>
 #include <interfaces/init.h>
 #include <key.h>
 #include <logging.h>
@@ -32,7 +31,6 @@
 #include <key/mnemonic.h>
 
 const std::function<std::string(const char*)> G_TRANSLATION_FUN = nullptr;
-UrlDecodeFn* const URL_DECODE = nullptr;
 
 static void SetupWalletToolArgs(ArgsManager& argsman)
 {
