@@ -14,7 +14,6 @@
 #include <primitives/block.h>
 #include <primitives/transaction.h>
 #include <sync.h>
-#include <timedata.h>
 #include <util/moneystr.h>
 #include <util/syserror.h>
 #include <util/thread.h>
@@ -340,7 +339,7 @@ void ThreadStakeMiner(size_t nThreadID, std::vector<std::shared_ptr<wallet::CWal
             continue;
         }
 
-        int64_t nTime = GetAdjustedTimeInt();
+        int64_t nTime = chainman->GetAdjustedTimeInt();
         int64_t nMask = Params().GetStakeTimestampMask(nBestHeight + 1);
         int64_t nSearchTime = nTime & ~nMask;
         if (nSearchTime <= nBestTime) {

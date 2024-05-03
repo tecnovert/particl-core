@@ -1,31 +1,27 @@
-// Copyright (c) 2021-2023 tecnovert
+// Copyright (c) 2021-2024 tecnovert
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-
-#include <wallet/hdwallet.h>
-#include <wallet/coincontrol.h>
-#include <interfaces/chain.h>
-
-#include <wallet/test/hdwallet_test_fixture.h>
-#include <chainparams.h>
-#include <node/miner.h>
-#include <pos/miner.h>
-#include <timedata.h>
-#include <coins.h>
-#include <net.h>
-#include <validation.h>
 #include <anon.h>
 #include <blind.h>
+#include <chainparams.h>
+#include <coins.h>
+#include <consensus/tx_verify.h>
+#include <consensus/validation.h>
+#include <interfaces/chain.h>
+#include <net.h>
+#include <node/miner.h>
+#include <pos/miner.h>
 #include <rpc/rpcutil.h>
 #include <rpc/util.h>
 #include <util/any.h>
+#include <util/moneystr.h>
 #include <util/string.h>
 #include <util/translation.h>
-#include <util/moneystr.h>
-
-#include <consensus/validation.h>
-#include <consensus/tx_verify.h>
+#include <validation.h>
+#include <wallet/coincontrol.h>
+#include <wallet/hdwallet.h>
+#include <wallet/test/hdwallet_test_fixture.h>
 
 #include <secp256k1_mlsag.h>
 
@@ -407,7 +403,7 @@ BOOST_AUTO_TEST_CASE(rct_test)
     size_t k, nTries = 10000;
     int nBestHeight = WITH_LOCK(cs_main, return chain_active.Height());
     for (k = 0; k < nTries; ++k) {
-        int64_t nSearchTime = GetAdjustedTimeInt() & ~Params().GetStakeTimestampMask(nBestHeight+1);
+        int64_t nSearchTime = GetTime() & ~Params().GetStakeTimestampMask(nBestHeight+1);
         if (nSearchTime > pwallet->nLastCoinStakeSearchTime &&
             pwallet->SignBlock(pblocktemplate.get(), nBestHeight+1, nSearchTime)) {
             break;
@@ -429,7 +425,7 @@ BOOST_AUTO_TEST_CASE(rct_test)
     // Should connect without bad tx
     pblocktemplate->block.vtx.pop_back();
     for (k = 0; k < nTries; ++k) {
-        int64_t nSearchTime = GetAdjustedTimeInt() & ~Params().GetStakeTimestampMask(nBestHeight+1);
+        int64_t nSearchTime = GetTime() & ~Params().GetStakeTimestampMask(nBestHeight+1);
         if (nSearchTime > pwallet->nLastCoinStakeSearchTime &&
             pwallet->SignBlock(pblocktemplate.get(), nBestHeight+1, nSearchTime)) {
             break;

@@ -31,7 +31,6 @@
 #include <script/sign.h>
 #include <script/solver.h>
 #include <smsg/smessage.h>
-#include <timedata.h>
 #include <txdb.h>
 #include <txmempool.h>
 #include <util/fees.h>
@@ -11149,7 +11148,7 @@ bool CHDWallet::AddToRecord(CTransactionRecord &rtxIn, const CTransaction &tx, c
 
     bool fInsertedNew = ret.second;
     if (fInsertedNew) {
-        rtx.nTimeReceived = TicksSinceEpoch<std::chrono::seconds>(GetAdjustedTime());
+        rtx.nTimeReceived = GetTime();
 
         MapRecords_t::iterator mri = ret.first;
         rtxOrdered.insert(std::make_pair(rtx.nTimeReceived, mri));
@@ -12142,7 +12141,7 @@ void CHDWallet::AvailableAnonCoins(std::vector<COutputR> &vCoins, const CCoinCon
     const bool include_tainted_frozen = {coinControl ? coinControl->m_include_tainted_frozen : false};
     const bool only_safe = {coinControl ? !coinControl->m_include_unsafe_inputs : true};
 
-    int64_t time_now = TicksSinceEpoch<std::chrono::seconds>(GetAdjustedTime());
+    int64_t time_now = GetTime();
 
     CHDWalletDB wdb(*m_database);
 

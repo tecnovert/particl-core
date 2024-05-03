@@ -20,14 +20,13 @@
 
 // Particl dependencies
 #include <blind.h>
-#include <insight/balanceindex.h>
-#include <validation.h>
-#include <consensus/params.h>
 #include <chainparams.h>
-#include <timedata.h>
 #include <common/args.h>
-#include <util/strencodings.h>
+#include <consensus/params.h>
+#include <insight/balanceindex.h>
 #include <logging.h>
+#include <util/strencodings.h>
+#include <validation.h>
 
 
 bool IsFinalTx(const CTransaction &tx, int nBlockHeight, int64_t nBlockTime)
@@ -551,7 +550,7 @@ static bool CheckStandardOutput(TxValidationState &state, const CTxOutStandard *
     nValueOut += p->nValue;
 
     if (HasIsCoinstakeOp(p->scriptPubKey)) {
-        if (TicksSinceEpoch<std::chrono::seconds>(GetAdjustedTime()) < state.m_consensus_params->OpIsCoinstakeTime) {
+        if (GetTime() < state.m_consensus_params->OpIsCoinstakeTime) {
             return state.Invalid(TxValidationResult::TX_CONSENSUS, "bad-txns-vout-opiscoinstake");
         }
         if (!state.m_consensus_params->fAllowOpIsCoinstakeWithP2PKH) {

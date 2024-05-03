@@ -1,5 +1,5 @@
 // Copyright (c) 2014-2016 The ShadowCoin developers
-// Copyright (c) 2017-2023 The Particl Core developers
+// Copyright (c) 2017-2024 The Particl Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -10,6 +10,7 @@
 #include <interfaces/node.h>
 #include <kernel/cs_main.h>
 #include <key_io.h>
+#include <net_processing.h>
 #include <lz4/lz4.h>
 #include <serialize.h>
 #include <smsg/db.h>
@@ -232,8 +233,8 @@ public:
         nLockPeerId     = -1;
     };
 
-    void hashBucket(int64_t bucket_time);
-    size_t CountActive() const;
+    void hashBucket(int64_t bucket_time, int64_t now);
+    size_t CountActive(int64_t now) const;
 
     int64_t               timeChanged;
     uint32_t              hash;           // token set should get ordered the same on each node

@@ -21,7 +21,6 @@
 #include <rpc/util.h>
 #include <smsg/db.h>
 #include <smsg/smessage.h>
-#include <timedata.h>
 #include <util/fs_helpers.h>
 #include <util/moneystr.h>
 #include <util/strencodings.h>
@@ -1768,6 +1767,8 @@ static RPCHelpMan smsgbuckets()
     UniValue result(UniValue::VOBJ);
     UniValue arrBuckets(UniValue::VARR);
 
+    ChainstateManager &chainman = EnsureAnyChainman(request.context);
+
     char cbuf[256];
     if (mode == "stats" || mode == "total") {
         bool show_buckets = mode != "total" ? true : false;
@@ -1784,7 +1785,7 @@ static RPCHelpMan smsgbuckets()
                 std::string sFile = sBucket + "_01.dat";
                 std::string sHash = ToString((int64_t)it->second.hash);
 
-                size_t nActiveMessages = it->second.CountActive();
+                size_t nActiveMessages = it->second.CountActive(chainman.GetAdjustedTimeInt());
 
                 nBuckets++;
                 nMessages += nActiveMessages;
@@ -1850,7 +1851,7 @@ static RPCHelpMan smsgbuckets()
                 }
             }
             smsgModule.buckets.clear();
-            smsgModule.start_time = GetAdjustedTimeInt();
+            smsgModule.start_time = chainman.GetAdjustedTimeInt();
         } // cs_smsg
 
         result.pushKV("result", "Removed all buckets.");
@@ -2764,6 +2765,8 @@ static RPCHelpMan smsgdebug()
 {
     EnsureSMSGIsEnabled();
 
+    ChainstateManager &chainman = EnsureAnyChainman(request.context);
+
     std::string mode = "none";
     if (request.params.size() > 0) {
         mode = request.params[0].get_str();
@@ -2782,7 +2785,7 @@ static RPCHelpMan smsgdebug()
         }
 
         bool active_only = request.params.size() > 1 ? GetBool(request.params[1]) : true;
-        int64_t now = GetAdjustedTimeInt();
+        int64_t now = chainman.GetAdjustedTimeInt();
 
         std::ofstream file;
         file.open(filepath);

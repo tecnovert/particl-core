@@ -8,7 +8,6 @@
 #include <node/miner.h>
 #include <pos/miner.h>
 #include <rpc/server.h>
-#include <timedata.h>
 #include <validation.h>
 #include <wallet/coincontrol.h>
 #include <wallet/db.h>
@@ -58,7 +57,7 @@ void StakeNBlocks(CHDWallet *pwallet, size_t nBlocks)
     for (k = 0; k < nTries; ++k) {
         int nBestHeight = WITH_LOCK(cs_main, return pchainman->ActiveChain().Height());
 
-        int64_t nSearchTime = GetAdjustedTimeInt() & ~Params().GetStakeTimestampMask(nBestHeight+1);
+        int64_t nSearchTime = GetTime() & ~Params().GetStakeTimestampMask(nBestHeight+1);
         if (nSearchTime <= pwallet->nLastCoinStakeSearchTime) {
             std::this_thread::sleep_for(std::chrono::milliseconds(250));
             continue;
@@ -101,7 +100,7 @@ bool CreateValidBlock(CHDWallet *pwallet, CBlock &block_out)
     for (k = 0; k < nTries; ++k) {
         int nBestHeight = WITH_LOCK(cs_main, return pchainman->ActiveChain().Height());
 
-        int64_t nSearchTime = GetAdjustedTimeInt() & ~Params().GetStakeTimestampMask(nBestHeight+1);
+        int64_t nSearchTime = GetTime() & ~Params().GetStakeTimestampMask(nBestHeight+1);
         if (nSearchTime <= pwallet->nLastCoinStakeSearchTime) {
             std::this_thread::sleep_for(std::chrono::milliseconds(250));
             continue;

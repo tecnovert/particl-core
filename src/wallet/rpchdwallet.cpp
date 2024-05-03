@@ -23,7 +23,6 @@
 #include <rpc/rawtransaction_util.h>
 #include <script/sign.h>
 #include <script/descriptor.h>
-#include <timedata.h>
 #include <util/string.h>
 #include <txdb.h>
 #include <blind.h>
@@ -6366,7 +6365,7 @@ static void traceFrozenOutputs(WalletContext& context, UniValue &rv, CAmount min
     std::vector<std::shared_ptr<CWallet> > wallets = GetWallets(context);
     std::set<COutPoint> extra_txouts;  // Trace these outputs even if spent
     std::set<COutPoint> top_level, set_forced;
-    int64_t time_now = TicksSinceEpoch<std::chrono::seconds>(GetAdjustedTime());
+    int64_t time_now = GetTime();
 
     if (uv_extra_outputs.isArray()) {
         for (size_t i = 0; i < uv_extra_outputs.size(); ++i) {
@@ -6700,7 +6699,7 @@ static RPCHelpMan debugwallet()
     bool downgrade_wallets = false;
     bool exit_ibd = false;
     CAmount max_frozen_output_spendable = Params().GetConsensus().m_max_tainted_value_out;
-    int64_t time_now = TicksSinceEpoch<std::chrono::seconds>(GetAdjustedTime());
+    int64_t time_now = GetTime();
 
     if (!request.params[0].isNull()) {
         const UniValue &options = request.params[0].get_obj();
@@ -7453,8 +7452,8 @@ static RPCHelpMan walletsettings()
                     throw JSONRPCError(RPC_INVALID_PARAMETER, "Wallet must have a default account set.");
                 }
 
-                const Consensus::Params& consensusParams = Params().GetConsensus();
-                if (GetAdjustedTimeInt() < consensusParams.OpIsCoinstakeTime) {
+                const Consensus::Params &consensusParams = Params().GetConsensus();
+                if (GetTime() < consensusParams.OpIsCoinstakeTime) {
                     throw JSONRPCError(RPC_INVALID_PARAMETER, "OpIsCoinstake is not active yet.");
                 }
             } else {

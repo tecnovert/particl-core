@@ -10,6 +10,8 @@
 #include <validationinterface.h>
 #include <node/blockstorage.h>
 
+#include <chrono>
+
 class AddrMan;
 class CChainParams;
 class CTxMemPool;
@@ -45,11 +47,17 @@ struct CNodeStateStats {
     bool m_addr_relay_enabled{false};
     ServiceFlags their_services;
     int64_t presync_height{-1};
+    std::chrono::seconds time_offset{0};
 
     // Particl
     int m_chain_height = -1;
     int nDuplicateCount = 0;
     int nLooseHeadersCount = 0;
+};
+
+struct PeerManagerInfo {
+    std::chrono::seconds median_outbound_time_offset{0s};
+    bool ignores_incoming_txs{false};
 };
 
 class PeerManager : public CValidationInterface, public NetEventsInterface
@@ -95,8 +103,8 @@ public:
     /** Get statistics from node state */
     virtual bool GetNodeStateStats(NodeId nodeid, CNodeStateStats& stats) const = 0;
 
-    /** Whether this node ignores txs received over p2p. */
-    virtual bool IgnoresIncomingTxs() = 0;
+    /** Get peer manager info. */
+    virtual PeerManagerInfo GetInfo() const = 0;
 
     /** Relay transaction to all peers. */
     virtual void RelayTransaction(const uint256& txid, const uint256& wtxid) = 0;
@@ -158,6 +166,7 @@ public:
     virtual bool AddNodeHeader(NodeId node_id, const uint256 &hash) EXCLUSIVE_LOCKS_REQUIRED(cs_main) = 0;
     virtual void RemoveNodeHeader(const uint256 &hash) EXCLUSIVE_LOCKS_REQUIRED(cs_main) = 0;
     virtual void RemoveNonReceivedHeaderFromNodes(node::BlockMap::iterator mi) EXCLUSIVE_LOCKS_REQUIRED(cs_main) = 0;
+    virtual int64_t GetAdjustedTimeInt() = 0;
 
 };
 

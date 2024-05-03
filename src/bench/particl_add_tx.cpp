@@ -12,7 +12,6 @@
 #include <pos/miner.h>
 #include <rpc/blockchain.h>
 #include <rpc/rpcutil.h>
-#include <timedata.h>
 #include <util/any.h>
 #include <util/string.h>
 #include <util/translation.h>
@@ -104,7 +103,7 @@ void StakeNBlocks(CHDWallet *pwallet, size_t nBlocks)
     for (k = 0; k < nTries; ++k) {
         nBestHeight = pwallet->chain().getHeightInt();
 
-        int64_t nSearchTime = GetAdjustedTimeInt() & ~Params().GetStakeTimestampMask(nBestHeight+1);
+        int64_t nSearchTime = GetTime() & ~Params().GetStakeTimestampMask(nBestHeight+1);
         if (nSearchTime <= pwallet->nLastCoinStakeSearchTime) {
             std::this_thread::sleep_for(std::chrono::milliseconds(250));
             continue;
