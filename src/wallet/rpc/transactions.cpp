@@ -31,7 +31,7 @@ void WalletTxToJSON(const CWallet& wallet, const CWalletTx& wtx, UniValue& entry
         entry.pushKV("blockindex", conf->position_in_block);
         int64_t block_time;
         CHECK_NONFATAL(chain.findBlock(conf->confirmed_block_hash, FoundBlock().time(block_time)));
-        PushTime(entry, "blocktime", block_time);
+        particl::PushTime(entry, "blocktime", block_time);
     } else {
         entry.pushKV("trusted", CachedTxIsTrusted(wallet, wtx));
     }
@@ -42,8 +42,8 @@ void WalletTxToJSON(const CWallet& wallet, const CWalletTx& wtx, UniValue& entry
     for (const uint256& conflict : wallet.GetTxConflicts(wtx))
         conflicts.push_back(conflict.GetHex());
     entry.pushKV("walletconflicts", conflicts);
-    PushTime(entry, "time", wtx.GetTxTime());
-    PushTime(entry, "timereceived", wtx.nTimeReceived);
+    particl::PushTime(entry, "time", wtx.GetTxTime());
+    particl::PushTime(entry, "timereceived", wtx.nTimeReceived);
 
     // Add opt-in RBF status
     std::string rbfStatus = "no";
@@ -201,7 +201,7 @@ static void ListRecord(const CHDWallet *phdw, const uint256 &hash, const CTransa
             if (confirms > 0) {
                 entry.pushKV("blockhash", rtx.blockHash.GetHex());
                 entry.pushKV("blockindex", rtx.nIndex);
-                PushTime(entry, "blocktime", rtx.nBlockTime);
+                particl::PushTime(entry, "blocktime", rtx.nBlockTime);
             } else {
                 entry.pushKV("trusted", phdw->IsTrusted(hash, rtx));
             }
@@ -216,7 +216,7 @@ static void ListRecord(const CHDWallet *phdw, const uint256 &hash, const CTransa
             }
             entry.pushKV("walletconflicts", conflicts);
 
-            PushTime(entry, "time", rtx.GetTxTime());
+            particl::PushTime(entry, "time", rtx.GetTxTime());
             entry.pushKV("abandoned", rtx.IsAbandoned());
         }
 
@@ -243,7 +243,7 @@ void RecordTxToJSON(interfaces::Chain& chain, const CHDWallet *phdw, const uint2
     if (confirms > 0) {
         entry.pushKV("blockhash", rtx.blockHash.GetHex());
         entry.pushKV("blockindex", rtx.nIndex);
-        PushTime(entry, "blocktime", rtx.nBlockTime);
+        particl::PushTime(entry, "blocktime", rtx.nBlockTime);
     } else {
         entry.pushKV("trusted", phdw->IsTrusted(hash, rtx));
     }
@@ -254,8 +254,8 @@ void RecordTxToJSON(interfaces::Chain& chain, const CHDWallet *phdw, const uint2
         conflicts.push_back(conflict.GetHex());
     }
     entry.pushKV("walletconflicts", conflicts);
-    PushTime(entry, "time", rtx.GetTxTime());
-    PushTime(entry, "timereceived", rtx.nTimeReceived);
+    particl::PushTime(entry, "time", rtx.GetTxTime());
+    particl::PushTime(entry, "timereceived", rtx.nTimeReceived);
 
     for (const auto &item : rtx.mapValue) {
         if (item.first == RTXVT_COMMENT) {

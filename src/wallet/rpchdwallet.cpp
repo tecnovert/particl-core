@@ -3391,7 +3391,7 @@ static void ParseRecords(
     if (confirmations > 0) {
         entry.pushKVEnd("blockhash", rtx.blockHash.GetHex());
         entry.pushKVEnd("blockindex", rtx.nIndex);
-        PushTime(entry, "blocktime", rtx.nBlockTime);
+        particl::PushTime(entry, "blocktime", rtx.nBlockTime);
     } else {
         entry.pushKVEnd("trusted", pwallet->IsTrusted(hash, rtx));
     }
@@ -3406,7 +3406,7 @@ static void ParseRecords(
     if (conflicts.size() > 0) {
         entry.pushKVEnd("walletconflicts", conflicts);
     }
-    PushTime(entry, "time", rtx.GetTxTime());
+    particl::PushTime(entry, "time", rtx.GetTxTime());
 
     bool have_stx = false;
     CStoredTransaction stx;
@@ -4460,7 +4460,14 @@ static RPCHelpMan getstakinginfo()
                     RPCResult::Type::OBJ, "", "", {
                         {RPCResult::Type::BOOL, "enabled", "If staking is enabled on this wallet"},
                         {RPCResult::Type::BOOL, "staking", "If this wallet is currently staking"},
-                        {RPCResult::Type::STR, "warnings", "Node warnings messages"},
+                        (IsDeprecatedRPCEnabled("warnings") ?
+                            RPCResult{RPCResult::Type::STR, "warnings", "any network and blockchain warnings (DEPRECATED)"} :
+                            RPCResult{RPCResult::Type::ARR, "warnings", "any network and blockchain warnings (run with `-deprecatedrpc=warnings` to return the latest warning as a single string)",
+                            {
+                                {RPCResult::Type::STR, "", "warning"},
+                            }
+                            }
+                        ),
                         {RPCResult::Type::STR_AMOUNT, "percentyearreward", "Current stake reward percentage"},
                         {RPCResult::Type::STR_AMOUNT, "moneysupply", "The total amount of particl in the network"},
                         {RPCResult::Type::STR_AMOUNT, "reserve", /*optional=*/true, "The reserve balance of the wallet in " + CURRENCY_UNIT},
@@ -4545,7 +4552,7 @@ static RPCHelpMan getstakinginfo()
             break;
     }
 
-    obj.pushKV("warnings", GetWarnings(false).original);
+    obj.pushKV("warnings", GetNodeWarnings(IsDeprecatedRPCEnabled("warnings")));
 
     obj.pushKV("percentyearreward", rCoinYearReward);
     obj.pushKV("moneysupply", ValueFromAmount(nMoneySupply));

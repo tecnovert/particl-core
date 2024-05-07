@@ -1473,15 +1473,15 @@ static RPCHelpMan smsginbox()
                         continue;
                     }
 
-                    PushTime(objM, "received", smsgStored.timeReceived);
-                    PushTime(objM, "sent", msg.timestamp);
+                    particl::PushTime(objM, "received", smsgStored.timeReceived);
+                    particl::PushTime(objM, "sent", msg.timestamp);
                     objM.pushKV("paid", UniValue(psmsg->IsPaidVersion()));
 
                     int64_t ttl = psmsg->m_ttl;
                     objM.pushKV("ttl", ttl);
                     int nDaysRetention = ttl / smsg::SMSG_SECONDS_IN_DAY;
                     objM.pushKV("daysretention", nDaysRetention);
-                    PushTime(objM, "expiration", psmsg->timestamp + ttl);
+                    particl::PushTime(objM, "expiration", psmsg->timestamp + ttl);
 
                     uint32_t nPayload = smsgStored.vchMessage.size() - smsg::SMSG_HDR_LEN;
                     objM.pushKV("payloadsize", (int)nPayload);
@@ -1691,14 +1691,14 @@ static RPCHelpMan smsgoutbox()
                         continue;
                     }
 
-                    PushTime(objM, "sent", msg.timestamp);
+                    particl::PushTime(objM, "sent", msg.timestamp);
                     objM.pushKV("paid", UniValue(psmsg->IsPaidVersion()));
 
                     int64_t ttl = psmsg->m_ttl;
                     objM.pushKV("ttl", ttl);
                     int nDaysRetention = ttl / smsg::SMSG_SECONDS_IN_DAY;
                     objM.pushKV("daysretention", nDaysRetention);
-                    PushTime(objM, "expiration", psmsg->timestamp + ttl);
+                    particl::PushTime(objM, "expiration", psmsg->timestamp + ttl);
 
                     uint32_t nPayload = smsgStored.vchMessage.size() - smsg::SMSG_HDR_LEN;
                     objM.pushKV("payloadsize", (int)nPayload);
@@ -1793,7 +1793,7 @@ static RPCHelpMan smsgbuckets()
                 UniValue objM(UniValue::VOBJ);
                 if (show_buckets) {
                     objM.pushKV("bucket", sBucket);
-                    PushTime(objM, "time", it->first);
+                    particl::PushTime(objM, "time", it->first);
                     objM.pushKV("no. messages", strprintf("%u", tokenSet.size()));
                     objM.pushKV("active messages", strprintf("%u", nActiveMessages));
                     objM.pushKV("hash", sHash);
@@ -2108,7 +2108,7 @@ static RPCHelpMan smsgview()
                     }
 
                     UniValue objM(UniValue::VOBJ);
-                    PushTime(objM, "sent", msg.timestamp);
+                    particl::PushTime(objM, "sent", msg.timestamp);
                     objM.pushKV("from", sFrom);
                     objM.pushKV("to", sTo);
                     objM.pushKV("text", std::string((char*)&msg.vchMessage[0]));
@@ -2281,19 +2281,19 @@ static RPCHelpMan smsgone()
     result.pushKV("msgid", sMsgId);
     result.pushKV("version", strprintf("%02x%02x", psmsg->version[0], psmsg->version[1]));
     result.pushKV("location", sType);
-    PushTime(result, "received", smsgStored.timeReceived);
+    particl::PushTime(result, "received", smsgStored.timeReceived);
     result.pushKV("to", EncodeDestination(PKHash(smsgStored.addrTo)));
     //result.pushKV("addressoutbox", CBitcoinAddress(smsgStored.addrOutbox).ToString());
     result.pushKV("read", UniValue(bool(!(smsgStored.status & SMSG_MASK_UNREAD))));
 
-    PushTime(result, "sent", psmsg->timestamp);
+    particl::PushTime(result, "sent", psmsg->timestamp);
     result.pushKV("paid", UniValue(psmsg->IsPaidVersion()));
 
     int64_t ttl = psmsg->m_ttl;
     result.pushKV("ttl", ttl);
     int nDaysRetention = ttl / smsg::SMSG_SECONDS_IN_DAY;
     result.pushKV("daysretention", nDaysRetention);
-    PushTime(result, "expiration", psmsg->timestamp + ttl);
+    particl::PushTime(result, "expiration", psmsg->timestamp + ttl);
 
 
     smsg::MessageData msg;

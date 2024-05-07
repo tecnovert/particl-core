@@ -47,8 +47,8 @@ bool CheckAnonInputMempoolConflicts(const CTxIn &txin, const uint256 txhash, CTx
     for (size_t k = 0; k < nInputs; ++k) {
         const CCmpPubKey &ki = *((CCmpPubKey*)&vKeyImages[k*33]);
 
-        if (pmempool->HaveKeyImage(ki, txhashKI)
-            && txhashKI != txhash) {
+        if (pmempool->HaveKeyImage(ki, txhashKI) &&
+            txhashKI != txhash) {
             if (LogAcceptCategory(BCLog::VALIDATION, BCLog::Level::Debug)) {
                 LogPrintf("%s: Duplicate keyimage detected in mempool %s, used in %s.\n", __func__,
                     HexStr(ki), txhashKI.ToString());

@@ -260,8 +260,8 @@ static void TxToJSON(const CTransaction& tx, const uint256 hashBlock, UniValue& 
             if (active_chainstate.m_chain.Contains(pindex)) {
                 entry.pushKV("height", pindex->nHeight);
                 entry.pushKV("confirmations", 1 + active_chainstate.m_chain.Height() - pindex->nHeight);
-                PushTime(entry, "time", pindex->GetBlockTime());
-                PushTime(entry, "blocktime", pindex->GetBlockTime());
+                particl::PushTime(entry, "time", pindex->GetBlockTime());
+                particl::PushTime(entry, "blocktime", pindex->GetBlockTime());
             } else
             {
                 entry.pushKV("height", -1);

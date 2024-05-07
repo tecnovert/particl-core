@@ -784,8 +784,8 @@ static UniValue blockToDeltasJSON(ChainstateManager& chainman, const CBlock& blo
 
     }
     result.pushKV("deltas", deltas);
-    PushTime(result, "time", block.GetBlockTime());
-    PushTime(result, "mediantime", blockindex->GetMedianTimePast());
+    particl::PushTime(result, "time", block.GetBlockTime());
+    particl::PushTime(result, "mediantime", blockindex->GetMedianTimePast());
     result.pushKV("nonce", (uint64_t)block.nNonce);
     result.pushKV("bits", strprintf("%08x", block.nBits));
     result.pushKV("difficulty", GetDifficulty(*blockindex));

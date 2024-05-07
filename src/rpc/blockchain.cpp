@@ -47,7 +47,6 @@
 #include <validation.h>
 #include <validationinterface.h>
 #include <versionbits.h>
-#include <warnings.h>
 
 #include <stdint.h>
 
@@ -150,8 +149,8 @@ UniValue blockheaderToJSON(const CBlockIndex& tip, const CBlockIndex& blockindex
     result.pushKV("versionHex", strprintf("%08x", blockindex.nVersion));
     result.pushKV("merkleroot", blockindex.hashMerkleRoot.GetHex());
     result.pushKV("witnessmerkleroot", blockindex.hashWitnessMerkleRoot.GetHex());
-    PushTime(result, "time", blockindex.nTime);
-    PushTime(result, "mediantime", blockindex.GetMedianTimePast());
+    particl::PushTime(result, "time", blockindex.nTime);
+    particl::PushTime(result, "mediantime", blockindex.GetMedianTimePast());
     result.pushKV("nonce", (uint64_t)blockindex.nNonce);
     result.pushKV("bits", strprintf("%08x", blockindex.nBits));
     result.pushKV("difficulty", GetDifficulty(blockindex));
@@ -1352,7 +1351,14 @@ RPCHelpMan getblockchaininfo()
                 {RPCResult::Type::NUM, "pruneheight", /*optional=*/true, "height of the last block pruned, plus one (only present if pruning is enabled)"},
                 {RPCResult::Type::BOOL, "automatic_pruning", /*optional=*/true, "whether automatic pruning is enabled (only present if pruning is enabled)"},
                 {RPCResult::Type::NUM, "prune_target_size", /*optional=*/true, "the target size used by pruning (only present if automatic pruning is enabled)"},
-                {RPCResult::Type::STR, "warnings", "any network and blockchain warnings"},
+                (IsDeprecatedRPCEnabled("warnings") ?
+                    RPCResult{RPCResult::Type::STR, "warnings", "any network and blockchain warnings (DEPRECATED)"} :
+                    RPCResult{RPCResult::Type::ARR, "warnings", "any network and blockchain warnings (run with `-deprecatedrpc=warnings` to return the latest warning as a single string)",
+                    {
+                        {RPCResult::Type::STR, "", "warning"},
+                    }
+                    }
+                ),
                 {RPCResult::Type::STR, "time_local", /*optional=*/true, "Human readable time with local offset."},
                 {RPCResult::Type::STR, "time_utc", /*optional=*/true, "Human readable time in UTC."},
                 {RPCResult::Type::STR, "mediantime_local", /*optional=*/true, "Human readable time with local offset."},
@@ -1381,8 +1387,8 @@ RPCHelpMan getblockchaininfo()
         obj.pushKV("delayedblocks", (int)particl::CountDelayedBlocks());
     }
     obj.pushKV("difficulty", GetDifficulty(tip));
-    PushTime(obj, "time", tip.GetBlockTime());
-    PushTime(obj, "mediantime", tip.GetMedianTimePast());
+    particl::PushTime(obj, "time", tip.GetBlockTime());
+    particl::PushTime(obj, "mediantime", tip.GetMedianTimePast());
     obj.pushKV("verificationprogress", GuessVerificationProgress(chainman.GetParams().TxData(), &tip));
     obj.pushKV("initialblockdownload", chainman.IsInitialBlockDownload());
     obj.pushKV("chainwork", tip.nChainWork.GetHex());
@@ -1399,7 +1405,7 @@ RPCHelpMan getblockchaininfo()
         }
     }
 
-    obj.pushKV("warnings", GetWarnings(false).original);
+    obj.pushKV("warnings", GetNodeWarnings(IsDeprecatedRPCEnabled("warnings")));
     return obj;
 },
     };
