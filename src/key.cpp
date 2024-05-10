@@ -17,6 +17,10 @@
 #include <secp256k1_schnorrsig.h>
 #include <secp256k1_ecdh.h>
 
+// Particl
+#include <blind.h>
+#include <key/stealth.h>
+
 static secp256k1_context* secp256k1_context_sign = nullptr;
 
 /** These functions are taken from the libsecp256k1 distribution and are very ugly. */
@@ -477,7 +481,8 @@ bool ECC_InitSanityCheck() {
     return key.VerifyPubKey(pubkey);
 }
 
-void ECC_Start() {
+/** Initialize the elliptic curve support. May not be called twice without calling ECC_Stop first. */
+static void ECC_Start() {
     assert(secp256k1_context_sign == nullptr);
 
     secp256k1_context *ctx = secp256k1_context_create(SECP256K1_CONTEXT_NONE);
@@ -494,11 +499,26 @@ void ECC_Start() {
     secp256k1_context_sign = ctx;
 }
 
-void ECC_Stop() {
+/** Deinitialize the elliptic curve support. No-op if ECC_Start wasn't called first. */
+static void ECC_Stop() {
     secp256k1_context *ctx = secp256k1_context_sign;
     secp256k1_context_sign = nullptr;
 
     if (ctx) {
         secp256k1_context_destroy(ctx);
     }
+}
+
+ECC_Context::ECC_Context()
+{
+    ECC_Start();
+    particl::ECC_Start_Stealth();
+    particl::ECC_Start_Blinding();
+}
+
+ECC_Context::~ECC_Context()
+{
+    particl::ECC_Stop_Blinding();
+    particl::ECC_Stop_Stealth();
+    ECC_Stop();
 }

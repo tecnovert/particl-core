@@ -22,7 +22,7 @@
 static void CCoinsCaching(benchmark::Bench& bench)
 {
     fParticlMode = false;
-    ECC_Start();
+    ECC_Context ecc_context{};
 
     FillableSigningProvider keystore;
     CCoinsView coinsDummy;
@@ -51,7 +51,6 @@ static void CCoinsCaching(benchmark::Bench& bench)
         bool success{AreInputsStandard(tx_1, coins)};
         assert(success);
     });
-    ECC_Stop();
 }
 
 BENCHMARK(CCoinsCaching, benchmark::PriorityLevel::HIGH);
