@@ -95,7 +95,7 @@ static RPCHelpMan validateaddress()
                 ret.pushKV("scriptPubKey", HexStr(scriptPubKey));
 
                 UniValue detail = DescribeAddress(dest);
-                ret.pushKVs(detail);
+                ret.pushKVs(std::move(detail));
 
                 if (!request.params[1].isNull() && GetBool(request.params[1])) {
                     if (dest.index() == DI::_WitnessV0KeyHash ||
@@ -116,7 +116,7 @@ static RPCHelpMan validateaddress()
             } else {
                 UniValue error_indices(UniValue::VARR);
                 for (int i : error_locations) error_indices.push_back(i);
-                ret.pushKV("error_locations", error_indices);
+                ret.pushKV("error_locations", std::move(error_indices));
                 ret.pushKV("error", error_msg);
             }
 

@@ -41,7 +41,7 @@ void WalletTxToJSON(const CWallet& wallet, const CWalletTx& wtx, UniValue& entry
     UniValue conflicts(UniValue::VARR);
     for (const uint256& conflict : wallet.GetTxConflicts(wtx))
         conflicts.push_back(conflict.GetHex());
-    entry.pushKV("walletconflicts", conflicts);
+    entry.pushKV("walletconflicts", std::move(conflicts));
     particl::PushTime(entry, "time", wtx.GetTxTime());
     particl::PushTime(entry, "timereceived", wtx.nTimeReceived);
 
@@ -482,8 +482,8 @@ static UniValue ListReceived(const CWallet& wallet, const UniValue& params, bool
                     transactions.push_back(_item.GetHex());
                 }
             }
-            obj.pushKV("txids", transactions);
-            ret.push_back(obj);
+            obj.pushKV("txids", std::move(transactions));
+            ret.push_back(std::move(obj));
         }
     };
 
@@ -505,7 +505,7 @@ static UniValue ListReceived(const CWallet& wallet, const UniValue& params, bool
             obj.pushKV("amount",        ValueFromAmount(nAmount));
             obj.pushKV("confirmations", (nConf == std::numeric_limits<int>::max() ? 0 : nConf));
             obj.pushKV("label",         entry.first);
-            ret.push_back(obj);
+            ret.push_back(std::move(obj));
         }
     }
 
@@ -675,7 +675,7 @@ static void ListTransactions(const CWallet& wallet, const CWalletTx& wtx, int nM
             }
             entry.pushKV("abandoned", wtx.isAbandoned());
 
-            ret.push_back(entry);
+            ret.push_back(std::move(entry));
         }
     }
 
@@ -746,7 +746,7 @@ static void ListTransactions(const CWallet& wallet, const CWalletTx& wtx, int nM
                     entry.pushKV("narration", mi->second);
                 }
             }
-            ret.push_back(entry);
+            ret.push_back(std::move(entry));
         }
     }
 
@@ -781,7 +781,7 @@ static void ListTransactions(const CWallet& wallet, const CWalletTx& wtx, int nM
                 }
             }
             entry.pushKV("abandoned", wtx.isAbandoned());
-            ret.push_back(entry);
+            ret.push_back(std::move(entry));
         }
     }
 }
@@ -1146,8 +1146,8 @@ RPCHelpMan listsinceblock()
     CHECK_NONFATAL(wallet.chain().findAncestorByHeight(wallet.GetLastBlockHash(), wallet.GetLastBlockHeight() + 1 - target_confirms, FoundBlock().hash(lastblock)));
 
     UniValue ret(UniValue::VOBJ);
-    ret.pushKV("transactions", transactions);
-    if (include_removed) ret.pushKV("removed", removed);
+    ret.pushKV("transactions", std::move(transactions));
+    if (include_removed) ret.pushKV("removed", std::move(removed));
     ret.pushKV("lastblock", lastblock.GetHex());
 
     return ret;
@@ -1287,14 +1287,14 @@ const std::shared_ptr<const CWallet> pwallet = GetWalletForJSONRPCRequest(reques
 
     UniValue details(UniValue::VARR);
     ListTransactions(*pwallet, wtx, 0, false, details, filter, /*filter_label=*/std::nullopt);
-    entry.pushKV("details", details);
+    entry.pushKV("details", std::move(details));
 
     entry.pushKV("hex", EncodeHexTx(*wtx.tx));
 
     if (verbose) {
         UniValue decoded(UniValue::VOBJ);
         TxToUniv(*wtx.tx, /*block_hash=*/uint256(), /*entry=*/decoded, /*include_hex=*/false);
-        entry.pushKV("decoded", decoded);
+        entry.pushKV("decoded", std::move(decoded));
     }
     AddSmsgFundingInfo(*wtx.tx, entry);
 

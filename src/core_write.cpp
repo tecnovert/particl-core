@@ -334,7 +334,7 @@ void TxToUniv(const CTransaction& tx, const uint256& block_hash, UniValue& entry
             UniValue o(UniValue::VOBJ);
             o.pushKV("asm", ScriptToAsmStr(txin.scriptSig, true));
             o.pushKV("hex", HexStr(txin.scriptSig));
-            in.pushKV("scriptSig", o);
+            in.pushKV("scriptSig", std::move(o));
         }
         if (!txin.scriptData.IsNull()) {
             UniValue scriptdata(UniValue::VARR);
@@ -349,7 +349,7 @@ void TxToUniv(const CTransaction& tx, const uint256& block_hash, UniValue& entry
             for (const auto& item : tx.vin[i].scriptWitness.stack) {
                 txinwitness.push_back(HexStr(item));
             }
-            in.pushKV("txinwitness", txinwitness);
+            in.pushKV("txinwitness", std::move(txinwitness));
         }
         if (have_undo && !txin.IsAnonInput()) {
             const Coin& prev_coin = txundo->vprevout[i];
@@ -365,15 +365,15 @@ void TxToUniv(const CTransaction& tx, const uint256& block_hash, UniValue& entry
                 p.pushKV("generated", bool(prev_coin.fCoinBase));
                 p.pushKV("height", uint64_t(prev_coin.nHeight));
                 p.pushKV("value", ValueFromAmount(prev_txout.nValue));
-                p.pushKV("scriptPubKey", o_script_pub_key);
-                in.pushKV("prevout", p);
+                p.pushKV("scriptPubKey", std::move(o_script_pub_key));
+                in.pushKV("prevout", std::move(p));
                 in.pushKV("type", prev_coin.nType == OUTPUT_CT ? "blind" : "plain");
             }
         }
         in.pushKV("sequence", (int64_t)txin.nSequence);
-        vin.push_back(in);
+        vin.push_back(std::move(in));
     }
-    entry.pushKV("vin", vin);
+    entry.pushKV("vin", std::move(vin));
 
     UniValue vout(UniValue::VARR);
     for (unsigned int i = 0; i < tx.vpout.size(); i++) {
@@ -394,15 +394,14 @@ void TxToUniv(const CTransaction& tx, const uint256& block_hash, UniValue& entry
 
         UniValue o(UniValue::VOBJ);
         ScriptToUniv(txout.scriptPubKey, /*out=*/o, /*include_hex=*/true, /*include_address=*/true);
-        out.pushKV("scriptPubKey", o);
-        vout.push_back(out);
+        out.pushKV("scriptPubKey", std::move(o));
+        vout.push_back(std::move(out));
 
         if (have_undo) {
             amt_total_out += txout.nValue;
         }
     }
-
-    entry.pushKV("vout", vout);
+    entry.pushKV("vout", std::move(vout));
 
     if (have_undo) {
         const CAmount fee = amt_total_in - amt_total_out;

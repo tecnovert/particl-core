@@ -274,9 +274,9 @@ RPCHelpMan listaddressgroupings()
                     addressInfo.push_back(address_book_entry->GetLabel());
                 }
             }
-            jsonGrouping.push_back(addressInfo);
+            jsonGrouping.push_back(std::move(addressInfo));
         }
-        jsonGroupings.push_back(jsonGrouping);
+        jsonGroupings.push_back(std::move(jsonGrouping));
     }
     return jsonGroupings;
 },
@@ -489,9 +489,9 @@ public:
             // Only when the script corresponds to an address.
             UniValue subobj(UniValue::VOBJ);
             UniValue detail = DescribeAddress(embedded);
-            subobj.pushKVs(detail);
+            subobj.pushKVs(std::move(detail));
             UniValue wallet_detail = std::visit(*this, embedded);
-            subobj.pushKVs(wallet_detail);
+            subobj.pushKVs(std::move(wallet_detail));
             subobj.pushKV("address", EncodeDestination(embedded));
             subobj.pushKV("scriptPubKey", HexStr(subscript));
             // Always report the pubkey at the top level, so that `getnewaddress()['pubkey']` always works.
@@ -610,7 +610,7 @@ static UniValue DescribeWalletAddress(const CWallet& wallet, const CTxDestinatio
     CScript script = GetScriptForDestination(dest);
     std::unique_ptr<SigningProvider> provider = nullptr;
     provider = wallet.GetSolvingProvider(script);
-    ret.pushKVs(detail);
+    ret.pushKVs(std::move(detail));
     ret.pushKVs(std::visit(DescribeWalletAddressVisitor(provider.get()), dest));
     return ret;
 }
@@ -829,7 +829,7 @@ RPCHelpMan getaddressinfo()
     }
 
     UniValue detail = DescribeWalletAddress(*pwallet, dest);
-    ret.pushKVs(detail);
+    ret.pushKVs(std::move(detail));
 
     ret.pushKV("ischange", ScriptIsChange(*pwallet, scriptPubKey));
 
@@ -910,7 +910,7 @@ RPCHelpMan getaddressesbylabel()
             // which currently is O(1).
             UniValue value(UniValue::VOBJ);
             value.pushKV("purpose", _purpose ? PurposeToString(*_purpose) : "unknown");
-            ret.pushKVEnd(address, value);
+            ret.pushKVEnd(address, std::move(value));
         }
     });
 
