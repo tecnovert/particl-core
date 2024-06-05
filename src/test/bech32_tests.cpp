@@ -159,9 +159,9 @@ BOOST_AUTO_TEST_CASE(bech32_testvectors_invalid)
     int i = 0;
     for (const std::string& str : CASES) {
         const auto& err = ERRORS[i];
-        const auto dec = bech32::Decode(str);
+        const auto dec = bech32::Decode(str, bech32::CharLimit::BECH32_BTC);
         BOOST_CHECK(dec.encoding == bech32::Encoding::INVALID);
-        auto [error, error_locations] = bech32::LocateErrors(str);
+        auto [error, error_locations] = bech32::LocateErrors(str, bech32::CharLimit::BECH32_BTC);
         BOOST_CHECK_EQUAL(err.first, error);
         BOOST_CHECK(err.second == error_locations);
         i++;
@@ -211,9 +211,9 @@ BOOST_AUTO_TEST_CASE(bech32m_testvectors_invalid)
     int i = 0;
     for (const std::string& str : CASES) {
         const auto& err = ERRORS[i];
-        const auto dec = bech32::Decode(str);
+        const auto dec = bech32::Decode(str, bech32::CharLimit::BECH32_BTC);
         BOOST_CHECK(dec.encoding == bech32::Encoding::INVALID);
-        auto [error, error_locations] = bech32::LocateErrors(str);
+        auto [error, error_locations] = bech32::LocateErrors(str, bech32::CharLimit::BECH32_BTC);
         BOOST_CHECK_EQUAL(err.first, error);
         BOOST_CHECK(err.second == error_locations);
         i++;

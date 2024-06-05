@@ -70,7 +70,7 @@ bool FlatSigningProvider::GetTaprootSpendData(const XOnlyPubKey& output_key, Tap
         spenddata = builder.GetSpendData();
         return true;
     }
-    return false;
+    return LookupHelper(tr_spenddata, output_key, spenddata);
 }
 bool FlatSigningProvider::GetTaprootBuilder(const XOnlyPubKey& output_key, TaprootBuilder& builder) const
 {

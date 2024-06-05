@@ -138,6 +138,15 @@ FUZZ_TARGET(scriptpubkeyman, .init = initialize_spkm)
                                            PKHash{ConsumeUInt160(fuzzed_data_provider)}};
                         std::string str_sig;
                         (void)spk_manager->SignMessage(msg, pk_hash, MESSAGE_MAGIC, str_sig);
+                        (void)spk_manager->GetMetadata(dest);
+                    }
+                }
+            },
+            [&] {
+                auto spks{spk_manager->GetScriptPubKeys()};
+                for (const CScript& spk : spks) {
+                    if (fuzzed_data_provider.ConsumeBool()) {
+                        spk_manager->MarkUnusedAddresses(spk);
                     }
                 }
             },
@@ -149,6 +158,10 @@ FUZZ_TARGET(scriptpubkeyman, .init = initialize_spkm)
                 }
                 spk_manager->AddDescriptorKey(key, key.GetPubKey());
                 spk_manager->TopUp();
+                LOCK(spk_manager->cs_desc_man);
+                auto particular_key{spk_manager->GetKey(key.GetPubKey().GetID())};
+                assert(*particular_key == key);
+                assert(spk_manager->HasPrivKey(key.GetPubKey().GetID()));
             },
             [&] {
                 std::string descriptor;
@@ -195,6 +208,9 @@ FUZZ_TARGET(scriptpubkeyman, .init = initialize_spkm)
             }
         );
     }
+
+    (void)spk_manager->GetEndRange();
+    (void)spk_manager->GetKeyPoolSize();
 }
 
 } // namespace
