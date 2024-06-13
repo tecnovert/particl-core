@@ -1628,7 +1628,7 @@ DBErrors CHDWallet::LoadWallet()
             */
         }
     }
-    if (idDefaultAccount.IsNull() && m_chain) { // If !m_chain, probably running from particl-wallet
+    if (idDefaultAccount.IsNull() && m_chain && m_warn_no_active_acc) { // If !m_chain, probably running from particl-wallet
         std::string sWarning = "Warning: Wallet " + GetName() + " has no active account, please view the readme.";
 #ifndef ENABLE_QT
         tfm::format(std::cout, "%s\n", sWarning.c_str());
