@@ -1334,7 +1334,7 @@ Signing is only possible with addresses of the type &apos;legacy&apos;.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+74"/>
+        <location line="+77"/>
         <source>Compiled without external signing support (required for external signing)</source>
         <extracomment>&quot;External signing&quot; means using devices such as hardware wallets.</extracomment>
         <translation type="unfinished"></translation>
@@ -1698,7 +1698,7 @@ The migration process will create a backup of the wallet before migrating. This 
         <location line="+10"/>
         <location line="+92"/>
         <location line="+234"/>
-        <location filename="../mnemonicdialog.cpp" line="+106"/>
+        <location filename="../mnemonicdialog.cpp" line="+110"/>
         <source>Import</source>
         <translation type="unfinished"></translation>
     </message>

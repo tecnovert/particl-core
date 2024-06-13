@@ -1268,7 +1268,7 @@ The migration process will create a backup of the wallet before migrating. This 
       </trans-unit>
       <trans-unit id="_msg285">
         <source xml:space="preserve">Compiled without external signing support (required for external signing)</source>
-        <context-group purpose="location"><context context-type="linenumber">98</context></context-group>
+        <context-group purpose="location"><context context-type="linenumber">101</context></context-group>
         <note annotates="source" from="developer">&quot;External signing&quot; means using devices such as hardware wallets.</note>
       </trans-unit>
     </group>
@@ -1537,7 +1537,7 @@ The migration process will create a backup of the wallet before migrating. This 
         <context-group purpose="location"><context context-type="linenumber">24</context></context-group>
         <context-group purpose="location"><context context-type="linenumber">116</context></context-group>
         <context-group purpose="location"><context context-type="linenumber">350</context></context-group>
-        <context-group purpose="location"><context context-type="sourcefile">../mnemonicdialog.cpp</context><context context-type="linenumber">106</context></context-group>
+        <context-group purpose="location"><context context-type="sourcefile">../mnemonicdialog.cpp</context><context context-type="linenumber">110</context></context-group>
       </trans-unit>
       <trans-unit id="_msg340">
         <source xml:space="preserve">Import Recovery Phrase</source>
@@ -1663,15 +1663,15 @@ The migration process will create a backup of the wallet before migrating. This 
     <group restype="x-trolltech-linguist-context" resname="MnemonicDialog">
       <trans-unit id="_msg369">
         <source xml:space="preserve">Path to derive account from, if not using default. (optional, default=%1)</source>
-        <context-group purpose="location"><context context-type="linenumber">43</context></context-group>
+        <context-group purpose="location"><context context-type="linenumber">47</context></context-group>
       </trans-unit>
       <trans-unit id="_msg370">
         <source xml:space="preserve">Enter a passphrase to protect your Recovery Phrase. (optional)</source>
-        <context-group purpose="location"><context context-type="linenumber">44</context></context-group>
+        <context-group purpose="location"><context context-type="linenumber">48</context></context-group>
       </trans-unit>
       <trans-unit id="_msg371">
         <source xml:space="preserve">Enter your BIP39 compliant Recovery Phrase/Mnemonic.</source>
-        <context-group purpose="location"><context context-type="linenumber">46</context></context-group>
+        <context-group purpose="location"><context context-type="linenumber">50</context></context-group>
       </trans-unit>
     </group>
   </body></file>

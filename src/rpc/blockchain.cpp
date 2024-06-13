@@ -205,12 +205,12 @@ UniValue blockToJSON(BlockManager& blockman, const CBlock& block, const CBlockIn
 
                 UniValue objTx(UniValue::VOBJ);
                 TxToUniv(*tx, /*block_hash=*/uint256(), /*entry=*/objTx, /*include_hex=*/true, RPCSerializationFlags(), txundo, verbosity);
-                txs.push_back(objTx);
+                txs.push_back(std::move(objTx));
             }
             break;
     }
 
-    result.pushKV("tx", txs);
+    result.pushKV("tx", std::move(txs));
     if (coinstakeDetails && blockindex->pprev) {
         result.pushKV("blocksig", HexStr(block.vchBlockSig));
         result.pushKV("prevstakemodifier", blockindex->pprev->bnStakeModifier.GetHex());

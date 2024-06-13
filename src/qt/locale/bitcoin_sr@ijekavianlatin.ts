@@ -94,6 +94,14 @@ Signing is only possible with addresses of the type 'legacy'.</source>
         <translation type="unfinished">Десила се грешка приликом покушаја да се листа адреса сачува на  %1. Молимо покушајте поново.</translation>
     </message>
     <message>
+        <source>Sending addresses - %1</source>
+        <translation type="unfinished">Адреса пошиљаоца - %1</translation>
+    </message>
+    <message>
+        <source>Receiving addresses - %1</source>
+        <translation type="unfinished">Адресе за примање - %1</translation>
+    </message>
+    <message>
         <source>Exporting Failed</source>
         <translation type="unfinished">Извоз Неуспешан</translation>
     </message>
@@ -216,12 +224,20 @@ Signing is only possible with addresses of the type 'legacy'.</source>
         <translation type="unfinished">Лозинка коју сте унели за дешифровање новчаника је погрешна.</translation>
     </message>
     <message>
+        <source>The passphrase entered for the wallet decryption is incorrect. It contains a null character (ie - a zero byte). If the passphrase was set with a version of this software prior to 25.0, please try again with only the characters up to — but not including — the first null character. If this is successful, please set a new passphrase to avoid this issue in the future.</source>
+        <translation type="unfinished">Приступна фраза унета за дешифровање новчаника је нетачна. Садржи нулти карактер (тј. - нулти бајт). Ако је приступна фраза постављена са верзијом овог софтвера старијом од 25.0, покушајте поново само са знаковима до — али не укључујући — првог нултог знака. Ако је ово успешно, поставите нову приступну фразу да бисте избегли овај проблем у будућности.</translation>
+    </message>
+    <message>
         <source>Wallet passphrase was successfully changed.</source>
         <translation type="unfinished">Pristupna fraza novčanika je uspešno promenjena.</translation>
     </message>
     <message>
         <source>Passphrase change failed</source>
         <translation type="unfinished">Promena lozinke nije uspela</translation>
+    </message>
+    <message>
+        <source>The old passphrase entered for the wallet decryption is incorrect. It contains a null character (ie - a zero byte). If the passphrase was set with a version of this software prior to 25.0, please try again with only the characters up to — but not including — the first null character.</source>
+        <translation type="unfinished">Стара приступна фраза унета за дешифровање новчаника је нетачна. Садржи нулти карактер (тј. - нулти бајт). Ако је приступна фраза постављена са верзијом овог софтвера старијом од 25.0, покушајте поново са само знаковима до — али не укључујући — првог нултог знака.</translation>
     </message>
     <message>
         <source>Warning: The Caps Lock key is on!</source>
@@ -237,6 +253,10 @@ Signing is only possible with addresses of the type 'legacy'.</source>
 </context>
 <context>
     <name>BitcoinApplication</name>
+    <message>
+        <source>Settings file %1 might be corrupt or invalid.</source>
+        <translation type="unfinished">Датотека подешавања %1 је можда оштећена или неважећа.</translation>
+    </message>
     <message>
         <source>Runaway exception</source>
         <translation type="unfinished">Изузетак покретања</translation>
@@ -260,6 +280,11 @@ Signing is only possible with addresses of the type 'legacy'.</source>
         <source>Do you want to reset settings to default values, or to abort without making changes?</source>
         <extracomment>Explanatory text shown on startup when the settings file cannot be read. Prompts user to make a choice between resetting or aborting.</extracomment>
         <translation type="unfinished">Da li želiš da poništiš podešavanja na početne vrednosti, ili da prekineš bez promena?</translation>
+    </message>
+    <message>
+        <source>A fatal error occurred. Check that settings file is writable, or try running with -nosettings.</source>
+        <extracomment>Explanatory text shown on startup when the settings file could not be written. Prompts user to check that we have the ability to write to the file. Explains that the user has the option of running without a settings file.</extracomment>
+        <translation type="unfinished">Догодила се фатална грешка. Проверите да ли је могуће уписивати у "settings" фајл или покушајте да покренете са "-nosettings".</translation>
     </message>
     <message>
         <source>Error: %1</source>
@@ -621,6 +646,10 @@ Signing is only possible with addresses of the type 'legacy'.</source>
         <translation type="unfinished">Учитај делимично потписану Particl трансакцију</translation>
     </message>
     <message>
+        <source>Load PSBT from &amp;clipboard…</source>
+        <translation type="unfinished">Учитај ”PSBT” из привремене меморије</translation>
+    </message>
+    <message>
         <source>Load Partially Signed Particl Transaction from clipboard</source>
         <translation type="unfinished">Учитај делимично потписану Particl трансакцију из clipboard-a</translation>
     </message>
@@ -657,8 +686,21 @@ Signing is only possible with addresses of the type 'legacy'.</source>
         <translation type="unfinished">Затвори новчаник</translation>
     </message>
     <message>
+        <source>Restore Wallet…</source>
+        <extracomment>Name of the menu item that restores wallet from a backup file.</extracomment>
+        <translation type="unfinished">Поврати новчаник...</translation>
+    </message>
+    <message>
         <source>Close all wallets</source>
         <translation type="unfinished">Затвори све новчанике</translation>
+    </message>
+    <message>
+        <source>Migrate Wallet</source>
+        <translation type="unfinished">Пренеси Новчаник</translation>
+    </message>
+    <message>
+        <source>Migrate a wallet</source>
+        <translation type="unfinished">Пренеси новчаник</translation>
     </message>
     <message>
         <source>Show the %1 help message to get a list with possible Particl command-line options</source>
@@ -679,6 +721,21 @@ Signing is only possible with addresses of the type 'legacy'.</source>
     <message>
         <source>No wallets available</source>
         <translation type="unfinished">Нема доступних новчаника</translation>
+    </message>
+    <message>
+        <source>Wallet Data</source>
+        <extracomment>Name of the wallet data file format.</extracomment>
+        <translation type="unfinished">Подаци Новчаника</translation>
+    </message>
+    <message>
+        <source>Load Wallet Backup</source>
+        <extracomment>The title for Restore Wallet File Windows</extracomment>
+        <translation type="unfinished">Учитај резевну копију новчаника</translation>
+    </message>
+    <message>
+        <source>Restore Wallet</source>
+        <extracomment>Title of pop-up window shown when the user is attempting to restore a wallet.</extracomment>
+        <translation type="unfinished">Поврати Новчаник</translation>
     </message>
     <message>
         <source>Wallet Name</source>
@@ -983,6 +1040,13 @@ Signing is only possible with addresses of the type 'legacy'.</source>
     </message>
 </context>
 <context>
+    <name>MigrateWalletActivity</name>
+    <message>
+        <source>Migrate Wallet</source>
+        <translation type="unfinished">Пренеси Новчаник</translation>
+    </message>
+    </context>
+<context>
     <name>OpenWalletActivity</name>
     <message>
         <source>Open wallet failed</source>
@@ -1007,6 +1071,14 @@ Signing is only possible with addresses of the type 'legacy'.</source>
         <translation type="unfinished">Отвањаре новчаника &lt;b&gt;%1&lt;/b&gt;</translation>
     </message>
 </context>
+<context>
+    <name>RestoreWalletActivity</name>
+    <message>
+        <source>Restore Wallet</source>
+        <extracomment>Title of progress window which is displayed when wallets are being restored.</extracomment>
+        <translation type="unfinished">Поврати Новчаник</translation>
+    </message>
+    </context>
 <context>
     <name>WalletController</name>
     <message>
@@ -3645,6 +3717,11 @@ Note:  Since the fee is calculated on a per-byte basis, a fee rate of "100 satos
     <message>
         <source>Backup Wallet</source>
         <translation type="unfinished">Резервна копија новчаника</translation>
+    </message>
+    <message>
+        <source>Wallet Data</source>
+        <extracomment>Name of the wallet data file format.</extracomment>
+        <translation type="unfinished">Подаци Новчаника</translation>
     </message>
     <message>
         <source>Backup Failed</source>

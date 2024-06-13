@@ -29,6 +29,11 @@
         <source>&amp;Edit</source>
         <translation type="unfinished">&amp;Broyt</translation>
     </message>
+    <message>
+        <source>There was an error trying to save the address list to %1. Please try again.</source>
+        <extracomment>An error message. %1 is a stand-in argument for the name of the file we attempted to save to.</extracomment>
+        <translation type="unfinished">Villa við goyming av adressuskrá til %1. Vinaliga royn aftur.</translation>
+    </message>
     </context>
 <context>
     <name>AddressTableModel</name>
@@ -176,6 +181,10 @@
         <translation type="unfinished">Net-virksemi óvirkijað.</translation>
     </message>
     <message>
+        <source>&amp;Receive</source>
+        <translation type="unfinished">&amp;Móttak</translation>
+    </message>
+    <message>
         <source>Sign &amp;message…</source>
         <translation type="unfinished">&amp;Undirskriva  boðini</translation>
     </message>
@@ -277,7 +286,7 @@
     </message>
     <message>
         <source>Bytes:</source>
-        <translation type="unfinished">Byte:</translation>
+        <translation type="unfinished">Být:</translation>
     </message>
     <message>
         <source>Amount:</source>
@@ -378,15 +387,15 @@
     <message numerus="yes">
         <source>%n GB of space available</source>
         <translation type="unfinished">
-            <numerusform />
-            <numerusform />
+            <numerusform>%n GB av goymsluplássi tøkt</numerusform>
+            <numerusform>%n GB av goymsluplássi tøkt</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>(of %n GB needed)</source>
         <translation type="unfinished">
-            <numerusform />
-            <numerusform />
+            <numerusform>(av %n GB ið tørvur er á)</numerusform>
+            <numerusform>(av %n GB ið tørvur er á)</numerusform>
         </translation>
     </message>
     <message numerus="yes">
@@ -395,6 +404,10 @@
             <numerusform />
             <numerusform />
         </translation>
+    </message>
+    <message>
+        <source>Approximately %1 GB of data will be stored in this directory.</source>
+        <translation type="unfinished">Á leið %1 GB av dátum verða goymd í hesi fíluskránni.</translation>
     </message>
     <message numerus="yes">
         <source>(sufficient to restore backups %n day(s) old)</source>
@@ -855,7 +868,7 @@
     </message>
     <message>
         <source>Bytes:</source>
-        <translation type="unfinished">Byte:</translation>
+        <translation type="unfinished">Být:</translation>
     </message>
     <message>
         <source>Amount:</source>
@@ -872,6 +885,10 @@
     <message>
         <source>Custom change address</source>
         <translation type="unfinished">Adressa til vekslipening</translation>
+    </message>
+    <message>
+        <source>per kilobyte</source>
+        <translation type="unfinished">per kilobýt</translation>
     </message>
     <message>
         <source>Hide</source>
@@ -1280,12 +1297,52 @@
         <translation type="unfinished">Útgangandi sambond avmarkaði til i2p (-onlynet=i2p) men -i2psam er ikki ásett.</translation>
     </message>
     <message>
+        <source>Error loading %s</source>
+        <translation type="unfinished">Villa við innlesan %s</translation>
+    </message>
+    <message>
         <source>Error reading configuration file: %s</source>
         <translation type="unfinished">Villa við innlesing av uppsetanarfílu: %s</translation>
     </message>
     <message>
+        <source>Error reading from database, shutting down.</source>
+        <translation type="unfinished">Villa við innlesan av dátugrunni. Letur aftur.</translation>
+    </message>
+    <message>
+        <source>Error: Disk space is low for %s</source>
+        <translation type="unfinished">Villa: Tøkt disk goymslupláss og lítið til %s</translation>
+    </message>
+    <message>
+        <source>Error: Got key that was not hex: %s</source>
+        <translation type="unfinished">Villa: Fekk lykil ið ikki er sekstandatal: %s</translation>
+    </message>
+    <message>
+        <source>Error: Got value that was not hex: %s</source>
+        <translation type="unfinished">Villa: Læs virði ið ikki er sekstandatal: %s</translation>
+    </message>
+    <message>
+        <source>Error: No %s addresses available.</source>
+        <translation type="unfinished">Villa: Ongar %s adressur tøkar.</translation>
+    </message>
+    <message>
+        <source>Error: Unable to begin reading all records in the database</source>
+        <translation type="unfinished">Villa: Bar ikki til at byrja at lesa allar skrásetingar í dátugrunninum</translation>
+    </message>
+    <message>
+        <source>Error: Unable to parse version %u as a uint32_t</source>
+        <translation type="unfinished">Villa: Bar ikki til at tulkað útgávu %u sum uint32_t</translation>
+    </message>
+    <message>
+        <source>Error: Unable to read all records in the database</source>
+        <translation type="unfinished">Villa: Bar ikki til at lesa allar skrásetingar í dátugrunninum</translation>
+    </message>
+    <message>
         <source>Failed to listen on any port. Use -listen=0 if you want this.</source>
         <translation type="unfinished">Miseydnaðist at lurta á portri. Brúka -listen=0 um tú ynskir hetta.</translation>
+    </message>
+    <message>
+        <source>Listening for incoming connections failed (listen returned error %s)</source>
+        <translation type="unfinished">Lurtingin eftir inngangandi sambondum miseydnaðist (lurtingin gav villuna %s)</translation>
     </message>
     <message>
         <source>No addresses available</source>
