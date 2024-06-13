@@ -30,7 +30,7 @@
 #include <util/strencodings.h>
 #include <util/moneystr.h>
 #include <util/translation.h>
-#include <util/fees.h>
+#include <common/messages.h>
 #include <util/rbf.h>
 #include <util/fs_helpers.h>
 #include <wallet/hdwallet.h>
@@ -937,7 +937,7 @@ void ParseCoinControlOptions(const UniValue &obj, const CHDWallet *pwallet, CCoi
     if (obj.exists("estimate_mode")) {
         if (!obj["estimate_mode"].isStr())
             throw JSONRPCError(RPC_INVALID_PARAMETER, "estimate_mode parameter must be a string.");
-        if (!FeeModeFromString(obj["estimate_mode"].get_str(), coin_control.m_fee_mode))
+        if (!common::FeeModeFromString(obj["estimate_mode"].get_str(), coin_control.m_fee_mode))
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid estimate_mode parameter");
     }
 
@@ -3104,7 +3104,7 @@ static bool ParseOutput(
         output.pushKV("label", mi->second.GetLabel());
     }
     output.pushKV("vout", o.vout);
-    amounts.push_back(ToString(o.amount));
+    amounts.push_back(util::ToString(o.amount));
     return true;
 }
 
@@ -3541,7 +3541,7 @@ static void ParseRecords(
         } else {
             totalAmount += amount;
         }
-        amounts.push_back(ToString(amount));
+        amounts.push_back(util::ToString(amount));
         output.pushKVEnd("amount", ValueFromAmount(amount));
         output.pushKVEnd("vout", record.n);
 
@@ -3624,7 +3624,7 @@ static void ParseRecords(
         }
         entry.pushKVEnd("amount", ValueFromAmount(totalAmount));
     }
-    amounts.push_back(ToString(totalAmount));
+    amounts.push_back(util::ToString(totalAmount));
 
     if (search != "") {
         bool drop = true;
@@ -8318,7 +8318,7 @@ static RPCHelpMan createrawparttransaction()
     UniValue outputs = request.params[1].get_array();
 
     CMutableTransaction rawTx;
-    rawTx.nVersion = PARTICL_TXN_VERSION;
+    rawTx.version = PARTICL_TXN_VERSION;
 
 
     if (!request.params[2].isNull()) {
@@ -8781,7 +8781,7 @@ static RPCHelpMan fundrawtransactionfrom()
 
     // parse hex string from parameter
     CMutableTransaction tx;
-    tx.nVersion = PARTICL_TXN_VERSION;
+    tx.version = PARTICL_TXN_VERSION;
     if (!DecodeHexTx(tx, request.params[1].get_str(), true)) {
         throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "TX decode failed");
     }
@@ -9078,7 +9078,7 @@ static RPCHelpMan fundrawtransactionfrom()
     }
 
     if (nFee > pwallet->m_default_max_tx_fee) {
-        throw JSONRPCError(RPC_WALLET_ERROR, TransactionErrorString(TransactionError::MAX_FEE_EXCEEDED).original);
+        throw JSONRPCError(RPC_WALLET_ERROR, common::TransactionErrorString(node::TransactionError::MAX_FEE_EXCEEDED).original);
     }
 
     pwallet->mapTempRecords.clear();

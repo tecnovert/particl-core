@@ -39,8 +39,9 @@ class TxValidationState;
 class CHDWallet : public wallet::CWallet
 {
 public:
-    CHDWallet(interfaces::Chain* chain, const std::string& name, std::unique_ptr<WalletDatabase> database) : CWallet(chain, name, std::move(database))
+    CHDWallet(interfaces::Chain* chain, const std::string& name, std::unique_ptr<WalletDatabase> database, bool warn_no_active_acc=true) : CWallet(chain, name, std::move(database))
     {
+        m_warn_no_active_acc = warn_no_active_acc;
         m_default_address_type = OutputType::LEGACY; // In Particl segwit is enabled for all types
         m_fallback_fee = CFeeRate(DEFAULT_FALLBACK_FEE_PART);
     }
@@ -551,10 +552,10 @@ public:
     CTxDestination m_reward_address = CNoDestination();
     int nStakeLimitHeight = 0; // for regtest, don't stake above nStakeLimitHeight
 
-    mutable std::atomic_bool m_have_cached_stakeable_coins {false};
+    mutable std::atomic_bool m_have_cached_stakeable_coins{false};
     mutable std::vector<COutput> m_cached_stakeable_coins;
 
-    bool fUnlockForStakingOnly = false; // Use coldstaking instead
+    bool fUnlockForStakingOnly{false}; // Use coldstaking instead
 
     int64_t nRCTOutSelectionGroup1 = 5000;
     int64_t nRCTOutSelectionGroup2 = 50000;
@@ -570,17 +571,18 @@ public:
 
     int64_t m_smsg_fee_rate_target = 0;
     uint32_t m_smsg_difficulty_target = 0; // 0 = auto
-    bool m_is_only_instance = true; // Set to false if spends can happen in a different wallet
+    bool m_is_only_instance{true}; // Set to false if spends can happen in a different wallet
 
     size_t m_rescan_stealth_v1_lookahead = DEFAULT_STEALTH_LOOKAHEAD_SIZE;
     size_t m_rescan_stealth_v2_lookahead = DEFAULT_STEALTH_LOOKAHEAD_SIZE;
     size_t m_default_lookahead = DEFAULT_LOOKAHEAD_SIZE;
 
-    bool m_smsg_enabled = true;
+    bool m_smsg_enabled{true};
     CAmount m_min_stakeable_value = 1;  // Wallet will not try to stake outputs below this value
     CAmount m_min_owned_value = 0;      // Wallet will ignore outputs below this value
 
     std::map<CKeyID, uint32_t> m_derived_keys; // Allows multiple provisional derivations from the same extkey
+    bool m_warn_no_active_acc{true};
 
 private:
     void ParseAddressForMetaData(const CTxDestination &addr, COutputRecord &rec);

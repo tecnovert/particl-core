@@ -117,7 +117,7 @@ bool ImportOutputs(node::CBlockTemplate *pblocktemplate, int nHeight)
     }
 
     CMutableTransaction txn;
-    txn.nVersion = PARTICL_TXN_VERSION;
+    txn.version = PARTICL_TXN_VERSION;
     txn.SetType(TXN_COINBASE);
     txn.nLockTime = 0;
     txn.vin.push_back(CTxIn()); // null prevout
@@ -292,7 +292,7 @@ void ThreadStakeMiner(size_t nThreadID, std::vector<std::shared_ptr<wallet::CWal
     LogPrint(BCLog::POS, "Stake thread conditional delay set to %d.\n", stake_thread_cond_delay_ms);
 
     while (!fStopMinerProc) {
-        if (chainman->m_blockman.m_reindexing || chainman->m_blockman.m_importing || particl::fBusyImporting) {
+        if (!chainman->m_blockman.m_blockfiles_indexed || chainman->m_blockman.m_importing || particl::fBusyImporting) {
             fIsStaking = false;
             LogPrint(BCLog::POS, "%s: Block import/reindex.\n", __func__);
             condWaitFor(nThreadID, 30000);

@@ -43,7 +43,7 @@ BOOST_AUTO_TEST_CASE(oldversion_test)
     ss << TX_WITH_WITNESS(blk);
     ss >> TX_WITH_WITNESS(blkOut);
 
-    BOOST_CHECK(blk.vtx[0]->nVersion == blkOut.vtx[0]->nVersion);
+    BOOST_CHECK(blk.vtx[0]->version == blkOut.vtx[0]->version);
 }
 
 BOOST_AUTO_TEST_CASE(signature_test)
@@ -59,7 +59,7 @@ BOOST_AUTO_TEST_CASE(signature_test)
     CKeyID id = pk.GetID();
 
     CMutableTransaction txn;
-    txn.nVersion = PARTICL_TXN_VERSION;
+    txn.version = PARTICL_TXN_VERSION;
     txn.nLockTime = 0;
 
     int nBlockHeight = 22;
@@ -74,7 +74,7 @@ BOOST_AUTO_TEST_CASE(signature_test)
     txn.vpout.push_back(out1);
 
     CMutableTransaction txn2;
-    txn2.nVersion = PARTICL_TXN_VERSION;
+    txn2.version = PARTICL_TXN_VERSION;
     txn2.vin.push_back(CTxIn(txn.GetHash(), 0));
 
     std::vector<uint8_t> vchAmount(8);
@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE(particlchain_test)
     blk.nTime = 1487406900;
 
     CMutableTransaction txn;
-    txn.nVersion = PARTICL_TXN_VERSION;
+    txn.version = PARTICL_TXN_VERSION;
     txn.SetType(TXN_COINBASE);
     txn.nLockTime = 0;
     OUTPUT_PTR<CTxOutStandard> out0 = MAKE_OUTPUT<CTxOutStandard>();
@@ -179,7 +179,7 @@ BOOST_AUTO_TEST_CASE(varints)
 BOOST_AUTO_TEST_CASE(mixed_input_types)
 {
     CMutableTransaction txn;
-    txn.nVersion = PARTICL_TXN_VERSION;
+    txn.version = PARTICL_TXN_VERSION;
     BOOST_CHECK(txn.IsParticlVersion());
 
     CAmount txfee;
@@ -188,7 +188,7 @@ BOOST_AUTO_TEST_CASE(mixed_input_types)
     CCoinsViewCache inputs(&viewDummy);
 
     CMutableTransaction txnPrev;
-    txnPrev.nVersion = PARTICL_TXN_VERSION;
+    txnPrev.version = PARTICL_TXN_VERSION;
     BOOST_CHECK(txnPrev.IsParticlVersion());
 
     CScript scriptPubKey;
@@ -259,7 +259,7 @@ BOOST_AUTO_TEST_CASE(mixed_output_types)
     CCoinsViewCache inputs(&viewDummy);
 
     CMutableTransaction txnPrev;
-    txnPrev.nVersion = PARTICL_TXN_VERSION;
+    txnPrev.version = PARTICL_TXN_VERSION;
     BOOST_CHECK(txnPrev.IsParticlVersion());
 
     CScript scriptPubKey;
@@ -270,7 +270,7 @@ BOOST_AUTO_TEST_CASE(mixed_output_types)
     uint256 prevHash = txnPrev_c.GetHash();
 
     CMutableTransaction txn;
-    txn.nVersion = PARTICL_TXN_VERSION;
+    txn.version = PARTICL_TXN_VERSION;
     BOOST_CHECK(txn.IsParticlVersion());
     txn.vin.push_back(CTxIn(Txid::FromUint256(prevHash), 0));
 
@@ -359,7 +359,7 @@ BOOST_AUTO_TEST_CASE(smsg_fees)
     CCoinsViewCache inputs(&viewDummy);
 
     CMutableTransaction txnPrev;
-    txnPrev.nVersion = PARTICL_TXN_VERSION;
+    txnPrev.version = PARTICL_TXN_VERSION;
     BOOST_CHECK(txnPrev.IsParticlVersion());
 
     CScript scriptPubKey;
@@ -370,7 +370,7 @@ BOOST_AUTO_TEST_CASE(smsg_fees)
     uint256 prevHash = txnPrev_c.GetHash();
 
     CMutableTransaction txn;
-    txn.nVersion = PARTICL_TXN_VERSION;
+    txn.version = PARTICL_TXN_VERSION;
     BOOST_CHECK(txn.IsParticlVersion());
     txn.vin.push_back(CTxIn(Txid::FromUint256(prevHash), 0));
 
@@ -510,7 +510,7 @@ BOOST_AUTO_TEST_CASE(taproot)
 
     CScript tr_scriptPubKey = GetScriptForDestination(builder.GetOutput());
     CMutableTransaction txnPrev;
-    txnPrev.nVersion = PARTICL_TXN_VERSION;
+    txnPrev.version = PARTICL_TXN_VERSION;
     BOOST_CHECK(txnPrev.IsParticlVersion());
 
     txnPrev.vpout.push_back(MAKE_OUTPUT<CTxOutStandard>(1 * COIN, tr_scriptPubKey));
@@ -521,7 +521,7 @@ BOOST_AUTO_TEST_CASE(taproot)
 
     CScript tr_scriptPubKey_out = GetScriptForDestination(builder.GetOutput());
     CMutableTransaction txn;
-    txn.nVersion = PARTICL_TXN_VERSION;
+    txn.version = PARTICL_TXN_VERSION;
     txn.vin.push_back(CTxIn(Txid::FromUint256(prevHash), 0));
     txn.vpout.push_back(MAKE_OUTPUT<CTxOutStandard>(1 * COIN - txfee, tr_scriptPubKey_out));
 
@@ -594,14 +594,14 @@ BOOST_AUTO_TEST_CASE(taproot)
     // Add the txn/output being spent
     CScript tr_scriptPubKey = GetScriptForDestination(builder.GetOutput());
     CMutableTransaction txnPrev;
-    txnPrev.nVersion = PARTICL_TXN_VERSION;
+    txnPrev.version = PARTICL_TXN_VERSION;
     BOOST_CHECK(txnPrev.IsParticlVersion());
     txnPrev.vpout.push_back(MAKE_OUTPUT<CTxOutStandard>(1 * COIN, tr_scriptPubKey));
     CTransaction txnPrev_c(txnPrev);
     AddCoins(inputs, txnPrev_c, 1);
 
     CMutableTransaction txn;
-    txn.nVersion = PARTICL_TXN_VERSION;
+    txn.version = PARTICL_TXN_VERSION;
     txn.SetType(TXN_COINSTAKE);
     txn.nLockTime = 0;
     txn.vin.push_back(CTxIn(txnPrev.GetHash(), 0));
@@ -664,7 +664,7 @@ BOOST_AUTO_TEST_CASE(taproot)
     BOOST_CHECK(ret_without_taproot);
     }
 
-    txn.nVersion = PARTICL_TXN_VERSION;
+    txn.version = PARTICL_TXN_VERSION;
     txn.SetType(TXN_COINSTAKE);
     BOOST_CHECK(txn.IsCoinStake());
     {
@@ -695,14 +695,14 @@ BOOST_AUTO_TEST_CASE(taproot)
         // Add the txn/output being spent
         CScript tr_scriptPubKey = GetScriptForDestination(builder.GetOutput());
         CMutableTransaction txnPrev;
-        txnPrev.nVersion = PARTICL_TXN_VERSION;
+        txnPrev.version = PARTICL_TXN_VERSION;
         BOOST_CHECK(txnPrev.IsParticlVersion());
         txnPrev.vpout.push_back(MAKE_OUTPUT<CTxOutStandard>(1 * COIN, tr_scriptPubKey));
         CTransaction txnPrev_c(txnPrev);
         AddCoins(inputs, txnPrev_c, 1);
 
         CMutableTransaction txn;
-        txn.nVersion = PARTICL_TXN_VERSION;
+        txn.version = PARTICL_TXN_VERSION;
         txn.SetType(TXN_COINSTAKE);
         txn.nLockTime = 0;
         txn.vin.push_back(CTxIn(txnPrev.GetHash(), 0));

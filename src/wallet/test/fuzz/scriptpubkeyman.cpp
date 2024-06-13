@@ -23,7 +23,6 @@
 #include <validation.h>
 #include <wallet/scriptpubkeyman.h>
 #include <wallet/test/util.h>
-#include <util/message.h>
 #include <wallet/types.h>
 #include <wallet/wallet.h>
 #include <wallet/walletutil.h>

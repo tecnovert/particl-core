@@ -21,6 +21,7 @@
 #include <stdexcept>
 #include <vector>
 
+using util::SplitString;
 
 void ReadSigNetArgs(const ArgsManager& args, CChainParams::SigNetOptions& options)
 {

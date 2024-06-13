@@ -33,8 +33,7 @@
 #include <smsg/smessage.h>
 #include <txdb.h>
 #include <txmempool.h>
-#include <util/fees.h>
-#include <util/message.h>
+#include <common/messages.h>
 #include <util/moneystr.h>
 #include <util/rbf.h>
 #include <util/translation.h>
@@ -100,7 +99,7 @@ static void AppendKey(const CHDWallet *pw, CKey &key, uint32_t nChild, UniValue 
 
     bool fHardened = IsHardened(nChild);
     ClearHardenedBit(nChild);
-    keyobj.pushKV("path", ToString((int64_t)nChild) + (fHardened ? "'" : ""));
+    keyobj.pushKV("path", util::ToString((int64_t)nChild) + (fHardened ? "'" : ""));
     keyobj.pushKV("address", EncodeDestination(PKHash(idk)));
     keyobj.pushKV("privkey", CBitcoinSecret(key).ToString());
 
@@ -600,7 +599,7 @@ bool CHDWallet::DumpJson(UniValue &rv, std::string &sError)
 
                 uint32_t nScanKey = sxPacked.aks.nScanKey;
                 ClearHardenedBit(nScanKey);
-                sxAddr.pushKV("scan_key_offset", ToString((int64_t)nScanKey)+"'");
+                sxAddr.pushKV("scan_key_offset", util::ToString((int64_t)nScanKey)+"'");
 
                 std::map<CTxDestination, CAddressBookData>::const_iterator mi = m_address_book.find(sx);
                 if (mi != m_address_book.end()) {
@@ -1651,7 +1650,7 @@ DBErrors CHDWallet::LoadWallet()
             */
         }
     }
-    if (idDefaultAccount.IsNull() && m_chain) { // If !m_chain, probably running from particl-wallet
+    if (idDefaultAccount.IsNull() && m_chain && m_warn_no_active_acc) { // If !m_chain, probably running from particl-wallet
         std::string sWarning = "Warning: Wallet " + GetName() + " has no active account, please view the readme.";
 #ifndef ENABLE_QT
         tfm::format(std::cout, "%s\n", sWarning.c_str());
@@ -3788,7 +3787,7 @@ int CHDWallet::AddStandardInputs(CWalletTx &wtx, CTransactionRecord &rtx,
     wtx.fTimeReceivedIsTxTime = true;
     wtx.fFromMe = true;
     CMutableTransaction txNew;
-    txNew.nVersion = PARTICL_TXN_VERSION;
+    txNew.version = PARTICL_TXN_VERSION;
     txNew.vout.clear();
 
     // Discourage fee sniping. See CWallet::CreateTransaction
@@ -4295,7 +4294,7 @@ int CHDWallet::AddStandardInputs(CWalletTx &wtx, CTransactionRecord &rtx,
     double all_est = feeCalc.est.pass.totalConfirmed + feeCalc.est.pass.inMempool + feeCalc.est.pass.leftMempool;
     if (all_est == 0.0) all_est = 1.0;
     WalletLogPrintf("Fee Calculation: Fee:%d Bytes:%u Needed:%d Tgt:%d (requested %d) Reason:\"%s\" Decay %.5f: Estimation: (%g - %g) %.2f%% %.1f/(%.1f %d mem %.1f out) Fail: (%g - %g) %.2f%% %.1f/(%.1f %d mem %.1f out)\n",
-              nFeeRet, nBytes, nFeeNeeded, feeCalc.returnedTarget, feeCalc.desiredTarget, StringForFeeReason(feeCalc.reason), feeCalc.est.decay,
+              nFeeRet, nBytes, nFeeNeeded, feeCalc.returnedTarget, feeCalc.desiredTarget, common::StringForFeeReason(feeCalc.reason), feeCalc.est.decay,
               feeCalc.est.pass.start, feeCalc.est.pass.end,
               100 * feeCalc.est.pass.withinTarget / all_est,
               feeCalc.est.pass.withinTarget, feeCalc.est.pass.totalConfirmed, feeCalc.est.pass.inMempool, feeCalc.est.pass.leftMempool,
@@ -4419,7 +4418,7 @@ int CHDWallet::AddBlindedInputs(CWalletTx &wtx, CTransactionRecord &rtx,
     wtx.fTimeReceivedIsTxTime = true;
     wtx.fFromMe = true;
     CMutableTransaction txNew;
-    txNew.nVersion = PARTICL_TXN_VERSION;
+    txNew.version = PARTICL_TXN_VERSION;
     txNew.vout.clear();
 
     // Discourage fee sniping. See CWallet::CreateTransaction
@@ -4856,7 +4855,7 @@ int CHDWallet::AddBlindedInputs(CWalletTx &wtx, CTransactionRecord &rtx,
     double all_est = feeCalc.est.pass.totalConfirmed + feeCalc.est.pass.inMempool + feeCalc.est.pass.leftMempool;
     if (all_est == 0.0) all_est = 1.0;
     WalletLogPrintf("Fee Calculation: Fee:%d Bytes:%u Needed:%d Tgt:%d (requested %d) Reason:\"%s\" Decay %.5f: Estimation: (%g - %g) %.2f%% %.1f/(%.1f %d mem %.1f out) Fail: (%g - %g) %.2f%% %.1f/(%.1f %d mem %.1f out)\n",
-              nFeeRet, nBytes, nFeeNeeded, feeCalc.returnedTarget, feeCalc.desiredTarget, StringForFeeReason(feeCalc.reason), feeCalc.est.decay,
+              nFeeRet, nBytes, nFeeNeeded, feeCalc.returnedTarget, feeCalc.desiredTarget, common::StringForFeeReason(feeCalc.reason), feeCalc.est.decay,
               feeCalc.est.pass.start, feeCalc.est.pass.end,
               100 * feeCalc.est.pass.withinTarget / all_est,
               feeCalc.est.pass.withinTarget, feeCalc.est.pass.totalConfirmed, feeCalc.est.pass.inMempool, feeCalc.est.pass.leftMempool,
@@ -5243,7 +5242,7 @@ int CHDWallet::AddAnonInputs(CWalletTx &wtx, CTransactionRecord &rtx,
     wtx.fTimeReceivedIsTxTime = true;
     wtx.fFromMe = true;
     CMutableTransaction txNew;
-    txNew.nVersion = PARTICL_TXN_VERSION;
+    txNew.version = PARTICL_TXN_VERSION;
     txNew.vout.clear();
 
     txNew.nLockTime = 0;
@@ -5722,7 +5721,7 @@ int CHDWallet::AddAnonInputs(CWalletTx &wtx, CTransactionRecord &rtx,
     double all_est = feeCalc.est.pass.totalConfirmed + feeCalc.est.pass.inMempool + feeCalc.est.pass.leftMempool;
     if (all_est == 0.0) all_est = 1.0;
     WalletLogPrintf("Fee Calculation: Fee:%d Bytes:%u Needed:%d Tgt:%d (requested %d) Reason:\"%s\" Decay %.5f: Estimation: (%g - %g) %.2f%% %.1f/(%.1f %d mem %.1f out) Fail: (%g - %g) %.2f%% %.1f/(%.1f %d mem %.1f out)\n",
-              nFeeRet, nBytes, nFeeNeeded, feeCalc.returnedTarget, feeCalc.desiredTarget, StringForFeeReason(feeCalc.reason), feeCalc.est.decay,
+              nFeeRet, nBytes, nFeeNeeded, feeCalc.returnedTarget, feeCalc.desiredTarget, common::StringForFeeReason(feeCalc.reason), feeCalc.est.decay,
               feeCalc.est.pass.start, feeCalc.est.pass.end,
               100 * feeCalc.est.pass.withinTarget / all_est,
               feeCalc.est.pass.withinTarget, feeCalc.est.pass.totalConfirmed, feeCalc.est.pass.inMempool, feeCalc.est.pass.leftMempool,
@@ -8922,7 +8921,7 @@ bool CHDWallet::FundTransaction(const CMutableTransaction& tx, CTransactionRef &
     }
 
     if (nFeeRet > this->m_default_max_tx_fee) {
-        error = Untranslated(TransactionErrorString(TransactionError::MAX_FEE_EXCEEDED).original);
+        error = Untranslated(common::TransactionErrorString(node::TransactionError::MAX_FEE_EXCEEDED).original);
         return false;
     }
 
@@ -11325,7 +11324,7 @@ bool CHDWallet::AddToRecord(CTransactionRecord &rtxIn, const CTransaction &tx, c
     std::string strCmd = m_notify_tx_changed_script;
 
     if (!strCmd.empty()) {
-        ReplaceAll(strCmd, "%s", txhash.GetHex());
+        util::ReplaceAll(strCmd, "%s", txhash.GetHex());
         std::thread t(runCommand, strCmd);
         t.detach(); // thread runs free
     }
@@ -13582,7 +13581,7 @@ bool CHDWallet::CreateCoinStake(unsigned int nBits, int64_t nTime, int nBlockHei
             txNew.vpout.clear();
 
             // Mark as coin stake transaction
-            txNew.nVersion = PARTICL_TXN_VERSION;
+            txNew.version = PARTICL_TXN_VERSION;
             txNew.SetType(TXN_COINSTAKE);
 
             txNew.vin.push_back(CTxIn(pcoin.outpoint));

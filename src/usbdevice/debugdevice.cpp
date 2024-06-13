@@ -7,7 +7,6 @@
 #include <hash.h>
 #include <key_io.h>
 #include <univalue.h>
-#include <util/message.h>
 #include <validation.h>
 
 namespace usb_device {

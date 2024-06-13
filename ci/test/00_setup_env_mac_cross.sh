@@ -9,10 +9,10 @@ export LC_ALL=C.UTF-8
 export SDK_URL=${SDK_URL:-https://bitcoincore.org/depends-sources/sdks}
 
 export CONTAINER_NAME=ci_macos_cross
-export CI_IMAGE_NAME_TAG="docker.io/ubuntu:22.04"
+export CI_IMAGE_NAME_TAG="docker.io/ubuntu:24.04"
 export HOST=x86_64-apple-darwin
 export DEP_OPTS="PROTOBUF=1"
-export PACKAGES="zip libprotobuf-dev protobuf-compiler"
+export PACKAGES="clang lld llvm zip libprotobuf-dev protobuf-compiler"
 export XCODE_VERSION=15.0
 export XCODE_BUILD_ID=15A240d
 export RUN_UNIT_TESTS=false

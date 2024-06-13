@@ -1781,9 +1781,9 @@ static RPCHelpMan smsgbuckets()
             for (it = smsgModule.buckets.begin(); it != smsgModule.buckets.end(); ++it) {
                 const std::set<smsg::SecMsgToken> &tokenSet = it->second.setTokens;
 
-                std::string sBucket = ToString(it->first);
+                std::string sBucket = util::ToString(it->first);
                 std::string sFile = sBucket + "_01.dat";
-                std::string sHash = ToString((int64_t)it->second.hash);
+                std::string sHash = util::ToString((int64_t)it->second.hash);
 
                 size_t nActiveMessages = it->second.CountActive(chainman.GetAdjustedTimeInt());
 
@@ -1840,7 +1840,7 @@ static RPCHelpMan smsgbuckets()
             LOCK(smsgModule.cs_smsg);
             std::map<int64_t, smsg::SecMsgBucket>::iterator it;
             for (it = smsgModule.buckets.begin(); it != smsgModule.buckets.end(); ++it) {
-                std::string sFile = ToString(it->first) + "_01.dat";
+                std::string sFile = util::ToString(it->first) + "_01.dat";
 
                 try {
                     fs::path fullPath = gArgs.GetDataDirNet() / fs::PathFromString(smsg::STORE_DIR) / fs::PathFromString(sFile);

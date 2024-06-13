@@ -276,9 +276,7 @@ void TxToUniv(const CTransaction& tx, const uint256& block_hash, UniValue& entry
     uint256 txid = tx.GetHash();
     entry.pushKV("txid", txid.GetHex());
     entry.pushKV("hash", tx.GetWitnessHash().GetHex());
-    // Transaction version is actually unsigned in consensus checks, just signed in memory,
-    // so cast to unsigned before giving it to the user.
-    entry.pushKV("version", static_cast<int64_t>(static_cast<uint32_t>(tx.nVersion)));
+    entry.pushKV("version", tx.version);
     entry.pushKV("size", tx.GetTotalSize());
     entry.pushKV("vsize", (GetTransactionWeight(tx) + WITNESS_SCALE_FACTOR - 1) / WITNESS_SCALE_FACTOR);
     entry.pushKV("weight", GetTransactionWeight(tx));

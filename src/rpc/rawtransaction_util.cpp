@@ -24,7 +24,7 @@
 
 void AddInputs(CMutableTransaction& rawTx, const UniValue& inputs_in, std::optional<bool> rbf)
 {
-    rawTx.nVersion = fParticlMode ? PARTICL_TXN_VERSION : BTC_TXN_VERSION;
+    rawTx.version = fParticlMode ? PARTICL_TXN_VERSION : BTC_TXN_VERSION;
     UniValue inputs;
     if (inputs_in.isNull()) {
         inputs = UniValue::VARR;

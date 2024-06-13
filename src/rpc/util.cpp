@@ -7,9 +7,12 @@
 #include <clientversion.h>
 #include <core_io.h>
 #include <common/args.h>
+#include <common/messages.h>
+#include <common/types.h>
 #include <consensus/amount.h>
 #include <script/interpreter.h>
 #include <key_io.h>
+#include <node/types.h>
 #include <outputtype.h>
 #include <rpc/util.h>
 #include <script/descriptor.h>
@@ -29,6 +32,14 @@
 #include <string_view>
 #include <tuple>
 #include <utility>
+
+using common::PSBTError;
+using common::PSBTErrorString;
+using common::TransactionErrorString;
+using node::TransactionError;
+using util::Join;
+using util::SplitString;
+using util::TrimString;
 
 const std::string UNIX_EPOCH_TIME = "UNIX epoch time";
 const std::string EXAMPLE_ADDRESS_BTC[2] = {"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl", "bc1q02ad21edsxd23d32dfgqqsz4vv4nmtfzuklhy3"};
@@ -405,7 +416,7 @@ bool GetBool(const UniValue &uv)
         throw std::runtime_error("String not a boolean value.");
     }
     return rv;
-};
+}
 
 uint32_t GetUInt32(const UniValue &uv)
 {
@@ -421,7 +432,19 @@ uint32_t GetUInt32(const UniValue &uv)
         throw std::runtime_error("String not a numeric value.");
     }
     return rv;
-};
+}
+
+RPCErrorCode RPCErrorFromPSBTError(PSBTError err)
+{
+    switch (err) {
+        case PSBTError::UNSUPPORTED:
+            return RPC_INVALID_PARAMETER;
+        case PSBTError::SIGHASH_MISMATCH:
+            return RPC_DESERIALIZATION_ERROR;
+        default: break;
+    }
+    return RPC_TRANSACTION_ERROR;
+}
 
 RPCErrorCode RPCErrorFromTransactionError(TransactionError terr)
 {
@@ -430,16 +453,14 @@ RPCErrorCode RPCErrorFromTransactionError(TransactionError terr)
             return RPC_TRANSACTION_REJECTED;
         case TransactionError::ALREADY_IN_CHAIN:
             return RPC_TRANSACTION_ALREADY_IN_CHAIN;
-        case TransactionError::P2P_DISABLED:
-            return RPC_CLIENT_P2P_DISABLED;
-        case TransactionError::INVALID_PSBT:
-        case TransactionError::PSBT_MISMATCH:
-            return RPC_INVALID_PARAMETER;
-        case TransactionError::SIGHASH_MISMATCH:
-            return RPC_DESERIALIZATION_ERROR;
         default: break;
     }
     return RPC_TRANSACTION_ERROR;
+}
+
+UniValue JSONRPCPSBTError(PSBTError err)
+{
+    return JSONRPCError(RPCErrorFromPSBTError(err), PSBTErrorString(err).original);
 }
 
 UniValue JSONRPCTransactionError(TransactionError terr, const std::string& err_string)
@@ -837,7 +858,7 @@ std::string RPCHelpMan::ToString() const
         if (arg.m_opts.hidden) break; // Any arg that follows is also hidden
 
         // Push named argument name and description
-        sections.m_sections.emplace_back(::ToString(i + 1) + ". " + arg.GetFirstName(), arg.ToDescriptionString(/*is_named_arg=*/true));
+        sections.m_sections.emplace_back(util::ToString(i + 1) + ". " + arg.GetFirstName(), arg.ToDescriptionString(/*is_named_arg=*/true));
         sections.m_max_pad = std::max(sections.m_max_pad, sections.m_sections.back().m_left.size());
 
         // Recursively push nested args

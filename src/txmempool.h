@@ -49,12 +49,13 @@ class CBlockIndex;
 class CChain;
 class ValidationSignals;
 
+struct bilingual_str;
+
 enum eMemPoolFlags
 {
     MPE_CT                 = (1 << 1),
     MPE_RINGCT             = (1 << 2),
 };
-
 
 /** Fake height value used in Coin to signify they are only in the memory pool (since 0.8) */
 static const uint32_t MEMPOOL_HEIGHT = 0x7FFFFFFF;
@@ -471,7 +472,7 @@ public:
      * accepting transactions becomes O(N^2) where N is the number of transactions
      * in the pool.
      */
-    explicit CTxMemPool(const Options& opts);
+    explicit CTxMemPool(Options opts, bilingual_str& error);
 
     /**
      * If sanity-checking is turned on, check makes sure the pool is

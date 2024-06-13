@@ -466,7 +466,7 @@ int CLedgerDevice::PrepareTransaction(CMutableTransaction &tx, const CCoinsViewC
     in[apduSize++] = 0x02; // segwit
     in[apduSize++] = 4 + GetSizeOfVarInt<VarIntMode::DEFAULT>(tx.vin.size());
 
-    in[apduSize++] = tx.nVersion;
+    in[apduSize++] = tx.version;
     in[apduSize++] = 0x00;
     in[apduSize++] = 0x00;
     in[apduSize++] = 0x00;

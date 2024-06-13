@@ -894,7 +894,7 @@ int CTrezorDevice::CompleteTransaction(int change_pos, const std::vector<uint32_
 
             const auto msg_tx = msg.mutable_tx();
 
-            msg_tx->set_version(prev_tx.nVersion);
+            msg_tx->set_version(prev_tx.version);
             msg_tx->set_lock_time(prev_tx.nLockTime);
             msg_tx->set_inputs_cnt(prev_tx.vin.size());
             msg_tx->set_outputs_cnt(prev_tx.vpout.size());

@@ -352,7 +352,7 @@ BOOST_AUTO_TEST_CASE(test_TxOutRingCT)
     // ---------------- Serialize Transaction with No Segwit ---------------------
     CMutableTransaction tx;
     tx.vpout.emplace_back(txout);
-    tx.nVersion = 2 | PARTICL_TXN_VERSION;
+    tx.version = 2 | PARTICL_TXN_VERSION;
     BOOST_CHECK_MESSAGE(tx.IsParticlVersion(), "failed IsParticlVersion");
 
     //The peer that sends the block sets the version that the data stream will use!
@@ -552,7 +552,7 @@ BOOST_AUTO_TEST_CASE(opiscoinstake_test)
     SignatureData sigdataA, sigdataB, sigdataC;
 
     CMutableTransaction txn;
-    txn.nVersion = PARTICL_TXN_VERSION;
+    txn.version = PARTICL_TXN_VERSION;
     txn.SetType(TXN_COINSTAKE);
     txn.nLockTime = 0;
 
@@ -585,7 +585,7 @@ BOOST_AUTO_TEST_CASE(opiscoinstake_test)
     BOOST_CHECK(VerifyScript(scriptSig, script, &sigdataA.scriptWitness, nFlags, MutableTransactionSignatureChecker(&txn, 0, vchAmount, MissingDataBehavior::ASSERT_FAIL), &serror));
 
 
-    txn.nVersion = PARTICL_TXN_VERSION;
+    txn.version = PARTICL_TXN_VERSION;
     txn.SetType(TXN_STANDARD);
     BOOST_CHECK(!txn.IsCoinStake());
 
