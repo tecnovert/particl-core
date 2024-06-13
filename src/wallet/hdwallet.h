@@ -40,8 +40,9 @@ class TxValidationState;
 class CHDWallet : public wallet::CWallet
 {
 public:
-    CHDWallet(interfaces::Chain* chain, const std::string& name, const ArgsManager& args, std::unique_ptr<WalletDatabase> database) : CWallet(chain, name, args, std::move(database))
+    CHDWallet(interfaces::Chain* chain, const std::string& name, const ArgsManager& args, std::unique_ptr<WalletDatabase> database, bool warn_no_active_acc=true) : CWallet(chain, name, args, std::move(database))
     {
+        m_warn_no_active_acc = warn_no_active_acc;
         m_default_address_type = OutputType::LEGACY; // In Particl segwit is enabled for all types
         m_fallback_fee = CFeeRate(DEFAULT_FALLBACK_FEE_PART);
     }
@@ -574,6 +575,8 @@ public:
     CAmount m_min_owned_value = 0;      // Wallet will ignore outputs below this value
 
     std::map<CKeyID, uint32_t> m_derived_keys; // Allows multiple provisional derivations from the same extkey
+
+    bool m_warn_no_active_acc{true};
 
 private:
     void ParseAddressForMetaData(const CTxDestination &addr, COutputRecord &rec);
