@@ -24,6 +24,7 @@ HDWalletTestingSetup::HDWalletTestingSetup(const std::string &chainName):
     m_wallet_loader{interfaces::MakeWalletLoader(*m_node.chain, *Assert(m_node.args))}
 {
     pwalletMain = std::make_shared<CHDWallet>(m_node.chain.get(), "", CreateMockWalletDatabaseBDB());
+    pwalletMain->m_warn_no_active_acc = false;
     WalletContext& wallet_context = *m_wallet_loader->context();
     AddWallet(wallet_context, pwalletMain);
     pwalletMain->LoadWallet();

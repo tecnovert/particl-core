@@ -2999,7 +2999,7 @@ std::unique_ptr<WalletDatabase> MakeWalletDatabase(const std::string& name, cons
     return MakeDatabase(wallet_path, options, status, error_string);
 }
 
-std::shared_ptr<CWallet> CWallet::Create(WalletContext& context, const std::string& name, std::unique_ptr<WalletDatabase> database, uint64_t wallet_creation_flags, bilingual_str& error, std::vector<bilingual_str>& warnings)
+std::shared_ptr<CWallet> CWallet::Create(WalletContext& context, const std::string& name, std::unique_ptr<WalletDatabase> database, uint64_t wallet_creation_flags, bilingual_str& error, std::vector<bilingual_str>& warnings, bool warn_no_active_acc)
 {
     interfaces::Chain* chain = context.chain;
     ArgsManager& args = *Assert(context.args);
@@ -3009,7 +3009,7 @@ std::shared_ptr<CWallet> CWallet::Create(WalletContext& context, const std::stri
     // TODO: Can't use std::make_shared because we need a custom deleter but
     // should be possible to use std::allocate_shared.
     std::shared_ptr<CWallet> walletInstance(fParticlMode
-        ? std::shared_ptr<CWallet>(new CHDWallet(chain, name, std::move(database)), ReleaseWallet)
+        ? std::shared_ptr<CWallet>(new CHDWallet(chain, name, std::move(database), warn_no_active_acc), ReleaseWallet)
         : std::shared_ptr<CWallet>(new CWallet(chain, name, std::move(database)), ReleaseWallet));
 
     walletInstance->m_keypool_size = std::max(args.GetIntArg("-keypool", DEFAULT_KEYPOOL_SIZE), int64_t{1});
