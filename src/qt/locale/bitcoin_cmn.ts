@@ -54,14 +54,6 @@
         <translation type="unfinished">选择(&amp;H)</translation>
     </message>
     <message>
-        <source>Sending addresses</source>
-        <translation type="unfinished">发送地址</translation>
-    </message>
-    <message>
-        <source>Receiving addresses</source>
-        <translation type="unfinished">收款地址</translation>
-    </message>
-    <message>
         <source>These are your Particl addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
         <translation type="unfinished">这些是你的比特币支付地址。在发送之前，一定要核对金额和接收地址。</translation>
     </message>
@@ -725,8 +717,16 @@ Signing is only possible with addresses of the type 'legacy'.</source>
         <translation type="unfinished">关闭所有钱包</translation>
     </message>
     <message>
+        <source>Migrate Wallet</source>
+        <translation type="unfinished">迁移钱包</translation>
+    </message>
+    <message>
+        <source>Migrate a wallet</source>
+        <translation type="unfinished">迁移一个钱包</translation>
+    </message>
+    <message>
         <source>Show the %1 help message to get a list with possible Particl command-line options</source>
-        <translation type="unfinished">显示%1帮助消息以获得可能包含Particl命令行选项的列表</translation>
+        <translation type="unfinished">显示 %1 帮助信息，获取可用命令行选项列表</translation>
     </message>
     <message>
         <source>&amp;Mask values</source>

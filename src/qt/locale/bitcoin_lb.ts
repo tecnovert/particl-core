@@ -44,7 +44,7 @@
     <message>
         <source>These are your Particl addresses for receiving payments. Use the 'Create new receiving address' button in the receive tab to create new addresses.
 Signing is only possible with addresses of the type 'legacy'.</source>
-        <translation type="unfinished">Dat sinn är Particl-Adressen fir Zuelungen ze erhuelen. Benotzt de 'Nei Erhaltsadress erstellen' Knäppchen am 'Erhalts'-Tab, fir nei Adressen ze erstellen.
+        <translation type="unfinished">Dat sinn är Particl-Adressen fir Zuelungen ze erhuelen. Benotzt de 'Nei Erhaltsadress erstellen' Knäppchen am 'Erhalts'-Tab, fir nei Adressen ze erstellen. 
 D'Signatur ass nëmmen mat Adressen vum Typ 'legacy' méiglech.</translation>
     </message>
     <message>

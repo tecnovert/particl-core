@@ -54,14 +54,6 @@
         <translation type="unfinished">c&amp;zaɓi</translation>
     </message>
     <message>
-        <source>Sending addresses</source>
-        <translation type="unfinished">adireshin aikawa</translation>
-    </message>
-    <message>
-        <source>Receiving addresses</source>
-        <translation type="unfinished">Adireshi da za a karba dashi</translation>
-    </message>
-    <message>
         <source>These are your Particl addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
         <translation type="unfinished">Waɗannan adiresoshin Particl ne don tura kuɗi particl . ka tabbatar da cewa adreshin daidai ne kamin ka tura abua a ciki</translation>
     </message>

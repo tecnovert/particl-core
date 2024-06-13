@@ -23,7 +23,7 @@
     </message>
     <message>
         <source>C&amp;lose</source>
-        <translation type="unfinished">&amp;Schließen</translation>
+        <translation type="unfinished">&amp;Schliessen</translation>
     </message>
     <message>
         <source>Delete the currently selected address from the list</source>
@@ -56,14 +56,6 @@
     <message>
         <source>C&amp;hoose</source>
         <translation type="unfinished">&amp;Auswählen</translation>
-    </message>
-    <message>
-        <source>Sending addresses</source>
-        <translation type="unfinished">Sendeadressen</translation>
-    </message>
-    <message>
-        <source>Receiving addresses</source>
-        <translation type="unfinished">Empfangsadressen</translation>
     </message>
     <message>
         <source>These are your Particl addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
@@ -455,6 +447,18 @@ Das Signieren ist nur mit Adressen vom Typ 'Legacy' möglich.</translation>
         <translation type="unfinished">Neues Wallet erstellen</translation>
     </message>
     <message>
+        <source>&amp;Minimize</source>
+        <translation type="unfinished">&amp;Minimieren</translation>
+    </message>
+    <message>
+        <source>&amp;Send</source>
+        <translation type="unfinished">&amp;Senden</translation>
+    </message>
+    <message>
+        <source>&amp;Receive</source>
+        <translation type="unfinished">&amp;Empfangen</translation>
+    </message>
+    <message>
         <source>&amp;Options…</source>
         <translation type="unfinished">weitere Möglichkeiten/Einstellungen </translation>
     </message>
@@ -542,6 +546,14 @@ Das Signieren ist nur mit Adressen vom Typ 'Legacy' möglich.</translation>
     <message>
         <source>Close all wallets</source>
         <translation type="unfinished">Schließe alle Wallets</translation>
+    </message>
+    <message>
+        <source>Migrate Wallet</source>
+        <translation type="unfinished">Wallet migrieren</translation>
+    </message>
+    <message>
+        <source>Migrate a wallet</source>
+        <translation type="unfinished">Eine Wallet Migrieren</translation>
     </message>
     <message>
         <source>Show the %1 help message to get a list with possible Particl command-line options</source>
@@ -4212,7 +4224,7 @@ Die Wallet könnte manipuliert oder in böser Absicht erstellt worden sein.
 The wallet might had been created on a newer version.
 Please try running the latest software version.
 </source>
-        <translation type="unfinished">Nicht erkannter Deskriptor gefunden. Beim laden vom Wallet %s
+        <translation type="unfinished">Nicht erkannter Deskriptor gefunden. Beim laden vom Wallet %s 
 
 Die Wallet wurde möglicherweise in einer neueren Version erstellt.
 Bitte mit der neuesten Softwareversion versuchen.</translation>

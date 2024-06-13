@@ -34,14 +34,6 @@
         <translation type="unfinished">Fidio ny adiresy handraisana vola</translation>
     </message>
     <message>
-        <source>Sending addresses</source>
-        <translation type="unfinished">Adiresy fandefasana</translation>
-    </message>
-    <message>
-        <source>Receiving addresses</source>
-        <translation type="unfinished">Adiresy fandraisana</translation>
-    </message>
-    <message>
         <source>These are your Particl addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
         <translation type="unfinished">Ireto ny adiresy Particl natokana handefasanao vola. Hamarino hatrany ny tarehimarika sy ny adiresy handefasana alohan'ny handefa vola.</translation>
     </message>

@@ -58,14 +58,6 @@
         <translation type="unfinished">C&amp;hoisir</translation>
     </message>
     <message>
-        <source>Sending addresses</source>
-        <translation type="unfinished">Adresses d’envoi</translation>
-    </message>
-    <message>
-        <source>Receiving addresses</source>
-        <translation type="unfinished">Adresses de réception</translation>
-    </message>
-    <message>
         <source>These are your Particl addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
         <translation type="unfinished">Ce sont vos adresses Particl pour envoyer des paiements. Vérifiez toujours le montant et l’adresse du destinataire avant d’envoyer des pièces.</translation>
     </message>
@@ -729,8 +721,16 @@ La signature n'est possible qu'avec les adresses de type "patrimoine".</translat
         <translation type="unfinished">Fermer tous les porte-monnaie</translation>
     </message>
     <message>
+        <source>Migrate Wallet</source>
+        <translation type="unfinished">Migrer le portefeuille</translation>
+    </message>
+    <message>
+        <source>Migrate a wallet</source>
+        <translation type="unfinished">Migrer un portefeuilles </translation>
+    </message>
+    <message>
         <source>Show the %1 help message to get a list with possible Particl command-line options</source>
-        <translation type="unfinished">Afficher le message d’aide de %1 pour obtenir la liste des options possibles de ligne de commande Particl</translation>
+        <translation type="unfinished">Afficher le message d’aide de %1 pour obtenir la liste des options possibles en ligne de commande Particl</translation>
     </message>
     <message>
         <source>&amp;Mask values</source>

@@ -725,8 +725,16 @@ Signing is only possible with addresses of the type 'legacy'.</source>
         <translation type="unfinished">关闭所有钱包</translation>
     </message>
     <message>
+        <source>Migrate Wallet</source>
+        <translation type="unfinished">迁移钱包</translation>
+    </message>
+    <message>
+        <source>Migrate a wallet</source>
+        <translation type="unfinished">迁移一个钱包</translation>
+    </message>
+    <message>
         <source>Show the %1 help message to get a list with possible Particl command-line options</source>
-        <translation type="unfinished">显示%1帮助消息以获得可能包含Particl命令行选项的列表</translation>
+        <translation type="unfinished">显示 %1 帮助信息，获取可用命令行选项列表</translation>
     </message>
     <message>
         <source>&amp;Mask values</source>

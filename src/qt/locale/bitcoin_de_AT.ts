@@ -58,14 +58,6 @@
         <translation type="unfinished">&amp;Auswählen</translation>
     </message>
     <message>
-        <source>Sending addresses</source>
-        <translation type="unfinished">Sendeadressen</translation>
-    </message>
-    <message>
-        <source>Receiving addresses</source>
-        <translation type="unfinished">Empfangsadressen</translation>
-    </message>
-    <message>
         <source>These are your Particl addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
         <translation type="unfinished">Dies sind Ihre Particl-Adressen zum Tätigen von Überweisungen. Bitte prüfen Sie den Betrag und die Adresse des Empfängers, bevor Sie Particl überweisen.</translation>
     </message>
@@ -542,6 +534,14 @@ Das Signieren ist nur mit Adressen vom Typ 'Legacy' möglich.</translation>
     <message>
         <source>Close all wallets</source>
         <translation type="unfinished">Schließe alle Wallets</translation>
+    </message>
+    <message>
+        <source>Migrate Wallet</source>
+        <translation type="unfinished">Wallet migrieren</translation>
+    </message>
+    <message>
+        <source>Migrate a wallet</source>
+        <translation type="unfinished">Eine Wallet Migrieren</translation>
     </message>
     <message>
         <source>Show the %1 help message to get a list with possible Particl command-line options</source>
@@ -4208,7 +4208,7 @@ Die Wallet könnte manipuliert oder in böser Absicht erstellt worden sein.
 The wallet might had been created on a newer version.
 Please try running the latest software version.
 </source>
-        <translation type="unfinished">Nicht erkannter Deskriptor gefunden. Beim Laden vom Wallet %s
+        <translation type="unfinished">Nicht erkannter Deskriptor gefunden. Beim Laden vom Wallet %s 
 
 Die Wallet wurde möglicherweise in einer neueren Version erstellt.
 Bitte mit der neuesten Softwareversion versuchen.

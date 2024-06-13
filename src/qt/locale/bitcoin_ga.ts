@@ -58,14 +58,6 @@
         <translation type="unfinished">&amp;Roghnaigh</translation>
     </message>
     <message>
-        <source>Sending addresses</source>
-        <translation type="unfinished">Seoltaí seoladh</translation>
-    </message>
-    <message>
-        <source>Receiving addresses</source>
-        <translation type="unfinished">Seoltaí glacadh</translation>
-    </message>
-    <message>
         <source>These are your Particl addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
         <translation type="unfinished">Seo iad do sheoltaí Particl chun íocaíochtaí a sheoladh. Seiceáil i gcónaí an méid agus an seoladh glactha sula seoltar boinn.</translation>
     </message>
@@ -387,6 +379,10 @@ Ní féidir síniú ach le seoltaí 'oidhreachta'.</translation>
     <message>
         <source>Create a new wallet</source>
         <translation type="unfinished">Cruthaigh sparán nua</translation>
+    </message>
+    <message>
+        <source>&amp;Minimize</source>
+        <translation type="unfinished">&amp;Íoslaghdaigh</translation>
     </message>
     <message>
         <source>Wallet:</source>
@@ -1603,6 +1599,11 @@ Ní féidir síniú ach le seoltaí 'oidhreachta'.</translation>
         <source>User Agent</source>
         <extracomment>Title of Peers Table column which contains the peer's User Agent string.</extracomment>
         <translation type="unfinished">Gníomhaire Úsáideora</translation>
+    </message>
+    <message>
+        <source>Age</source>
+        <extracomment>Title of Peers Table column which indicates the duration (length of time) since the peer connection started.</extracomment>
+        <translation type="unfinished">Aois</translation>
     </message>
     <message>
         <source>Direction</source>
