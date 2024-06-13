@@ -380,7 +380,7 @@ Signing is only possible with addresses of the type &apos;legacy&apos;.</source>
 <context>
     <name>BitcoinGUI</name>
     <message>
-        <location filename="../bitcoingui.cpp" line="+262"/>
+        <location filename="../bitcoingui.cpp" line="+261"/>
         <source>&amp;Overview</source>
         <translation>&amp;Overview</translation>
     </message>
@@ -440,7 +440,7 @@ Signing is only possible with addresses of the type &apos;legacy&apos;.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+168"/>
+        <location line="+162"/>
         <source>&amp;Minimize</source>
         <translation type="unfinished"></translation>
     </message>
@@ -450,7 +450,7 @@ Signing is only possible with addresses of the type &apos;legacy&apos;.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+454"/>
+        <location line="+457"/>
         <source>Network activity disabled.</source>
         <extracomment>A substring of the tooltip.</extracomment>
         <translation type="unfinished"></translation>
@@ -461,7 +461,7 @@ Signing is only possible with addresses of the type &apos;legacy&apos;.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="-1281"/>
+        <location line="-1278"/>
         <source>Send coins to a Particl address</source>
         <translation>Send coins to a Particl address</translation>
     </message>
@@ -556,7 +556,7 @@ Signing is only possible with addresses of the type &apos;legacy&apos;.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+127"/>
+        <location line="+121"/>
         <source>&amp;File</source>
         <translation>&amp;File</translation>
     </message>
@@ -576,7 +576,7 @@ Signing is only possible with addresses of the type &apos;legacy&apos;.</source>
         <translation>Tabs toolbar</translation>
     </message>
     <message>
-        <location line="+518"/>
+        <location line="+521"/>
         <source>Syncing Headers (%1%)…</source>
         <translation type="unfinished"></translation>
     </message>
@@ -601,7 +601,7 @@ Signing is only possible with addresses of the type &apos;legacy&apos;.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="-902"/>
+        <location line="-899"/>
         <source>Request payments (generates QR codes and particl: URIs)</source>
         <translation type="unfinished"></translation>
     </message>
@@ -621,7 +621,7 @@ Signing is only possible with addresses of the type &apos;legacy&apos;.</source>
         <translation type="unfinished"></translation>
     </message>
     <message numerus="yes">
-        <location line="+818"/>
+        <location line="+815"/>
         <source>Processed %n block(s) of transaction history.</source>
         <translation>
             <numerusform>Processed %n block of transaction history.</numerusform>
@@ -669,7 +669,7 @@ Signing is only possible with addresses of the type &apos;legacy&apos;.</source>
         <translation>Up to date</translation>
     </message>
     <message>
-        <location line="-887"/>
+        <location line="-884"/>
         <source>Ctrl+Q</source>
         <translation type="unfinished"></translation>
     </message>
@@ -805,7 +805,7 @@ Signing is only possible with addresses of the type &apos;legacy&apos;.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+72"/>
+        <location line="+66"/>
         <source>&amp;Window</source>
         <translation type="unfinished">&amp;Window</translation>
     </message>
@@ -830,7 +830,7 @@ Signing is only possible with addresses of the type &apos;legacy&apos;.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+65"/>
+        <location line="+68"/>
         <source>&amp;Hide</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1339,7 +1339,7 @@ Signing is only possible with addresses of the type &apos;legacy&apos;.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+74"/>
+        <location line="+79"/>
         <source>Compiled without sqlite support (required for descriptor wallets)</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1651,7 +1651,7 @@ Signing is only possible with addresses of the type &apos;legacy&apos;.</source>
         <location line="+10"/>
         <location line="+92"/>
         <location line="+234"/>
-        <location filename="../mnemonicdialog.cpp" line="+106"/>
+        <location filename="../mnemonicdialog.cpp" line="+110"/>
         <source>Import</source>
         <translation type="unfinished"></translation>
     </message>
@@ -5650,7 +5650,7 @@ Note:  Since the fee is calculated on a per-byte basis, a fee rate of &quot;100 
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+170"/>
+        <location line="+173"/>
         <source>Range:</source>
         <translation type="unfinished"></translation>
     </message>
@@ -7125,7 +7125,12 @@ Unable to restore backup of wallet.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="-49"/>
+        <location line="+1"/>
+        <source>acceptstalefeeestimates is not supported on %s chain.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="-50"/>
         <source>Settings file could not be read</source>
         <translation type="unfinished"></translation>
     </message>

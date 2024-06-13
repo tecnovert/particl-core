@@ -228,6 +228,10 @@ Signing is only possible with addresses of the type 'legacy'.</source>
         <translation type="unfinished">지갑 암호가 성공적으로 변경되었습니다.</translation>
     </message>
     <message>
+        <source>Passphrase change failed</source>
+        <translation type="unfinished">암호 변경에 실패하였습니다.</translation>
+    </message>
+    <message>
         <source>Warning: The Caps Lock key is on!</source>
         <translation type="unfinished">경고: Caps Lock키가 켜져있습니다!</translation>
     </message>
@@ -677,7 +681,7 @@ Signing is only possible with addresses of the type 'legacy'.</source>
     </message>
     <message>
         <source>Open a particl: URI</source>
-        <translation type="unfinished">bitcoin 열기: URI</translation>
+        <translation type="unfinished">particl 열기: URI</translation>
     </message>
     <message>
         <source>Open Wallet</source>
@@ -729,6 +733,16 @@ Signing is only possible with addresses of the type 'legacy'.</source>
         <source>Wallet Data</source>
         <extracomment>Name of the wallet data file format.</extracomment>
         <translation type="unfinished">지갑 정보</translation>
+    </message>
+    <message>
+        <source>Load Wallet Backup</source>
+        <extracomment>The title for Restore Wallet File Windows</extracomment>
+        <translation type="unfinished">백업된 지갑 불러오기</translation>
+    </message>
+    <message>
+        <source>Restore Wallet</source>
+        <extracomment>Title of pop-up window shown when the user is attempting to restore a wallet.</extracomment>
+        <translation type="unfinished">지갑 복원하기</translation>
     </message>
     <message>
         <source>Wallet Name</source>
@@ -1089,6 +1103,14 @@ Signing is only possible with addresses of the type 'legacy'.</source>
     </message>
 </context>
 <context>
+    <name>RestoreWalletActivity</name>
+    <message>
+        <source>Restore Wallet</source>
+        <extracomment>Title of progress window which is displayed when wallets are being restored.</extracomment>
+        <translation type="unfinished">지갑 복원하기</translation>
+    </message>
+    </context>
+<context>
     <name>WalletController</name>
     <message>
         <source>Close wallet</source>
@@ -1270,7 +1292,7 @@ Signing is only possible with addresses of the type 'legacy'.</source>
     <message numerus="yes">
         <source>%n GB of space available</source>
         <translation type="unfinished">
-            <numerusform />
+            <numerusform>%nGB의 가용 공간</numerusform>
         </translation>
     </message>
     <message numerus="yes">
@@ -2482,7 +2504,7 @@ For more information on using this console, type %6.
 %7WARNING: Scammers have been active, telling users to type commands here, stealing their wallet contents. Do not use this console without fully understanding the ramifications of a command.%8</source>
         <extracomment>RPC console welcome message. Placeholders %7 and %8 are style tags for the warning content, and they are not space separated from the rest of the text intentionally.</extracomment>
         <translation type="unfinished">1%1 RPC 콘솔에 오신 것을 환영합니다.
-위쪽 및 아래쪽 화살표를 사용하여 기록 탐색을하고 2%2를 사용하여 화면을 지우세요. 
+위쪽 및 아래쪽 화살표를 사용하여 기록 탐색을하고 2%2를 사용하여 화면을 지우세요.
 3%3과 4%4을 사용하여 글꼴 크기 증가 또는 감소하세요
 사용 가능한 명령의 개요를 보려면 5%5를 입력하십시오.
 이 콘솔 사용에 대한 자세한 내용을 보려면 6%6을 입력하십시오.

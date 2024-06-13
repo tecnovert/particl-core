@@ -4392,7 +4392,6 @@ static bool CheckBlockHeader(const CBlockHeader& block, BlockValidationState& st
     return true;
 }
 
-
 bool CheckBlockSignature(const CBlock &block)
 {
     if (!block.IsProofOfStake())
@@ -4411,7 +4410,61 @@ bool CheckBlockSignature(const CBlock &block)
 
     CPubKey pubKey(txin.scriptWitness.stack[1]);
     return pubKey.Verify(block.GetHash(), block.vchBlockSig);
-};
+}
+
+static bool CheckMerkleRoot(const CBlock& block, BlockValidationState& state)
+{
+    if (block.m_checked_merkle_root) return true;
+
+    bool mutated;
+    uint256 hashMerkleRoot2 = BlockMerkleRoot(block, &mutated);
+    if (block.hashMerkleRoot != hashMerkleRoot2)
+        return state.Invalid(BlockValidationResult::BLOCK_MUTATED, "bad-txnmrklroot", "hashMerkleRoot mismatch");
+
+    // Check for merkle tree malleability (CVE-2012-2459): repeating sequences
+    // of transactions in a block without affecting the merkle root of a block,
+    // while still invalidating it.
+    if (mutated)
+        return state.Invalid(BlockValidationResult::BLOCK_MUTATED, "bad-txns-duplicate", "duplicate transaction");
+
+    block.m_checked_merkle_root = true;
+    return true;
+}
+
+static bool CheckWitnessMalleation(const CBlock& block, bool expect_witness_commitment, BlockValidationState& state)
+{
+    if (expect_witness_commitment) {
+        if (block.m_checked_witness_commitment) return true;
+
+        int commitpos = GetWitnessCommitmentIndex(block);
+        if (commitpos != NO_WITNESS_COMMITMENT) {
+            bool malleated = false;
+            uint256 hashWitness = BlockWitnessMerkleRoot(block, &malleated);
+            // The malleation check is ignored; as the transaction tree itself
+            // already does not permit it, it is impossible to trigger in the
+            // witness tree.
+            if (block.vtx[0]->vin[0].scriptWitness.stack.size() != 1 || block.vtx[0]->vin[0].scriptWitness.stack[0].size() != 32) {
+                return state.Invalid(BlockValidationResult::BLOCK_MUTATED, "bad-witness-nonce-size", strprintf("%s : invalid witness reserved value size", __func__));
+            }
+            CHash256().Write(hashWitness).Write(block.vtx[0]->vin[0].scriptWitness.stack[0]).Finalize(hashWitness);
+            if (memcmp(hashWitness.begin(), &block.vtx[0]->vout[commitpos].scriptPubKey[6], 32)) {
+                return state.Invalid(BlockValidationResult::BLOCK_MUTATED, "bad-witness-merkle-match", strprintf("%s : witness merkle commitment mismatch", __func__));
+            }
+
+            block.m_checked_witness_commitment = true;
+            return true;
+        }
+    }
+
+    // No witness data is allowed in blocks that don't commit to witness data, as this would otherwise leave room for spam
+    for (const auto& tx : block.vtx) {
+        if (tx->HasWitness()) {
+            return state.Invalid(BlockValidationResult::BLOCK_MUTATED, "unexpected-witness", strprintf("%s : unexpected witness data found", __func__));
+        }
+    }
+
+    return true;
+}
 
 bool CheckBlock(const CBlock& block, BlockValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW, bool fCheckMerkleRoot)
 {
@@ -4433,19 +4486,8 @@ bool CheckBlock(const CBlock& block, BlockValidationState& state, const Consensu
     }
 
     // Check the merkle root.
-    if (fCheckMerkleRoot) {
-        bool mutated;
-
-        uint256 hashMerkleRoot2 = BlockMerkleRoot(block, &mutated);
-
-        if (block.hashMerkleRoot != hashMerkleRoot2)
-            return state.Invalid(BlockValidationResult::BLOCK_MUTATED, "bad-txnmrklroot", "hashMerkleRoot mismatch");
-
-        // Check for merkle tree malleability (CVE-2012-2459): repeating sequences
-        // of transactions in a block without affecting the merkle root of a block,
-        // while still invalidating it.
-        if (mutated)
-            return state.Invalid(BlockValidationResult::BLOCK_MUTATED, "bad-txns-duplicate", "duplicate transaction");
+    if (fCheckMerkleRoot && !CheckMerkleRoot(block, state)) {
+        return false;
     }
 
     // All potential-corruption validation must be done before we do any
@@ -4564,6 +4606,37 @@ bool HasValidProofOfWork(const std::vector<CBlockHeader>& headers, const Consens
             [&](const auto& header) { return CheckProofOfWork(header.GetHash(), header.nBits, consensusParams);});
 }
 
+bool IsBlockMutated(const CBlock& block, bool check_witness_root)
+{
+    BlockValidationState state;
+    if (!CheckMerkleRoot(block, state)) {
+        LogPrint(BCLog::VALIDATION, "Block mutated: %s\n", state.ToString());
+        return true;
+    }
+
+    if (block.vtx.empty() || !block.vtx[0]->IsCoinBase()) {
+        // Consider the block mutated if any transaction is 64 bytes in size (see 3.1
+        // in "Weaknesses in Bitcoin’s Merkle Root Construction":
+        // https://lists.linuxfoundation.org/pipermail/bitcoin-dev/attachments/20190225/a27d8837/attachment-0001.pdf).
+        //
+        // Note: This is not a consensus change as this only applies to blocks that
+        // don't have a coinbase transaction and would therefore already be invalid.
+        return std::any_of(block.vtx.begin(), block.vtx.end(),
+                           [](auto& tx) { return ::GetSerializeSize(tx, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS) == 64; });
+    } else {
+        // Theoretically it is still possible for a block with a 64 byte
+        // coinbase transaction to be mutated but we neglect that possibility
+        // here as it requires at least 224 bits of work.
+    }
+
+    if (!CheckWitnessMalleation(block, check_witness_root, state)) {
+        LogPrint(BCLog::VALIDATION, "Block mutated: %s\n", state.ToString());
+        return true;
+    }
+
+    return false;
+}
+
 arith_uint256 CalculateHeadersWork(const std::vector<CBlockHeader>& headers)
 {
     arith_uint256 total_work{0};
@@ -4670,7 +4743,6 @@ static bool ContextualCheckBlock(const CBlock& block, BlockValidationState& stat
             if (!chainman.ActiveChainstate().IsInitialBlockDownload() &&
                 !particl::CheckStakeUnique(block)) {
                 //state.DoS(10, false, "bad-cs-duplicate", false, "duplicate coinstake");
-
                 state.nFlags |= BLOCK_FAILED_DUPLICATE_STAKE;
 
                 /*
@@ -4788,41 +4860,8 @@ static bool ContextualCheckBlock(const CBlock& block, BlockValidationState& stat
             }
         }
 
-        // Validation for witness commitments.
-        // * We compute the witness hash (which is the hash including witnesses) of all the block's transactions, except the
-        //   coinbase (where 0x0000....0000 is used instead).
-        // * The coinbase scriptWitness is a stack of a single 32-byte vector, containing a witness reserved value (unconstrained).
-        // * We build a merkle tree with all those witness hashes as leaves (similar to the hashMerkleRoot in the block header).
-        // * There must be at least one output whose scriptPubKey is a single 36-byte push, the first 4 bytes of which are
-        //   {0xaa, 0x21, 0xa9, 0xed}, and the following 32 bytes are SHA256^2(witness root, witness reserved value). In case there are
-        //   multiple, the last one is used.
-        bool fHaveWitness = false;
-        if (DeploymentActiveAfter(pindexPrev, chainman, Consensus::DEPLOYMENT_SEGWIT)) {
-            int commitpos = GetWitnessCommitmentIndex(block);
-            if (commitpos != NO_WITNESS_COMMITMENT) {
-                bool malleated = false;
-                uint256 hashWitness = BlockWitnessMerkleRoot(block, &malleated);
-                // The malleation check is ignored; as the transaction tree itself
-                // already does not permit it, it is impossible to trigger in the
-                // witness tree.
-                if (block.vtx[0]->vin[0].scriptWitness.stack.size() != 1 || block.vtx[0]->vin[0].scriptWitness.stack[0].size() != 32) {
-                    return state.Invalid(BlockValidationResult::BLOCK_MUTATED, "bad-witness-nonce-size", strprintf("%s : invalid witness reserved value size", __func__));
-                }
-                CHash256().Write(hashWitness).Write(block.vtx[0]->vin[0].scriptWitness.stack[0]).Finalize(hashWitness);
-                if (memcmp(hashWitness.begin(), &block.vtx[0]->vout[commitpos].scriptPubKey[6], 32)) {
-                    return state.Invalid(BlockValidationResult::BLOCK_MUTATED, "bad-witness-merkle-match", strprintf("%s : witness merkle commitment mismatch", __func__));
-                }
-                fHaveWitness = true;
-            }
-        }
-
-        // No witness data is allowed in blocks that don't commit to witness data, as this would otherwise leave room for spam
-        if (!fHaveWitness) {
-          for (const auto& tx : block.vtx) {
-                if (tx->HasWitness()) {
-                    return state.Invalid(BlockValidationResult::BLOCK_MUTATED, "unexpected-witness", strprintf("%s : unexpected witness data found", __func__));
-                }
-            }
+        if (!CheckWitnessMalleation(block, DeploymentActiveAfter(pindexPrev, chainman, Consensus::DEPLOYMENT_SEGWIT), state)) {
+            return false;
         }
     }
 
