@@ -127,7 +127,7 @@ static std::shared_ptr<CHDWallet> CreateTestWallet(wallet::WalletContext& wallet
     std::vector<bilingual_str> warnings;
     options.create_flags = WALLET_FLAG_BLANK_WALLET;
     auto database = MakeWalletDatabase(wallet_name, options, status, error);
-    auto wallet = CWallet::Create(wallet_context, wallet_name, std::move(database), options.create_flags, error, warnings);
+    auto wallet = CWallet::Create(wallet_context, wallet_name, std::move(database), options.create_flags, error, warnings, /*warn_no_active_acc*/ false);
 
     return std::static_pointer_cast<CHDWallet>(wallet);
 }

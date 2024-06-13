@@ -26,6 +26,7 @@ HDWalletTestingSetup::HDWalletTestingSetup(const std::string &chainName):
     ECC_Start_Blinding();
 
     pwalletMain = std::make_shared<CHDWallet>(m_chain.get(), "", m_args, CreateMockWalletDatabaseBDB());
+    pwalletMain->m_warn_no_active_acc = false;
     WalletContext& wallet_context = *m_wallet_loader->context();
     AddWallet(wallet_context, pwalletMain);
     pwalletMain->LoadWallet();
