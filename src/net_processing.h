@@ -18,6 +18,10 @@ class CTxMemPool;
 class ChainstateManager;
 class Peer;
 
+namespace node {
+class Warnings;
+} // namespace node
+
 /** Whether transaction reconciliation protocol should be enabled by default. */
 static constexpr bool DEFAULT_TXRECONCILIATION_ENABLE{false};
 /** Default for -maxorphantx, maximum number of orphan transactions kept in memory */
@@ -85,7 +89,7 @@ public:
 
     static std::unique_ptr<PeerManager> make(CConnman& connman, AddrMan& addrman,
                                              BanMan* banman, ChainstateManager& chainman,
-                                             CTxMemPool& pool, Options opts);
+                                             CTxMemPool& pool, node::Warnings& warnings, Options opts);
     virtual ~PeerManager() { }
 
     /**
@@ -116,7 +120,7 @@ public:
     virtual void SetBestBlock(int height, std::chrono::seconds time) = 0;
 
     /* Public for unit testing. */
-    virtual void UnitTestMisbehaving(NodeId peer_id, int howmuch) = 0;
+    virtual void UnitTestMisbehaving(NodeId peer_id, int howmuch=100) = 0;
 
     /* Particl: Keep old functionality */
     virtual void MisbehavingById(const NodeId pnode, const int howmuch, const std::string& message) = 0;

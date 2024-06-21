@@ -15,8 +15,10 @@ For a description of arguments recognized by test scripts, see
 import argparse
 from collections import deque
 import configparser
+import csv
 import datetime
 import os
+import pathlib
 import platform
 import time
 import shutil
@@ -280,6 +282,7 @@ BASE_SCRIPTS = [
     'mempool_packages.py',
     'mempool_package_onemore.py',
     'mempool_package_limits.py',
+    'mempool_package_rbf.py',
     'feature_versionbits_warning.py',
     'rpc_preciousblock.py',
     'wallet_importprunedfunds.py --legacy-wallet',
@@ -495,6 +498,7 @@ def main():
     parser.add_argument('--filter', help='filter scripts to run by regular expression')
     parser.add_argument("--nocleanup", dest="nocleanup", default=False, action="store_true",
                         help="Leave bitcoinds and test.* datadir on exit or error")
+    parser.add_argument('--resultsfile', '-r', help='store test results (as CSV) to the provided file')
 
 
     args, unknown_args = parser.parse_known_args()
@@ -527,6 +531,13 @@ def main():
     os.makedirs(tmpdir)
 
     logging.debug("Temporary test directory at %s" % tmpdir)
+
+    results_filepath = None
+    if args.resultsfile:
+        results_filepath = pathlib.Path(args.resultsfile)
+        # Stop early if the parent directory doesn't exist
+        assert results_filepath.parent.exists(), "Results file parent directory does not exist"
+        logging.debug("Test results will be written to " + str(results_filepath))
 
     enable_bitcoind = config["components"].getboolean("ENABLE_BITCOIND")
 
@@ -625,10 +636,11 @@ def main():
         combined_logs_len=args.combinedlogslen,
         failfast=args.failfast,
         use_term_control=args.ansi,
-        create_cache=(True if args.bitcoin or (not args.particl and not args.insight) else False)
+        results_filepath=results_filepath,
+        create_cache=(True if args.bitcoin or (not args.particl and not args.insight) else False),
     )
 
-def run_tests(*, test_list, src_dir, build_dir, tmpdir, jobs=1, enable_coverage=False, args=None, combined_logs_len=0, failfast=False, use_term_control, create_cache=True):
+def run_tests(*, test_list, src_dir, build_dir, tmpdir, jobs=1, enable_coverage=False, args=None, combined_logs_len=0, failfast=False, use_term_control, results_filepath=None, create_cache=True):
     args = args or []
 
     # Warn if bitcoind is already running
@@ -723,11 +735,14 @@ def run_tests(*, test_list, src_dir, build_dir, tmpdir, jobs=1, enable_coverage=
                     break
 
                 if "[Errno 28] No space left on device" in stdout:
-                    sys.exit(f"Early exiting after test failure due to insuffient free space in {tmpdir}\n"
+                    sys.exit(f"Early exiting after test failure due to insufficient free space in {tmpdir}\n"
                              f"Test execution data left in {tmpdir}.\n"
                              f"Additional storage is needed to execute testing.")
 
-    print_results(test_results, max_len_name, (int(time.time() - start_time)))
+    runtime = int(time.time() - start_time)
+    print_results(test_results, max_len_name, runtime)
+    if results_filepath:
+        write_results(test_results, results_filepath, runtime)
 
     if coverage:
         coverage_passed = coverage.report_rpc_coverage()
@@ -773,6 +788,17 @@ def print_results(test_results, max_len_name, runtime):
         results += RED[0]
     results += "Runtime: %s s\n" % (runtime)
     print(results)
+
+
+def write_results(test_results, filepath, total_runtime):
+    with open(filepath, mode="w", encoding="utf8") as results_file:
+        results_writer = csv.writer(results_file)
+        results_writer.writerow(['test', 'status', 'duration(seconds)'])
+        all_passed = True
+        for test_result in test_results:
+            all_passed = all_passed and test_result.was_successful
+            results_writer.writerow([test_result.name, test_result.status, str(test_result.time)])
+        results_writer.writerow(['ALL', ("Passed" if all_passed else "Failed"), str(total_runtime)])
 
 class TestHandler:
     """

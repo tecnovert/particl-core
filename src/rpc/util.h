@@ -508,8 +508,6 @@ private:
 void PushWarnings(const UniValue& warnings, UniValue& obj);
 void PushWarnings(const std::vector<bilingual_str>& warnings, UniValue& obj);
 
-UniValue GetNodeWarnings(bool use_deprecated);
-
 namespace particl {
 void PushTime(UniValue &o, const char *name, int64_t nTime);
 } // namespace particl

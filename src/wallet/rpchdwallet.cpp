@@ -43,7 +43,7 @@
 #include <pos/miner.h>
 #include <pos/kernel.h>
 #include <crypto/sha256.h>
-#include <warnings.h>
+#include <node/warnings.h>
 #include <txmempool.h>
 #include <common/args.h>
 #include <undo.h>
@@ -4460,14 +4460,6 @@ static RPCHelpMan getstakinginfo()
                     RPCResult::Type::OBJ, "", "", {
                         {RPCResult::Type::BOOL, "enabled", "If staking is enabled on this wallet"},
                         {RPCResult::Type::BOOL, "staking", "If this wallet is currently staking"},
-                        (IsDeprecatedRPCEnabled("warnings") ?
-                            RPCResult{RPCResult::Type::STR, "warnings", "any network and blockchain warnings (DEPRECATED)"} :
-                            RPCResult{RPCResult::Type::ARR, "warnings", "any network and blockchain warnings (run with `-deprecatedrpc=warnings` to return the latest warning as a single string)",
-                            {
-                                {RPCResult::Type::STR, "", "warning"},
-                            }
-                            }
-                        ),
                         {RPCResult::Type::STR_AMOUNT, "percentyearreward", "Current stake reward percentage"},
                         {RPCResult::Type::STR_AMOUNT, "moneysupply", "The total amount of particl in the network"},
                         {RPCResult::Type::STR_AMOUNT, "reserve", /*optional=*/true, "The reserve balance of the wallet in " + CURRENCY_UNIT},
@@ -4551,8 +4543,6 @@ static RPCHelpMan getstakinginfo()
         default:
             break;
     }
-
-    obj.pushKV("warnings", GetNodeWarnings(IsDeprecatedRPCEnabled("warnings")));
 
     obj.pushKV("percentyearreward", rCoinYearReward);
     obj.pushKV("moneysupply", ValueFromAmount(nMoneySupply));

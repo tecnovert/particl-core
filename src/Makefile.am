@@ -213,6 +213,7 @@ BITCOIN_CORE_H = \
   kernel/messagestartchars.h \
   kernel/notifications_interface.h \
   kernel/validation_cache_sizes.h \
+  kernel/warning.h \
   key.h \
   key/stealth.h \
   key/extkey.h \
@@ -261,6 +262,7 @@ BITCOIN_CORE_H = \
   node/types.h \
   node/utxo_snapshot.h \
   node/validation_cache_args.h \
+  node/warnings.h \
   noui.h \
   outputtype.h \
   policy/v3_policy.h \
@@ -405,7 +407,6 @@ BITCOIN_CORE_H = \
   wallet/hdwallettypes.h \
   wallet/hdwallet.h \
   wallet/rpchdwallet.h \
-  warnings.h \
   zmq/zmqabstractnotifier.h \
   zmq/zmqnotificationinterface.h \
   zmq/zmqpublishnotifier.h \
@@ -491,6 +492,7 @@ libparticl_node_a_SOURCES = \
   node/txreconciliation.cpp \
   node/utxo_snapshot.cpp \
   node/validation_cache_args.cpp \
+  node/warnings.cpp \
   noui.cpp \
   policy/v3_policy.cpp \
   policy/fees.cpp \
@@ -827,7 +829,6 @@ libparticl_common_a_SOURCES = \
   script/sign.cpp \
   script/signingprovider.cpp \
   script/solver.cpp \
-  warnings.cpp \
   $(BITCOIN_CORE_H)
 #
 
@@ -1191,7 +1192,6 @@ libparticlkernel_la_SOURCES = \
   validation.cpp \
   validationinterface.cpp \
   versionbits.cpp \
-  warnings.cpp \
   insight/insight.cpp
 
 # Required for obj/build.h to be generated first.
