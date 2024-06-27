@@ -16,11 +16,11 @@ static int mlsag_count = 32;
 #define MAX_N_COLUMNS 32
 void test_mlsag(void)
 {
-    const size_t n_inputs = (secp256k1_testrand32() % (MAX_N_INPUTS))+1;
-    const size_t n_outputs = (secp256k1_testrand32() % (MAX_N_OUTPUTS))+1;
-    const size_t n_blinded = (secp256k1_testrand32() % (n_outputs))+1;
-    const size_t n_columns = (secp256k1_testrand32() % (MAX_N_COLUMNS))+1;
-    const size_t n_real_col = secp256k1_testrand32() % (n_columns);
+    const size_t n_inputs = (testrand32() % (MAX_N_INPUTS))+1;
+    const size_t n_outputs = (testrand32() % (MAX_N_OUTPUTS))+1;
+    const size_t n_blinded = (testrand32() % (n_outputs))+1;
+    const size_t n_columns = (testrand32() % (MAX_N_COLUMNS))+1;
+    const size_t n_real_col = testrand32() % (n_columns);
     const size_t n_rows = n_inputs+1;
     uint8_t preimage[32];
     uint8_t tmp32[32];
@@ -42,7 +42,7 @@ void test_mlsag(void)
     uint8_t ki[MAX_N_INPUTS * 33];
     uint8_t ss[(MAX_N_INPUTS+1) * MAX_N_COLUMNS * 33]; /* max_rows * max_cols */
 
-    secp256k1_testrand256(preimage);
+    testrand256(preimage);
 
     total_value = 0;
     for (i = 0; i < n_outputs; i++) {
@@ -56,7 +56,7 @@ void test_mlsag(void)
     value[i] = total_value;
 
     for (k = 0; k < n_blinded; ++k) {
-        random_scalar_order(&s);
+        testutil_random_scalar_order_test(&s);
         secp256k1_scalar_get_b32(&blinds_out[k * 32], &s);
         pblinds[n_inputs + k] = &blinds_out[k * 32];
 
@@ -74,7 +74,7 @@ void test_mlsag(void)
     for (k = 0; k < n_inputs; ++k) /* rows */
     for (i = 0; i < n_columns; ++i) { /* cols */
         if (i == n_real_col) {
-            random_scalar_order(&s);
+            testutil_random_scalar_order_test(&s);
             secp256k1_scalar_get_b32(&keys_in[k * 32], &s);
             pkeys[k] = &keys_in[k * 32];
 
@@ -82,7 +82,7 @@ void test_mlsag(void)
             secp256k1_ge_set_gej(&ge, &gej);
             secp256k1_eckey_pubkey_serialize(&ge, &m[(i+k*n_columns)*33], &sz, 1);
 
-            random_scalar_order(&s);
+            testutil_random_scalar_order_test(&s);
             secp256k1_scalar_get_b32(&blinds_in[k * 32], &s);
             pblinds[k] = &blinds_in[k * 32];
 
@@ -93,12 +93,12 @@ void test_mlsag(void)
         }
 
         /* Fake input */
-        random_scalar_order(&s);
+        testutil_random_scalar_order_test(&s);
         secp256k1_ecmult_gen(&CTX->ecmult_gen_ctx, &gej, &s);
         secp256k1_ge_set_gej(&ge, &gej);
         secp256k1_eckey_pubkey_serialize(&ge, &m[(i+k*n_columns)*33], &sz, 1);
 
-        random_scalar_order(&s);
+        testutil_random_scalar_order_test(&s);
         secp256k1_ecmult_gen(&CTX->ecmult_gen_ctx, &gej, &s);
         secp256k1_ge_set_gej(&ge, &gej);
         secp256k1_eckey_pubkey_serialize(&ge, cm_in[i+k*n_columns].data, &sz, 1);
@@ -111,7 +111,7 @@ void test_mlsag(void)
         n_outputs, n_blinded, n_columns, n_inputs+1,
         pcm_in, pcm_out, pblinds));
 
-    secp256k1_testrand256(tmp32); /* random seed */
+    testrand256(tmp32); /* random seed */
     CHECK(0 == secp256k1_generate_mlsag(CTX, ki, pc, ss,
         tmp32, preimage, n_columns, n_rows, n_real_col,
         (const uint8_t**)pkeys, m));
@@ -163,7 +163,7 @@ void test_mlsag(void)
 
 
     /* Bad secretkey */
-    random_scalar_order(&s);
+    testutil_random_scalar_order_test(&s);
     secp256k1_scalar_get_b32(&keys_in[0], &s);
     pkeys[0] = &keys_in[0];
     CHECK(0 == secp256k1_generate_mlsag(CTX, ki, pc, ss,

@@ -187,6 +187,42 @@ static constexpr size_t MAX_LOOSE_HEADERS = 1000;
 static constexpr int MAX_DUPLICATE_HEADERS = 2000;
 static constexpr int64_t MAX_LOOSE_HEADER_TIME = 120;
 static constexpr int64_t MIN_DOS_STATE_TTL = 60 * 10; // seconds
+
+class CNodeDOS
+{
+public:
+    //! Headers received from this peer, removed when block is received
+    std::map<uint256, int64_t> m_map_loose_headers;
+
+    //! Set of node ids that triggered the counters
+    //std::set<NodeID> m_node_ids;
+
+    //! Count of times node tried to send duplicate headers/blocks, decreased in DecMisbehaving
+    int m_duplicate_count = 0;
+
+    //! Set when counters increase
+    int64_t m_last_used_time = 0;
+
+    //! Persistent misbehaving counter
+    int m_misbehavior = 0;
+
+    //! Times node was discouraged
+    int m_discouraged_count = 0;
+};
+
+/** Map maintaining per-addr DOS state. */
+static std::map<CNetAddr, CNodeDOS> map_dos_state GUARDED_BY(cs_main);
+
+int GetNumDOSStates()
+{
+    return map_dos_state.size();
+}
+
+void ClearDOSStates()
+{
+    map_dos_state.clear();
+}
+
 } // namespace particl
 
 // Internal stuff
@@ -1205,32 +1241,7 @@ public:
     int64_t GetAdjustedTimeInt() override;
 };
 
-class CNodeDOS
-{
-public:
-    //! Headers received from this peer, removed when block is received
-    std::map<uint256, int64_t> m_map_loose_headers;
-
-    //! Set of node ids that triggered the counters
-    //std::set<NodeID> m_node_ids;
-
-    //! Count of times node tried to send duplicate headers/blocks, decreased in DecMisbehaving
-    int m_duplicate_count = 0;
-
-    //! Set when counters increase
-    int64_t m_last_used_time = 0;
-
-    //! Persistent misbehaving counter
-    int m_misbehavior = 0;
-
-    //! Times node was discouraged
-    int m_discouraged_count = 0;
-};
-
-/** Map maintaining per-addr DOS state. */
-static std::map<CNetAddr, CNodeDOS> map_dos_state GUARDED_BY(cs_main);
-
-const CNodeState* PeerManagerImpl::State(NodeId pnode) const EXCLUSIVE_LOCKS_REQUIRED(cs_main)
+const CNodeState* PeerManagerImpl::State(NodeId pnode) const
 {
     std::map<NodeId, CNodeState>::const_iterator it = m_node_states.find(pnode);
     if (it == m_node_states.end())
@@ -1238,7 +1249,7 @@ const CNodeState* PeerManagerImpl::State(NodeId pnode) const EXCLUSIVE_LOCKS_REQ
     return &it->second;
 }
 
-CNodeState* PeerManagerImpl::State(NodeId pnode) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
+CNodeState* PeerManagerImpl::State(NodeId pnode)
 {
     return const_cast<CNodeState*>(std::as_const(*this).State(pnode));
 }
@@ -1894,8 +1905,8 @@ bool PeerManagerImpl::GetNodeStateStats(NodeId nodeid, CNodeStateStats& stats) c
             if (queue.pindex)
                 stats.vHeightInFlight.push_back(queue.pindex->nHeight);
         }
-        auto it = map_dos_state.find(state->m_address);
-        if (it != map_dos_state.end()) {
+        auto it = particl::map_dos_state.find(state->m_address);
+        if (it != particl::map_dos_state.end()) {
             stats.nDuplicateCount = it->second.m_duplicate_count;
             stats.nLooseHeadersCount = (int)it->second.m_map_loose_headers.size();
         }
@@ -2161,8 +2172,8 @@ bool PeerManagerImpl::IncDuplicateHeaders(NodeId node_id) EXCLUSIVE_LOCKS_REQUIR
 
     PeerRef peer = GetPeerRef(node_id);
     if (peer == nullptr) return true;
-    auto it = map_dos_state.find(node_address);
-    if (it != map_dos_state.end()) {
+    auto it = particl::map_dos_state.find(node_address);
+    if (it != particl::map_dos_state.end()) {
         ++it->second.m_duplicate_count;
         it->second.m_last_used_time = GetTime();
         if (it->second.m_duplicate_count < particl::MAX_DUPLICATE_HEADERS) {
@@ -2170,8 +2181,8 @@ bool PeerManagerImpl::IncDuplicateHeaders(NodeId node_id) EXCLUSIVE_LOCKS_REQUIR
         }
         return false;
     }
-    map_dos_state[node_address].m_duplicate_count = 1;
-    map_dos_state[node_address].m_last_used_time = GetTime();
+    particl::map_dos_state[node_address].m_duplicate_count = 1;
+    particl::map_dos_state[node_address].m_last_used_time = GetTime();
     return true;
 }
 
@@ -2194,8 +2205,8 @@ void PeerManagerImpl::IncPersistentMisbehaviour(NodeId node_id, int howmuch)
 
     PeerRef peer = GetPeerRef(node_id);
     if (peer == nullptr) return;
-    auto it = map_dos_state.find(node_address);
-    if (it != map_dos_state.end()) {
+    auto it = particl::map_dos_state.find(node_address);
+    if (it != particl::map_dos_state.end()) {
         int peer_misbehavior_score = WITH_LOCK(peer->m_misbehavior_mutex, return peer->m_misbehavior_score);
         if (peer_misbehavior_score < it->second.m_misbehavior) {
             PassOnMisbehaviour(node_id, it->second.m_misbehavior);
@@ -2203,7 +2214,7 @@ void PeerManagerImpl::IncPersistentMisbehaviour(NodeId node_id, int howmuch)
         it->second.m_misbehavior += howmuch;
         return;
     }
-    map_dos_state[node_address].m_misbehavior = howmuch;
+    particl::map_dos_state[node_address].m_misbehavior = howmuch;
     return;
 }
 
@@ -2217,8 +2228,8 @@ bool PeerManagerImpl::IncPersistentDiscouraged(NodeId node_id)
 
     PeerRef peer = GetPeerRef(node_id);
     if (peer == nullptr) return false;
-    auto it = map_dos_state.find(node_address);
-    if (it != map_dos_state.end()) {
+    auto it = particl::map_dos_state.find(node_address);
+    if (it != particl::map_dos_state.end()) {
         it->second.m_discouraged_count += 1;
         if (it->second.m_discouraged_count > 5) {
             WITH_LOCK(peer->m_misbehavior_mutex, peer->m_should_ban = true);
@@ -2229,14 +2240,14 @@ bool PeerManagerImpl::IncPersistentDiscouraged(NodeId node_id)
         LogPrint(BCLog::NET, "peer=%d discouraged count (%d)\n", node_id, it->second.m_discouraged_count);
         return false;
     }
-    map_dos_state[node_address].m_discouraged_count = 1;
+    particl::map_dos_state[node_address].m_discouraged_count = 1;
     return false;
 }
 
 void PeerManagerImpl::CheckUnreceivedHeaders(int64_t now) EXCLUSIVE_LOCKS_REQUIRED(cs_main, !m_peer_mutex)
 {
-    auto it = map_dos_state.begin();
-    for (; it != map_dos_state.end();) {
+    auto it = particl::map_dos_state.begin();
+    for (; it != particl::map_dos_state.end();) {
         auto &dos_counters = it->second;
         auto it_headers = dos_counters.m_map_loose_headers.begin();
         for (; it_headers != dos_counters.m_map_loose_headers.end();) {
@@ -2269,7 +2280,7 @@ void PeerManagerImpl::CheckUnreceivedHeaders(int64_t now) EXCLUSIVE_LOCKS_REQUIR
             dos_counters.m_misbehavior < 1 &&
             dos_counters.m_map_loose_headers.size() == 0 &&
             now - dos_counters.m_last_used_time > particl::MIN_DOS_STATE_TTL) {
-            map_dos_state.erase(it++);
+            particl::map_dos_state.erase(it++);
             continue;
         }
         ++it;
@@ -2291,8 +2302,8 @@ bool PeerManagerImpl::AddNodeHeader(NodeId node_id, const uint256 &hash) EXCLUSI
     if (state == nullptr) {
         return true;
     }
-    auto it = map_dos_state.find(state->m_address);
-    if (it != map_dos_state.end()) {
+    auto it = particl::map_dos_state.find(state->m_address);
+    if (it != particl::map_dos_state.end()) {
         if (it->second.m_map_loose_headers.size() > particl::MAX_LOOSE_HEADERS) {
             return false;
         }
@@ -2300,15 +2311,15 @@ bool PeerManagerImpl::AddNodeHeader(NodeId node_id, const uint256 &hash) EXCLUSI
         it->second.m_last_used_time = GetTime();
         return true;
     }
-    map_dos_state[state->m_address].m_map_loose_headers.insert(std::make_pair(hash, GetTime()));
-    map_dos_state[state->m_address].m_last_used_time = GetTime();
+    particl::map_dos_state[state->m_address].m_map_loose_headers.insert(std::make_pair(hash, GetTime()));
+    particl::map_dos_state[state->m_address].m_last_used_time = GetTime();
     return true;
 }
 
 void PeerManagerImpl::RemoveNodeHeader(const uint256 &hash) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
 {
-    auto it = map_dos_state.begin();
-    for (; it != map_dos_state.end(); ++it) {
+    auto it = particl::map_dos_state.begin();
+    for (; it != particl::map_dos_state.end(); ++it) {
         it->second.m_map_loose_headers.erase(hash);
     }
 }
@@ -2331,16 +2342,6 @@ NodeClock::time_point PeerManagerImpl::GetAdjustedTime()
 int64_t PeerManagerImpl::GetAdjustedTimeInt()
 {
     return TicksSinceEpoch<std::chrono::seconds>(NodeClock::now() + m_outbound_time_offsets.GetOffset());
-}
-
-int GetNumDOSStates()
-{
-    return map_dos_state.size();
-}
-
-void ClearDOSStates()
-{
-    map_dos_state.clear();
 }
 
 bool PeerManagerImpl::BlockRequestAllowed(const CBlockIndex* pindex)

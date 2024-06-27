@@ -264,15 +264,15 @@ void test_bulletproof_inner_product(size_t n, const secp256k1_bulletproof_genera
     secp256k1_scratch *scratch = secp256k1_scratch_space_create(CTX, 100000 + 256 * (2 * n + 2));
 
     for (j = 0; j < n; j++) {
-        random_scalar_order(&a_arr[j]);
-        random_scalar_order(&b_arr[j]);
+        testutil_random_scalar_order_test(&a_arr[j]);
+        testutil_random_scalar_order_test(&b_arr[j]);
     }
 
     abgh_data.a_arr = a_arr;
     abgh_data.b_arr = b_arr;
 
     random_group_element_test(&offs_ctx.ext_pt);
-    random_scalar_order(&offs_ctx.ext_sc);
+    testutil_random_scalar_order_test(&offs_ctx.ext_sc);
     secp256k1_scalar_clear(&offs_ctx.skew_sc);
     offs_ctx.n = n;
 
@@ -305,7 +305,7 @@ void test_bulletproof_inner_product(size_t n, const secp256k1_bulletproof_genera
     CHECK(secp256k1_bulletproof_inner_product_verify_impl(scratch, gens, n, &innp_ctx, 1, plen, 1) == 1);
 
     /* skew P by a random amount and instruct the verifier to offset it */
-    random_scalar_order(&innp_ctx.p_offs);
+    testutil_random_scalar_order_test(&innp_ctx.p_offs);
     secp256k1_gej_set_ge(&tmpj2, &gens->blinding_gen[0]);
     secp256k1_ecmult(&tmpj, &tmpj2, &innp_ctx.p_offs, &zero);
     secp256k1_gej_add_var(&pj, &pj, &tmpj, NULL);
@@ -349,7 +349,7 @@ void test_bulletproof_inner_product(size_t n, const secp256k1_bulletproof_genera
             secp256k1_gej_add_ge_var(&tmpj2, &tmpj2, &gens->gens[j + gens->n/2], NULL);
         }
     }
-    random_scalar_order(&offs_ctx.skew_sc);
+    testutil_random_scalar_order_test(&offs_ctx.skew_sc);
     secp256k1_ecmult(&tmpj, &tmpj2, &offs_ctx.skew_sc, &zero);
     secp256k1_gej_add_ge_var(&tmpj, &tmpj, &offs_ctx.p, NULL);
     secp256k1_ge_set_gej(&offs_ctx.p, &tmpj);
@@ -409,7 +409,7 @@ void test_bulletproof_rangeproof(size_t nbits, size_t expected_size, const secp2
     secp256k1_generator_load(&value_gen[0], &secp256k1_generator_const_g);
     secp256k1_generator_load(&value_gen[1], &secp256k1_generator_const_g);
     secp256k1_generator_load(&value_gen[2], &secp256k1_generator_const_h);
-    random_scalar_order(&blind);
+    testutil_random_scalar_order_test(&blind);
 
     secp256k1_pedersen_ecmult(&commitj, &blind, v, &value_gen[0], &gens->blinding_gen[0]);
     secp256k1_ge_set_gej(&commitp, &commitj);
@@ -471,7 +471,7 @@ void test_bulletproof_rangeproof_aggregate(size_t nbits, size_t n_commits, size_
             v[i] = 0;
         }
         secp256k1_scalar_set_u64(&vs, v[i]);
-        random_scalar_order(&blind[i]);
+        testutil_random_scalar_order_test(&blind[i]);
         secp256k1_pedersen_ecmult(&commitj, &blind[i], v[i], &value_gen, &gens->blinding_gen[0]);
         secp256k1_ge_set_gej(&commitp[i], &commitj);
 

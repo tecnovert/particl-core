@@ -30,8 +30,8 @@ void test_generator_api(void) {
     secp256k1_context *vrfy = secp256k1_context_create(SECP256K1_CONTEXT_VERIFY);
     secp256k1_generator gen;
 
-    secp256k1_testrand256(key);
-    secp256k1_testrand256(blind);
+    testrand256(key);
+    testrand256(blind);
 
     secp256k1_context_set_illegal_callback(none, skip_error_callback_fn, NULL);
     secp256k1_context_set_illegal_callback(vrfy, skip_error_callback_fn, NULL);

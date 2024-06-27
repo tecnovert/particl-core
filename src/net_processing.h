@@ -176,7 +176,9 @@ public:
 
 NodeId GetBlockSource(const uint256 &hash) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 
+namespace particl {
 int GetNumDOSStates() EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 void ClearDOSStates() EXCLUSIVE_LOCKS_REQUIRED(cs_main);
+} // namespace particl
 
 #endif // BITCOIN_NET_PROCESSING_H

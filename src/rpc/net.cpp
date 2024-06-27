@@ -709,7 +709,7 @@ static RPCHelpMan getnetworkinfo()
         obj.pushKV("connections_in", node.connman->GetNodeCount(ConnectionDirection::In));
         obj.pushKV("connections_out", node.connman->GetNodeCount(ConnectionDirection::Out));
     }
-    obj.pushKV("dos_states",    GetNumDOSStates());
+    obj.pushKV("dos_states",    particl::GetNumDOSStates());
     obj.pushKV("networks",      GetNetworksInfo());
     if (node.mempool) {
         // Those fields can be deprecated, to be replaced by the getmempoolinfo fields
@@ -885,7 +885,7 @@ static RPCHelpMan clearbanned()
 
     {
     LOCK(cs_main);
-    ClearDOSStates();
+    particl::ClearDOSStates();
     }
 
     return UniValue::VNULL;

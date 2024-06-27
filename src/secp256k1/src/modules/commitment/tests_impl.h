@@ -23,7 +23,7 @@ static void test_commitment_api(void) {
     unsigned char blind_out[32];
     const unsigned char *blind_ptr = blind;
     unsigned char *blind_out_ptr = blind_out;
-    uint64_t val = secp256k1_testrand32();
+    uint64_t val = testrand32();
     int32_t dummy = 0;
 
     secp256k1_context *none = secp256k1_context_create(SECP256K1_CONTEXT_NONE);
@@ -34,7 +34,7 @@ static void test_commitment_api(void) {
     secp256k1_context_set_illegal_callback(none, counting_callback_fn, &dummy);
     secp256k1_context_set_illegal_callback(sign, counting_callback_fn, &dummy);
 
-    secp256k1_testrand256(blind);
+    testrand256(blind);
     CHECK(secp256k1_pedersen_commit(none, &commit, blind, val, &secp256k1_generator_const_h, &secp256k1_generator_const_g) != 0);
     CHECK(secp256k1_pedersen_commit(vrfy, &commit, blind, val, &secp256k1_generator_const_h, &secp256k1_generator_const_g) != 0);
     CHECK(secp256k1_pedersen_commit(sign, &commit, blind, val, &secp256k1_generator_const_h, &secp256k1_generator_const_g) != 0);
@@ -83,8 +83,8 @@ static void test_pedersen(void) {
     int inputs;
     int outputs;
     int total;
-    inputs = (secp256k1_testrand32() & 7) + 1;
-    outputs = (secp256k1_testrand32() & 7) + 2;
+    inputs = (testrand32() & 7) + 1;
+    outputs = (testrand32() & 7) + 2;
     total = inputs + outputs;
     for (i = 0; i < 19; i++) {
         cptr[i] = &commits[i];
@@ -102,7 +102,7 @@ static void test_pedersen(void) {
     values[total - 1] = totalv;
 
     for (i = 0; i < total - 1; i++) {
-        random_scalar_order(&s);
+        testutil_random_scalar_order_test(&s);
         secp256k1_scalar_get_b32(&blinds[i * 32], &s);
     }
     CHECK(secp256k1_pedersen_blind_sum(CTX, &blinds[(total - 1) * 32], bptr, total - 1, inputs));
@@ -114,7 +114,7 @@ static void test_pedersen(void) {
     if (inputs > 0 && values[0] > 0) {
         CHECK(!secp256k1_pedersen_verify_tally(CTX, cptr, inputs - 1, &cptr[inputs], outputs));
     }
-    random_scalar_order(&s);
+    testutil_random_scalar_order_test(&s);
     for (i = 0; i < 4; i++) {
         secp256k1_scalar_get_b32(&blinds[i * 32], &s);
     }
@@ -130,8 +130,8 @@ static void test_pedersen(void) {
 
 #define MAX_N_GENS 30
 void test_multiple_generators(void) {
-    const size_t n_inputs = (secp256k1_testrand32() % (MAX_N_GENS / 2)) + 1;
-    const size_t n_outputs = (secp256k1_testrand32() % (MAX_N_GENS / 2)) + 1;
+    const size_t n_inputs = (testrand32() % (MAX_N_GENS / 2)) + 1;
+    const size_t n_outputs = (testrand32() % (MAX_N_GENS / 2)) + 1;
     const size_t n_generators = n_inputs + n_outputs;
     unsigned char *generator_blind[MAX_N_GENS];
     unsigned char *pedersen_blind[MAX_N_GENS];
@@ -145,16 +145,16 @@ void test_multiple_generators(void) {
     secp256k1_scalar s;
 
     unsigned char generator_seed[32];
-    random_scalar_order(&s);
+    testutil_random_scalar_order_test(&s);
     secp256k1_scalar_get_b32(generator_seed, &s);
     /* Create all the needed generators */
     for (i = 0; i < n_generators; i++) {
         generator_blind[i] = (unsigned char*) malloc(32);
         pedersen_blind[i] = (unsigned char*) malloc(32);
 
-        random_scalar_order(&s);
+        testutil_random_scalar_order_test(&s);
         secp256k1_scalar_get_b32(generator_blind[i], &s);
-        random_scalar_order(&s);
+        testutil_random_scalar_order_test(&s);
         secp256k1_scalar_get_b32(pedersen_blind[i], &s);
 
         CHECK(secp256k1_generator_generate_blinded(CTX, &generator[i], generator_seed, generator_blind[i]));
