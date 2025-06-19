@@ -419,7 +419,7 @@ public:
     int Send(CKeyID &addressFrom, CKeyID &addressTo, std::string &message,
         SecureMessage &smsg, std::string &sError, bool fPaid, size_t nRetention,
         bool fTestFee=false, CAmount *nFee=nullptr, size_t *nTxBytes=nullptr, bool fFromFile=false, bool submit_msg=true, bool add_to_outbox=true,
-        bool fund_from_rct=false, size_t nRingSize=5, wallet::CCoinControl *coin_control=nullptr, bool fund_paid_msg=true);
+        bool fund_from_rct=false, size_t nRingSize=5, wallet::CCoinControl *coin_control=nullptr, bool fund_paid_msg=true, int plaintext_format_version=1, int compression=2);
 
     bool GetPowHash(const SecureMessage *psmsg, const uint8_t *pPayload, uint32_t nPayload, uint256 &hash);
     int HashMsg(const SecureMessage &smsg, const uint8_t *pPayload, uint32_t nPayload, uint160 &hash);
@@ -441,7 +441,7 @@ public:
     int Validate(const SecureMessage *psmsg, const uint8_t *pPayload, uint32_t nPayload);
     int SetHash (SecureMessage *psmsg, uint8_t *pPayload, uint32_t nPayload);
 
-    int Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID &addressTo, const std::string &message);
+    int Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID &addressTo, const std::string &message, int plaintext_format_version=0, int compress=-1);
 
     int Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg);
     int Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, const SecureMessage &smsg, MessageData &msg);

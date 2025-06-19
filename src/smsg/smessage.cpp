@@ -311,8 +311,7 @@ void ThreadSecureMsg(smsg::CSMSG *smsg_module)
                     pnode->smsgData.ignoreUntil = ignoreUntil;
 
                     // Alert peer that they are being ignored
-                    std::vector<uint8_t> vchData;
-                    vchData.resize(8);
+                    std::vector<uint8_t> vchData(8);
                     memput_int64_le(&vchData[0], ignoreUntil);
                     smsg_module->m_node->connman->PushMessage(pnode,
                         NetMsg::Make(SMSGMsgType::IGNORING, vchData));
@@ -1648,7 +1647,6 @@ int CSMSG::ReceiveData(PeerManager *peerLogic, CNode *pfrom, const std::string &
         }
 
         std::vector<uint8_t> vchOne, vchBunch;
-
         vchBunch.resize(4 + 8); // nMessages + bucketTime
 
         int n = (vchData.size() - 8) / 16;
@@ -2968,7 +2966,6 @@ int CSMSG::Retrieve(const SecMsgToken &token, std::vector<uint8_t> &vchData)
         return errorN(SMSG_GENERAL_ERROR, "%s - fseek, error: %s.", __func__, SysErrorString(errno));
     }
 
-
     try {vchData.resize(SMSG_HDR_LEN);} catch (std::exception &e) {
         fclose(fp);
         return errorN(SMSG_ALLOCATE_FAILED, "%s - Could not resize vchData, %u, %s.", __func__, SMSG_HDR_LEN, e.what());
@@ -3040,8 +3037,7 @@ int CSMSG::Remove(const SecMsgToken &token)
     }
 
     size_t zlen = smsg.nPayload - 8;
-    std::vector<uint8_t> zbuf;
-    zbuf.resize(zlen);
+    std::vector<uint8_t> zbuf(zlen);
     memset(zbuf.data(), 0, zlen);
     if (smsg.nPayload <= 8 ||  zlen != fwrite(zbuf.data(), 1, zlen, fp)) {
         fclose(fp);
@@ -3895,7 +3891,7 @@ int CSMSG::SetHash(SecureMessage *psmsg, uint8_t *pPayload, uint32_t nPayload)
   * Some differences:
   * bitmessage uses curve sect283r1 this uses secp256k1
   */
-int CSMSG::Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID &addressTo, const std::string &message)
+int CSMSG::Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID &addressTo, const std::string &message, int plaintext_format_version, int compression)
 {
     bool fSendAnonymous = addressFrom.IsNull();
 
@@ -3966,20 +3962,29 @@ int CSMSG::Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID 
     std::vector<uint8_t> vchPayload, vchCompressed;
     uint8_t *pMsgData;
     uint32_t lenMsgData;
-
     uint32_t lenMsg = message.size();
-    if (lenMsg > 128) {
+
+    bool lz4_compression = false;
+    if (plaintext_format_version < 2 && lenMsg > 128) {
+        lz4_compression = true;
+    } else
+    if (compression == 1) {
+        lz4_compression = true;
+    } else
+    if (compression == 2 && lenMsg > 128) {
+        lz4_compression = true;
+    }
+
+    if (lz4_compression) {
         // Only compress if over 128 bytes
         int worstCase = LZ4_compressBound(message.size());
         try { vchCompressed.resize(worstCase); } catch (std::exception &e) {
             return errorN(SMSG_ALLOCATE_FAILED, "%s: vchCompressed.resize %u threw: %s.", __func__, worstCase, e.what());
         }
-
         int lenComp = LZ4_compress_default((char*)message.c_str(), (char*)vchCompressed.data(), lenMsg, worstCase);
         if (lenComp < 1) {
             return errorN(SMSG_COMPRESS_FAILED, "%s: Could not compress message data.", __func__);
         }
-
         pMsgData = vchCompressed.data();
         lenMsgData = lenComp;
     } else {
@@ -3999,27 +4004,38 @@ int CSMSG::Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID 
         // Next 4 bytes are unused - there to ensure encrypted payload always > 8 bytes
         memput_uint32_le(&vchPayload[5], lenMsg);  // Length of uncompressed plain text
     } else {
-        try { vchPayload.resize(SMSG_PL_HDR_LEN + lenMsgData); } catch (std::exception &e) {
+        size_t extra_length = plaintext_format_version < 2 ? 0 : 1;
+        try { vchPayload.resize(SMSG_PL_HDR_LEN + lenMsgData + extra_length); } catch (std::exception &e) {
             return errorN(SMSG_ALLOCATE_FAILED, "%s: vchPayload.resize %u threw: %s.", __func__, SMSG_PL_HDR_LEN + lenMsgData, e.what());
         }
 
-        memcpy(&vchPayload[SMSG_PL_HDR_LEN], pMsgData, lenMsgData);
+        memcpy(&vchPayload[SMSG_PL_HDR_LEN + extra_length], pMsgData, lenMsgData);
         // Compact signature proves ownership of from address and allows the public key to be recovered, recipient can always reply.
         if (GetLocalKey(ckidFrom, keyFrom) != 0) {
             return errorN(SMSG_UNKNOWN_KEY_FROM, "%s: Could not get private key for addressFrom.", __func__);
         }
 
         // Sign the plaintext
-        std::vector<uint8_t> vchSignature;
-        vchSignature.resize(65);
+        std::vector<uint8_t> vchSignature(65);
         keyFrom.SignCompact(Hash(message), vchSignature);
 
+        size_t offset = 1;
         // Save some bytes by sending address raw
-        vchPayload[0] = (static_cast<CBitcoinAddress*>(&coinAddrFrom))->getVersion(); // vchPayload[0] = coinAddrDest.nVersion;
-        memcpy(&vchPayload[1], ckidFrom.begin(), 20); // memcpy(&vchPayload[1], ckidDest.pn, 20);
+        if (plaintext_format_version < 2) {
+            vchPayload[0] = (static_cast<CBitcoinAddress*>(&coinAddrFrom))->getVersion(); // vchPayload[0] = coinAddrDest.nVersion;
+        } else
+        if (plaintext_format_version == 2) {
+            vchPayload[0] = 249;
+            vchPayload[1] = compression;
+            offset += 1;
+        } else {
+            return errorN(SMSG_UNKNOWN_VERSION, "%s: Unknown plaintext format version.", __func__);
+        }
 
-        memcpy(&vchPayload[1+20], &vchSignature[0], vchSignature.size());
-        memput_uint32_le(&vchPayload[1+20+65], lenMsg); // Length of uncompressed plain text
+        memcpy(&vchPayload[offset], ckidFrom.begin(), 20); // memcpy(&vchPayload[1], ckidDest.pn, 20);
+
+        memcpy(&vchPayload[offset+20], &vchSignature[0], vchSignature.size());
+        memput_uint32_le(&vchPayload[offset+20+65], lenMsg); // Length of uncompressed plain text
     }
 
     SecMsgCrypter crypter;
@@ -4111,7 +4127,7 @@ int CSMSG::Import(SecureMessage *psmsg, std::string &sError, bool setread, bool 
 int CSMSG::Send(CKeyID &addressFrom, CKeyID &addressTo, std::string &message,
     SecureMessage &smsg, std::string &sError, bool fPaid,
     size_t nRetention, bool fTestFee, CAmount *nFee, size_t *nTxBytes, bool fFromFile, bool submit_msg, bool add_to_outbox,
-    bool fund_from_rct, size_t nRingSize, wallet::CCoinControl *coin_control, bool fund_paid_msg)
+    bool fund_from_rct, size_t nRingSize, wallet::CCoinControl *coin_control, bool fund_paid_msg, int plaintext_format_version, int compression)
 {
     bool fSendAnonymous = (addressFrom.IsNull());
 
@@ -4168,7 +4184,7 @@ int CSMSG::Send(CKeyID &addressFrom, CKeyID &addressTo, std::string &message,
 
     int rv;
     smsg = SecureMessage(fPaid, nRetention);
-    if ((rv = Encrypt(smsg, addressFrom, addressTo, sData)) != 0) {
+    if ((rv = Encrypt(smsg, addressFrom, addressTo, sData, plaintext_format_version, compression)) != 0) {
         sError = GetString(rv);
         return errorN(rv, "%s: %s.", __func__, sError);
     }
@@ -4238,7 +4254,7 @@ int CSMSG::Send(CKeyID &addressFrom, CKeyID &addressTo, std::string &message,
 
         SecureMessage smsgForOutbox(fPaid, nRetention);
         smsgForOutbox.timestamp = smsg.timestamp;
-        if ((rv = Encrypt(smsgForOutbox, addressFrom, addressOutbox, sData)) != 0) {
+        if ((rv = Encrypt(smsgForOutbox, addressFrom, addressOutbox, sData, plaintext_format_version, compression)) != 0) {
             LogPrintf("%s: Encrypt for outbox failed, %d.\n", __func__, rv);
         } else {
             if (fPaid) {
@@ -4556,8 +4572,7 @@ int CSMSG::Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, c
 
     // Use public key P to calculate the SHA512 hash H.
     //  The first 32 bytes of H are called key_e and the last 32 bytes are called key_m.
-    std::vector<uint8_t> vchHashedDec;
-    vchHashedDec.resize(64);    // 512 bits
+    std::vector<uint8_t> vchHashedDec(64);    // 512 bits
     memset(vchHashedDec.data(), 0, 64);
     CSHA512().Write(P.begin(), 32).Finalize(&vchHashedDec[0]);
     std::vector<uint8_t> key_e(&vchHashedDec[0], &vchHashedDec[0]+32);
@@ -4593,26 +4608,37 @@ int CSMSG::Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, c
     uint32_t lenData, lenPlain;
 
     uint8_t *pMsgData;
-    bool fFromAnonymous;
+    bool fFromAnonymous = false;
+    int compressed = 2;  // 0: no, 1: yes, 2: legacy (if plaintext > 128)
+    int start_offset = 0;
+    bool insert_null = true;
     if ((uint32_t)vchPayload[0] == 250) {
         fFromAnonymous = true;
-        lenData = vchPayload.size() - (9);
+        lenData = vchPayload.size() - 9;
         lenPlain = memget_uint32_le(&vchPayload[5]);
         pMsgData = &vchPayload[9];
+    } else
+    if ((uint32_t)vchPayload[0] == 249) {
+        // v2.1
+        compressed = vchPayload[1];
+        insert_null = false;
+        start_offset = 1;
+        lenData = vchPayload.size() - (SMSG_PL_HDR_LEN+start_offset);
+        lenPlain = memget_uint32_le(&vchPayload[1+20+65+start_offset]);
+        pMsgData = &vchPayload[SMSG_PL_HDR_LEN+start_offset];
     } else {
-        fFromAnonymous = false;
-        lenData = vchPayload.size() - (SMSG_PL_HDR_LEN);
+        lenData = vchPayload.size() - SMSG_PL_HDR_LEN;
         lenPlain = memget_uint32_le(&vchPayload[1+20+65]);
         pMsgData = &vchPayload[SMSG_PL_HDR_LEN];
     }
 
     try {
-        msg.vchMessage.resize(lenPlain + 1);
+        msg.vchMessage.resize(lenPlain + (insert_null ? 1 : 0));
     } catch (std::exception &e) {
         return errorN(SMSG_ALLOCATE_FAILED, "%s: msg.vchMessage.resize %u threw: %s.", __func__, lenPlain + 1, e.what());
     }
 
-    if (lenPlain > 128) {
+    if (compressed == 1 || (compressed == 2 && lenPlain > 128)) {
         // Decompress
         if (LZ4_decompress_safe((char*) pMsgData, (char*) &msg.vchMessage[0], lenData, lenPlain) != (int) lenPlain) {
             return errorN(SMSG_GENERAL_ERROR, "%s: Could not decompress message data.", __func__);
@@ -4622,16 +4648,16 @@ int CSMSG::Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, c
         memcpy(&msg.vchMessage[0], pMsgData, lenPlain);
     }
 
-    msg.vchMessage[lenPlain] = '\0';
+    if (insert_null) {
+        msg.vchMessage[lenPlain] = '\0';
+    }
 
     if (fFromAnonymous) {
         // Anonymous sender
         msg.sFromAddress = "anon";
     } else {
-        std::vector<uint8_t> vchUint160;
-        vchUint160.resize(20);
-
-        memcpy(&vchUint160[0], &vchPayload[1], 20);
+        std::vector<uint8_t> vchUint160(20);
+        memcpy(&vchUint160[0], &vchPayload[start_offset + 1], 20);
 
         uint160 ui160(vchUint160);
         CKeyID ckidFrom(ui160);
@@ -4642,13 +4668,11 @@ int CSMSG::Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, c
             return errorN(SMSG_INVALID_ADDRESS, "%s: From Address is invalid.", __func__);
         }
 
-        std::vector<uint8_t> vchSig;
-        vchSig.resize(65);
-
-        memcpy(&vchSig[0], &vchPayload[1+20], 65);
+        std::vector<uint8_t> vchSig(65);
+        memcpy(&vchSig[0], &vchPayload[start_offset + 1+20], 65);
 
         CPubKey cpkFromSig;
-        cpkFromSig.RecoverCompact(Hash(Span<const unsigned char>(msg.vchMessage.data(), msg.vchMessage.size() - 1)), vchSig);
+        cpkFromSig.RecoverCompact(Hash(Span<const unsigned char>(msg.vchMessage.data(), msg.vchMessage.size() - (insert_null ? 1 : 0))), vchSig);
         if (!cpkFromSig.IsValid()) {
             return errorN(SMSG_GENERAL_ERROR, "%s: Signature validation failed.", __func__);
         }
