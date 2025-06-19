@@ -166,6 +166,19 @@ class SmsgTest(ParticlTestFramework):
         self.log.info('Test smsgpeers')
         assert(len(nodes[0].smsgpeers()) == 2)
 
+        self.log.info('Test plaintext version 2')
+        msg = 'Test plaintext version 2' * 5
+        sendoptions = {'submitmsg': False, 'add_to_outbox': False, 'plaintext_format_version': 2, 'compression': 0}
+        ro = nodes[1].smsgsend(address1, address0, msg, False, 1, False, sendoptions)
+
+        assert (len(ro['msg']) == 664)
+        assert ('Not Sent' in ro['result'])
+
+        sendoptions = {'submitmsg': False, 'add_to_outbox': False, 'plaintext_format_version': 2, 'compression': 1}
+        ro = nodes[1].smsgsend(address1, address0, msg, False, 1, False, sendoptions)
+        assert (len(ro['msg']) == 472)
+        assert ('Not Sent' in ro['result'])
+
 
 if __name__ == '__main__':
     SmsgTest().main()

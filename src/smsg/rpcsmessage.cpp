@@ -838,6 +838,8 @@ static RPCHelpMan smsgsend()
                             {"fund_from_rct", RPCArg::Type::BOOL, RPCArg::Default{false}, "Fund message from anon balance."},
                             {"rct_ring_size", RPCArg::Type::NUM, RPCArg::Default{(int)DEFAULT_RING_SIZE}, "Ring size to use with fund_from_rct."},
                             {"fundmsg", RPCArg::Type::BOOL, RPCArg::Default{true}, "Fund paid message, if false message will be stashed for later funding."},
+                            {"plaintext_format_version", RPCArg::Type::NUM, RPCArg::Default{(int)1}, "Set the format of the plaintext data which gets encrypted."},
+                            {"compression", RPCArg::Type::NUM, RPCArg::Default{(int)2}, "Optionally compress plaintext data before encryption. 0: off, 1: LZ4, 2: LZ4 auto. Only takes effect if plaintext_format_version > 1."}
                         },
                         "options"},
                     {"coin_control", RPCArg::Type::OBJ, RPCArg::Default{UniValue::VOBJ}, "",
@@ -902,19 +904,23 @@ static RPCHelpMan smsgsend()
     bool fund_from_rct = false;
     bool fund_paid_msg = true;
     size_t rct_ring_size = DEFAULT_RING_SIZE;
+    int plaintext_format_version = 1;
+    int compression = 2;
 
     UniValue options = request.params[6];
     if (options.isObject()) {
         RPCTypeCheckObj(options,
         {
-            {"fromfile",          UniValueType(UniValue::VBOOL)},
-            {"decodehex",         UniValueType(UniValue::VBOOL)},
-            {"submitmsg",         UniValueType(UniValue::VBOOL)},
-            {"savemsg",           UniValueType(UniValue::VBOOL)},
-            {"ttl_is_seconds",    UniValueType(UniValue::VBOOL)},
-            {"fund_from_rct",     UniValueType(UniValue::VBOOL)},
-            {"rct_ring_size",     UniValueType(UniValue::VNUM)},
-            {"fundmsg",           UniValueType(UniValue::VBOOL)},
+            {"fromfile",                     UniValueType(UniValue::VBOOL)},
+            {"decodehex",                    UniValueType(UniValue::VBOOL)},
+            {"submitmsg",                    UniValueType(UniValue::VBOOL)},
+            {"savemsg",                      UniValueType(UniValue::VBOOL)},
+            {"ttl_is_seconds",               UniValueType(UniValue::VBOOL)},
+            {"fund_from_rct",                UniValueType(UniValue::VBOOL)},
+            {"rct_ring_size",                UniValueType(UniValue::VNUM)},
+            {"fundmsg",                      UniValueType(UniValue::VBOOL)},
+            {"plaintext_format_version",     UniValueType(UniValue::VNUM)},
+            {"compression",                  UniValueType(UniValue::VNUM)},
         }, true, false);
         if (!options["fromfile"].isNull()) {
             fFromFile = options["fromfile"].get_bool();
@@ -939,6 +945,12 @@ static RPCHelpMan smsgsend()
         }
         if (!options["fundmsg"].isNull()) {
             fund_paid_msg = options["fundmsg"].get_bool();
+        }
+        if (!options["plaintext_format_version"].isNull()) {
+            plaintext_format_version = options["plaintext_format_version"].getInt<int>();
+        }
+        if (!options["compression"].isNull()) {
+            compression = options["compression"].getInt<int>();
         }
     }
 
@@ -995,10 +1007,10 @@ static RPCHelpMan smsgsend()
         }
     }
     if (smsgModule.Send(kiFrom, kiTo, msg, smsgOut, sError, fPaid, nRetention, fTestFee, &nFee, &nTxBytes,
-                        fFromFile, submit_msg, save_msg, fund_from_rct, rct_ring_size, &cctl, fund_paid_msg) != 0) {
+                        fFromFile, submit_msg, save_msg, fund_from_rct, rct_ring_size, &cctl, fund_paid_msg, plaintext_format_version, compression) != 0) {
 #else
     if (smsgModule.Send(kiFrom, kiTo, msg, smsgOut, sError, fPaid, nRetention, fTestFee, &nFee, &nTxBytes,
-                        fFromFile, submit_msg, save_msg) != 0) {
+                        fFromFile, submit_msg, save_msg, fund_from_rct, rct_ring_size, nullptr, fund_paid_msg, plaintext_format_version, compression) != 0) {
 #endif
         result.pushKV("result", "Send failed.");
         result.pushKV("error", sError);
@@ -2179,7 +2191,14 @@ static RPCHelpMan smsgone()
                         {RPCResult::Type::STR, "expiration_local", /*optional=*/true, "Time Expired"},
                         {RPCResult::Type::STR, "expiration_utc", /*optional=*/true, "Time Expired"},
                         {RPCResult::Type::NUM, "payloadsize", "Size of user message"},
-                        {RPCResult::Type::STR, "from", "Address the message was sent from"},
+                        {RPCResult::Type::STR, "from", /*optional=*/true, "Address the message was sent from"},
+                        {RPCResult::Type::STR, "to", /*optional=*/true, "Address the message was sent to"},
+                        {RPCResult::Type::STR, "text", /*optional=*/true, "Message text"},
+                        {RPCResult::Type::STR, "hex", /*optional=*/true, "Message text"},
+                        {RPCResult::Type::STR, "unknown_encoding", /*optional=*/true, "Message text"},
+                        {RPCResult::Type::STR, "raw", /*optional=*/true, "Complete message hex encoded"},
+                        {RPCResult::Type::STR, "operation", /*optional=*/true, "Operation performed"},
+                        {RPCResult::Type::STR, "error", /*optional=*/true, "Error message"},
                 }},
                 RPCExamples{
             HelpExampleCli("smsg", "\"msgid\"") +
@@ -2689,8 +2708,7 @@ static RPCHelpMan smsgzmqpush()
             smsg::SecureMessage smsg(smsgStored.vchMessage.data());
             const smsg::SecureMessage *psmsg = &smsg;
 
-            std::vector<uint8_t> vchUint160;
-            vchUint160.resize(20);
+            std::vector<uint8_t> vchUint160(20);
             memcpy(vchUint160.data(), &chKey[10], 20);
             uint160 hash(vchUint160);
 
