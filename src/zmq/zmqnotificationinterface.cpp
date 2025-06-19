@@ -25,7 +25,6 @@
 #include <vector>
 
 // Particl
-#include <netbase.h>
 #include <util/thread.h>
 
 

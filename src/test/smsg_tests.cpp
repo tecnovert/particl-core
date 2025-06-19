@@ -1,10 +1,8 @@
-// Copyright (c) 2017-2024 The Particl Core developers
+// Copyright (c) 2017-2025 The Particl Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#if defined(HAVE_CONFIG_H)
-#include <config/bitcoin-config.h>
-#endif
+#include <config/bitcoin-config.h> // IWYU pragma: keep
 
 #include <test/util/setup_common.h>
 #include <test/util/random.h>
