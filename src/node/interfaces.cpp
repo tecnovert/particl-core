@@ -57,7 +57,6 @@
 #include <util/translation.h>
 #include <validation.h>
 #include <validationinterface.h>
-#include <node/miner.h>
 
 #include <config/bitcoin-config.h> // IWYU pragma: keep
 
