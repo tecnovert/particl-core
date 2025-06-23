@@ -213,7 +213,7 @@ class SmsgPaidTest(ParticlTestFramework):
 
 
         ro = nodes[0].smsgoptions('list', True)
-        assert (len(ro['options']) == 3)
+        assert (len(ro['options']) == 4)
         assert (len(ro['options'][0]['description']) > 0)
 
         ro = nodes[0].smsgoptions('set', 'newAddressAnon', 'false')
