@@ -779,8 +779,8 @@ int CSMSG::ReadIni()
             continue;
         }
 
-        if (!(pName = strtok_r(cLine, "=", &token))
-            || !(pValue = strtok_r(nullptr, "=", &token))) {
+        if (!(pName = strtok_r(cLine, "=", &token)) ||
+            !(pValue = strtok_r(nullptr, "=", &token))) {
             continue;
         }
 
@@ -792,6 +792,9 @@ int CSMSG::ReadIni()
         } else
         if (strcmp(pName, "scanIncoming") == 0) {
             options.fScanIncoming = (strcmp(pValue, "true") == 0) ? true : false;
+        } else
+        if (strcmp(pName, "addReceivedPubkeys") == 0) {
+            options.fAddReceivedPubkeys = (strcmp(pValue, "true") == 0) ? true : false;
         } else
         if (strcmp(pName, "key") == 0) {
             int rv = sscanf(pValue, "%63[^|]|%d|%d", cAddress, &addrRecv, &addrRecvAnon);
@@ -839,9 +842,10 @@ int CSMSG::WriteIni()
         return SMSG_GENERAL_ERROR;
     }
 
-    if (fprintf(fp, "newAddressRecv=%s\n", options.fNewAddressRecv ? "true" : "false") < 0
-        || fprintf(fp, "newAddressAnon=%s\n", options.fNewAddressAnon ? "true" : "false") < 0
-        || fprintf(fp, "scanIncoming=%s\n", options.fScanIncoming ? "true" : "false") < 0) {
+    if (fprintf(fp, "newAddressRecv=%s\n", options.fNewAddressRecv ? "true" : "false") < 0 ||
+        fprintf(fp, "newAddressAnon=%s\n", options.fNewAddressAnon ? "true" : "false") < 0 ||
+        fprintf(fp, "scanIncoming=%s\n", options.fScanIncoming ? "true" : "false") < 0 ||
+        fprintf(fp, "addReceivedPubkeys=%s\n", options.fAddReceivedPubkeys ? "true" : "false") < 0) {
         LogPrintf("fprintf error: %s\n", strerror(errno));
         fclose(fp);
         return SMSG_GENERAL_ERROR;
@@ -1241,6 +1245,31 @@ void CSMSG::GetNodesStats(int node_id, UniValue &result)
         result.push_back(obj);
     }
 };
+
+void CSMSG::ListRemoteAddresses(int max_results, int offset, UniValue &result)
+{
+    LOCK(cs_smsgDB);
+    SecMsgDB db;
+    if (!db.Open("r")) {
+        result.pushKV("error", "Could not open db");
+        LogPrintf("%s: ERROR Could not open db.\n", __func__);
+        return;
+    }
+
+    int k = 0;
+    CKeyID key_id;
+    leveldb::Iterator *it = db.pdb->NewIterator(leveldb::ReadOptions());
+    while (db.NextPKKey(it, key_id)) {
+        if (k >= offset) {
+            result.push_back(EncodeDestination(PKHash(key_id)));
+        }
+        k++;
+        if (max_results > 0 && k - offset >= max_results) {
+            break;
+        }
+    }
+    delete it;
+}
 
 void CSMSG::ClearBanned()
 {
@@ -1978,6 +2007,30 @@ static int InsertAddress(CKeyID &hashKey, CPubKey &pubKey)
     return InsertAddress(hashKey, pubKey, addrpkdb);
 };
 
+static int RemoveDBAddress(CKeyID &hashKey, SecMsgDB &addrpkdb) EXCLUSIVE_LOCKS_REQUIRED(cs_smsgDB)
+{
+    if (!addrpkdb.ExistsPK(hashKey)) {
+        return SMSG_PUBKEY_NOT_EXISTS;
+    }
+
+    if (!addrpkdb.ErasePK(hashKey)) {
+        return errorN(SMSG_GENERAL_ERROR, "%s: Erase pair failed.", __func__);
+    }
+
+    return SMSG_NO_ERROR;
+};
+
+static int RemoveDBAddress(CKeyID &hashKey)
+{
+    LOCK(cs_smsgDB);
+    SecMsgDB addrpkdb;
+    if (!addrpkdb.Open("cr+")) {
+        return SMSG_GENERAL_ERROR;
+    }
+    return RemoveDBAddress(hashKey, addrpkdb);
+};
+
+
 static bool ScanBlock(CSMSG &smsg, const CBlock &block, SecMsgDB &addrpkdb,
     uint32_t &nTransactions, uint32_t &nElements, uint32_t &nPubkeys, uint32_t &nDuplicates) EXCLUSIVE_LOCKS_REQUIRED(cs_smsgDB)
 {
@@ -2006,8 +2059,8 @@ static bool ScanBlock(CSMSG &smsg, const CBlock &block, SecMsgDB &addrpkdb,
 
             CPubKey pubKey(txin.scriptWitness.stack[1]);
 
-            if (!pubKey.IsValid()
-                || !pubKey.IsCompressed()) {
+            if (!pubKey.IsValid() ||
+                !pubKey.IsCompressed()) {
                 LogPrintf("Public key is invalid %s.\n", HexStr(pubKey));
                 continue;
             }
@@ -2808,6 +2861,19 @@ int CSMSG::AddLocalAddress(const std::string &sAddress)
 #endif
 };
 
+int CSMSG::RemoveAddress(const std::string &address)
+{
+    CBitcoinAddress coinAddress(address);
+    if (!coinAddress.IsValid()) {
+        return errorN(SMSG_INVALID_ADDRESS, "%s - Address is not valid: %s.", __func__, address);
+    }
+    CKeyID idk;
+    if (!coinAddress.GetKeyID(idk)) {
+        return errorN(SMSG_INVALID_ADDRESS, "%s - coinAddress.GetKeyID failed: %s.", __func__, address);
+    }
+    return RemoveDBAddress(idk);
+};
+
 int CSMSG::ImportPrivkey(const CBitcoinSecret &vchSecret, const std::string &sLabel)
 {
     SecMsgKey key;
@@ -2830,6 +2896,33 @@ int CSMSG::ImportPrivkey(const CBitcoinSecret &vchSecret, const std::string &sLa
 
     keyStore.AddKey(idk, key);
 
+    return SMSG_NO_ERROR;
+};
+
+int CSMSG::RemovePrivkey(const std::string &address)
+{
+    CBitcoinAddress addr(address);
+    if (!addr.IsValid(CChainParams::PUBKEY_ADDRESS)) {
+        return errorN(SMSG_INVALID_ADDRESS, "%s - Address is not valid: %s.", __func__, address);
+    }
+
+    CKeyID idk;
+    if (!addr.GetKeyID(idk)) {
+        return errorN(SMSG_INVALID_ADDRESS, "%s - GetKeyID failed: %s.", __func__, address);
+    }
+
+    LOCK(cs_smsgDB);
+
+    SecMsgDB db;
+    if (!db.Open("cr+")) {
+        return SMSG_GENERAL_ERROR;
+    }
+
+    if (!db.EraseKey(idk)) {
+        return errorN(SMSG_GENERAL_ERROR, "%s - EraseKey failed.", __func__);
+    }
+
+    keyStore.EraseKey(idk);
     return SMSG_NO_ERROR;
 };
 
@@ -3881,7 +3974,7 @@ int CSMSG::SetHash(SecureMessage *psmsg, uint8_t *pPayload, uint32_t nPayload)
   * Some differences:
   * bitmessage uses curve sect283r1 this uses secp256k1
   */
-int CSMSG::Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID &addressTo, const std::string &message, int plaintext_format_version, int compression)
+int CSMSG::Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID &addressTo, const std::string &message, SendOptions opts)
 {
     bool fSendAnonymous = addressFrom.IsNull();
 
@@ -3910,9 +4003,11 @@ int CSMSG::Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID 
     CKeyID ckidDest = addressTo;
 
     // Public key K is the destination address
-    CPubKey cpkDestK;
-    if (GetStoredKey(ckidDest, cpkDestK) != 0
-        && GetLocalKey(ckidDest, cpkDestK) != 0) { // maybe it's a local key (outbox?)
+
+    CPubKey cpkDestK = opts.pkTo;
+    if (!cpkDestK.IsValid() &&
+        GetStoredKey(ckidDest, cpkDestK) != 0 &&
+        GetLocalKey(ckidDest, cpkDestK) != 0) { // maybe it's a local key (outbox?)
         return errorN(SMSG_PUBKEY_NOT_EXISTS, "%s: Could not get public key for destination address.", __func__);
     }
 
@@ -3955,13 +4050,13 @@ int CSMSG::Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID 
     uint32_t lenMsg = message.size();
 
     bool lz4_compression = false;
-    if (plaintext_format_version < 2 && lenMsg > 128) {
+    if (opts.plaintext_format_version < 2 && lenMsg > 128) {
         lz4_compression = true;
     } else
-    if (compression == 1) {
+    if (opts.compression == 1) {
         lz4_compression = true;
     } else
-    if (compression == 2 && lenMsg > 128) {
+    if (opts.compression == 2 && lenMsg > 128) {
         lz4_compression = true;
     }
 
@@ -3994,7 +4089,7 @@ int CSMSG::Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID 
         // Next 4 bytes are unused - there to ensure encrypted payload always > 8 bytes
         memput_uint32_le(&vchPayload[5], lenMsg);  // Length of uncompressed plain text
     } else {
-        size_t extra_length = plaintext_format_version < 2 ? 0 : 1;
+        size_t extra_length = opts.plaintext_format_version < 2 ? 0 : 1;
         try { vchPayload.resize(SMSG_PL_HDR_LEN + lenMsgData + extra_length); } catch (std::exception &e) {
             return errorN(SMSG_ALLOCATE_FAILED, "%s: vchPayload.resize %u threw: %s.", __func__, SMSG_PL_HDR_LEN + lenMsgData, e.what());
         }
@@ -4011,12 +4106,12 @@ int CSMSG::Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID 
 
         size_t offset = 1;
         // Save some bytes by sending address raw
-        if (plaintext_format_version < 2) {
+        if (opts.plaintext_format_version < 2) {
             vchPayload[0] = (static_cast<CBitcoinAddress*>(&coinAddrFrom))->getVersion(); // vchPayload[0] = coinAddrDest.nVersion;
         } else
-        if (plaintext_format_version == 2) {
+        if (opts.plaintext_format_version == 2) {
             vchPayload[0] = 249;
-            vchPayload[1] = compression;
+            vchPayload[1] = opts.compression;
             offset += 1;
         } else {
             return errorN(SMSG_UNKNOWN_VERSION, "%s: Unknown plaintext format version.", __func__);
@@ -4060,7 +4155,7 @@ int CSMSG::Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID 
     return SMSG_NO_ERROR;
 };
 
-int CSMSG::Import(SecureMessage *psmsg, std::string &sError, bool setread, bool submitmsg)
+int CSMSG::Import(SecureMessage *psmsg, std::string &sError, bool setread, bool submitmsg, bool rehashmsg)
 {
     if (psmsg->IsPaidVersion() && psmsg->nPayload < 33) {
         sError = "Payload too short.";
@@ -4093,13 +4188,15 @@ int CSMSG::Import(SecureMessage *psmsg, std::string &sError, bool setread, bool 
     }
     LOCK(cs_smsg);
 
-    int rv = SetHash(psmsg, psmsg->pPayload, psmsg->nPayload);
-    if (rv != SMSG_NO_ERROR) {
-        sError = "SetHash failed " + std::string(GetString(rv));
-        return rv;
+    int rv = Validate(psmsg, psmsg->pPayload, psmsg->nPayload);
+    if (rv == SMSG_INVALID_HASH && rehashmsg) {
+        rv = SetHash(psmsg, psmsg->pPayload, psmsg->nPayload);
+        if (rv != SMSG_NO_ERROR) {
+            sError = "SetHash failed " + std::string(GetString(rv));
+            return rv;
+        }
+        rv = Validate(psmsg, psmsg->pPayload, psmsg->nPayload);
     }
-
-    rv = Validate(psmsg, psmsg->pPayload, psmsg->nPayload);
     if (rv != SMSG_NO_ERROR) {
         sError = "Validation failed " + std::string(GetString(rv));
         return rv;
@@ -4116,8 +4213,7 @@ int CSMSG::Import(SecureMessage *psmsg, std::string &sError, bool setread, bool 
   */
 int CSMSG::Send(CKeyID &addressFrom, CKeyID &addressTo, std::string &message,
     SecureMessage &smsg, std::string &sError, bool fPaid,
-    size_t nRetention, bool fTestFee, CAmount *nFee, size_t *nTxBytes, bool fFromFile, bool submit_msg, bool add_to_outbox,
-    bool fund_from_rct, size_t nRingSize, wallet::CCoinControl *coin_control, bool fund_paid_msg, int plaintext_format_version, int compression)
+    size_t nRetention, CAmount *nFee, size_t *nTxBytes, SendOptions opts)
 {
     bool fSendAnonymous = (addressFrom.IsNull());
 
@@ -4131,7 +4227,7 @@ int CSMSG::Send(CKeyID &addressFrom, CKeyID &addressTo, std::string &message,
     }
 
     std::string sFromFile;
-    if (fFromFile) {
+    if (opts.fFromFile) {
         FILE *fp;
         errno = 0;
         if (!(fp = fopen(message.c_str(), "rb"))) {
@@ -4159,7 +4255,7 @@ int CSMSG::Send(CKeyID &addressFrom, CKeyID &addressTo, std::string &message,
         }
     }
 
-    std::string &sData = fFromFile ? sFromFile : message;
+    std::string &sData = opts.fFromFile ? sFromFile : message;
 
     if (fPaid) {
         if (sData.size() > SMSG_MAX_MSG_BYTES_PAID) {
@@ -4174,12 +4270,16 @@ int CSMSG::Send(CKeyID &addressFrom, CKeyID &addressTo, std::string &message,
 
     int rv;
     smsg = SecureMessage(fPaid, nRetention);
-    if ((rv = Encrypt(smsg, addressFrom, addressTo, sData, plaintext_format_version, compression)) != 0) {
+    if ((rv = Encrypt(smsg, addressFrom, addressTo, sData, opts)) != 0) {
         sError = GetString(rv);
         return errorN(rv, "%s: %s.", __func__, sError);
     }
 
-    if (fPaid || !submit_msg) {
+    if (fPaid || !opts.submit_msg) {
+        if (!fPaid &&
+            (rv = SetHash(&smsg, smsg.pPayload, smsg.nPayload)) != SMSG_NO_ERROR) {
+            return errorN(rv, sError, __func__, "SetHash failed: %s", GetString(rv));
+        }
         uint256 msg_hash;
         size_t hash_bytes = smsg.IsPaidVersion() ? smsg.nPayload-32 : smsg.nPayload;
         GetPowHash(&smsg, smsg.pPayload, hash_bytes, msg_hash);
@@ -4187,23 +4287,23 @@ int CSMSG::Send(CKeyID &addressFrom, CKeyID &addressTo, std::string &message,
     }
     if (fPaid) {
         std::vector<SecureMessage*> v_smsgs{&smsg};
-        if (fund_paid_msg &&
-            0 != FundMsgs(v_smsgs, sError, fTestFee, nFee, nTxBytes, fund_from_rct, nRingSize, coin_control)) {
+        if (opts.fund_paid_msg &&
+            0 != FundMsgs(v_smsgs, sError, opts.fTestFee, nFee, nTxBytes, opts.fund_from_rct, opts.rct_ring_size, opts.coin_control)) {
             return errorN(SMSG_FUND_FAILED, "%s: SecureMsgFund failed %s.", __func__, sError);
         }
 
-        if (fTestFee) {
+        if (opts.fTestFee) {
             return SMSG_NO_ERROR;
         }
     }
 
-    if (submit_msg) {
-        if (0 != SubmitMsg(smsg, addressTo, (fPaid && !fund_paid_msg), sError)) {
+    if (opts.submit_msg) {
+        if (0 != SubmitMsg(smsg, addressTo, (fPaid && !opts.fund_paid_msg), sError)) {
             return errorN(SMSG_FUND_FAILED, "%s: SubmitMsg failed %s.", __func__, sError);
         }
     }
 
-    if (!add_to_outbox) {
+    if (!opts.add_to_outbox) {
         return SMSG_NO_ERROR;
     }
 
@@ -4244,7 +4344,7 @@ int CSMSG::Send(CKeyID &addressFrom, CKeyID &addressTo, std::string &message,
 
         SecureMessage smsgForOutbox(fPaid, nRetention);
         smsgForOutbox.timestamp = smsg.timestamp;
-        if ((rv = Encrypt(smsgForOutbox, addressFrom, addressOutbox, sData, plaintext_format_version, compression)) != 0) {
+        if ((rv = Encrypt(smsgForOutbox, addressFrom, addressOutbox, sData, opts)) != 0) {
             LogPrintf("%s: Encrypt for outbox failed, %d.\n", __func__, rv);
         } else {
             if (fPaid) {
@@ -4528,14 +4628,14 @@ std::vector<uint8_t> CSMSG::GetMsgID(const SecureMessage &smsg)
   * address is the owned address to decrypt with.
   * validate first in SecureMsgValidate
   */
-int CSMSG::Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg)
+int CSMSG::Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg, CPubKey *pk_from_out)
 {
     if (LogAcceptCategory(BCLog::SMSG)) {
         LogPrintf("%s: using %s, testonly %d.\n", __func__, EncodeDestination(PKHash(address)), fTestOnly);
     }
 
-    if (!pHeader
-        || !pPayload) {
+    if (!pHeader ||
+        !pPayload) {
         return errorN(SMSG_GENERAL_ERROR, "%s: null pointer to header or payload.", __func__);
     }
 
@@ -4675,12 +4775,18 @@ int CSMSG::Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, c
             return errorN(SMSG_GENERAL_ERROR, "%s: Signature validation failed.", __func__);
         }
 
-        int rv = SMSG_GENERAL_ERROR;
-        try {
-            rv = InsertAddress(ckidFrom, cpkFromSig);
-        } catch (std::exception &e) {
-            LogPrintf("%s, exception: %s.\n", __func__, e.what());
-            //return 1;
+        if (pk_from_out) {
+            *pk_from_out = cpkFromSig;
+        }
+        int rv = SMSG_NO_ERROR;
+        if (options.fAddReceivedPubkeys) {
+            try {
+                rv = SMSG_GENERAL_ERROR;
+                rv = InsertAddress(ckidFrom, cpkFromSig);
+            } catch (std::exception &e) {
+                LogPrintf("%s, exception: %s.\n", __func__, e.what());
+                //return 1;
+            }
         }
 
         if (rv != SMSG_NO_ERROR) {
@@ -4708,7 +4814,7 @@ int CSMSG::Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, c
     return CSMSG::Decrypt(fTestOnly, keyDest, address, header_buffer, smsg.pPayload, smsg.nPayload, msg);
 };
 
-int CSMSG::Decrypt(bool fTestOnly, const CKeyID &address, const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg)
+int CSMSG::Decrypt(bool fTestOnly, const CKeyID &address, const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg, CPubKey *pk_from_out)
 {
     // Fetch private key k, used to decrypt
     CKey keyDest;
@@ -4734,7 +4840,7 @@ int CSMSG::Decrypt(bool fTestOnly, const CKeyID &address, const uint8_t *pHeader
         return errorN(SMSG_UNKNOWN_KEY, "%s: Could not get private key for addressDest.", __func__);
     }
 
-    return CSMSG::Decrypt(fTestOnly, keyDest, address, pHeader, pPayload, nPayload, msg);
+    return CSMSG::Decrypt(fTestOnly, keyDest, address, pHeader, pPayload, nPayload, msg, pk_from_out);
 };
 
 int CSMSG::Decrypt(bool fTestOnly, const CKeyID &address, const SecureMessage &smsg, MessageData &msg)

@@ -62,9 +62,12 @@ public:
     bool ReadPK(const CKeyID &addr, CPubKey &pubkey);
     bool WritePK(const CKeyID &addr, const CPubKey &pubkey);
     bool ExistsPK(const CKeyID &addr);
+    bool ErasePK(const CKeyID &addr);
+    bool NextPKKey(leveldb::Iterator *it, CKeyID &key_id);
 
     bool ReadKey(const CKeyID &idk, SecMsgKey &key);
     bool WriteKey(const CKeyID &idk, const SecMsgKey &key);
+    bool EraseKey(const CKeyID &idk);
 
     bool NextSmesg(leveldb::Iterator *it, const std::string &prefix, uint8_t *chKey, SecMsgStored &smsgStored);
     bool NextSmesgKey(leveldb::Iterator *it, const std::string &prefix, uint8_t *chKey);

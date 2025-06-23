@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-# Copyright (c) 2017-2022 The Particl Core developers
+# Copyright (c) 2017-2025 The Particl Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+import json
 import time
 
 from test_framework.test_particl import ParticlTestFramework
@@ -40,8 +41,14 @@ class SmsgTest(ParticlTestFramework):
         ro = nodes[0].smsglocalkeys()
         assert(len(ro['wallet_keys']) == 1)
 
+<<<<<<< HEAD
         ro = nodes[1].smsgaddaddress(address0, ro['wallet_keys'][0]['public_key'])
         assert(ro['result'] == 'Public key added to db.')
+=======
+        address0_pk = ro['wallet_keys'][0]['public_key']
+        ro = nodes[1].smsgaddaddress(address0, address0_pk)
+        assert (ro['result'] == 'Public key added to db.')
+>>>>>>> b436ffd655 (smsg: Add RPC methods for remote address management.)
 
         ro = nodes[1].smsgbuckets()
         assert(ro['total']['numbuckets'] == 0)
@@ -178,6 +185,67 @@ class SmsgTest(ParticlTestFramework):
         ro = nodes[1].smsgsend(address1, address0, msg, False, 1, False, sendoptions)
         assert (len(ro['msg']) == 472)
         assert ('Not Sent' in ro['result'])
+
+        self.log.info("Test remote address management")
+        addresses_1 = nodes[1].smsgaddresses()
+        assert (len(addresses_1) == 2)
+        assert (address0 in addresses_1)
+        addresses_1_2 = nodes[1].smsgaddresses(1, 1)
+        assert (len(addresses_1_2) == 1)
+        assert (addresses_1_2[0] == addresses_1[1])
+
+        nodes[1].smsgremoveaddress(address0)
+        addresses_1 = nodes[1].smsgaddresses()
+        assert (len(addresses_1) == 1)
+
+        vk0 = nodes[0].dumpprivkey(address0)
+
+        nodes[1].smsgimportprivkey(vk0, "smsg test address")
+        localkeys_1 = nodes[1].smsglocalkeys()
+        assert (len(localkeys_1["smsg_keys"]) == 1)
+        nodes[1].smsgremoveprivkey(address0)
+        localkeys_1 = nodes[1].smsglocalkeys()
+        assert (len(localkeys_1["smsg_keys"]) == 0)
+
+        ro = nodes[1].smsgoptions("set", "addReceivedPubkeys", False)
+        assert ("addReceivedPubkeys = false" in json.dumps(ro))
+
+        msg: str = "Test 0->1, no pk."
+        sendoptions = {"submitmsg": False, "plaintext_format_version": 2, "compression": 0}
+        ro = nodes[0].smsgsend(address0, address1, msg, False, 1, False, sendoptions)
+        assert (ro["result"] == "Not Sent.")
+        smsg_id = ro["msgid"]
+        smsg_hex = ro["msg"]
+        options = {"submitmsg": True, "rehashmsg": False}
+        ro = nodes[1].smsgimport(smsg_hex, options)
+        assert (ro["msgid"] == smsg_id)
+        ro = nodes[1].smsginbox()
+        assert (ro["messages"][0]["from"] == address0)
+        assert (ro["messages"][0]["text"] == msg)
+        options = {"pubkey_from": True}
+        ro = nodes[1].smsg(smsg_id, options)
+        assert (len(ro["pubkey_from"]) == 66)
+
+        msg: str = "Test 0->1, decodehex."
+        msg_hex = msg.encode("utf-8").hex()
+        sendoptions = {"submitmsg": False, "decodehex": True, "add_to_outbox": False, "plaintext_format_version": 2, "compression": 0}
+        ro = nodes[0].smsgsend(address0, address1, msg_hex, False, 1, False, sendoptions)
+        assert (ro["result"] == "Not Sent.")
+        smsg_id = ro["msgid"]
+        smsg_hex = ro["msg"]
+        options = {"submitmsg": True, "rehashmsg": False}
+        ro = nodes[1].smsgimport(smsg_hex, options)
+        assert (ro["msgid"] == smsg_id)
+        ro = nodes[1].smsginbox()
+        assert (ro["messages"][0]["from"] == address0)
+        assert (ro["messages"][0]["text"] == msg)
+
+        msg: str = "Test 1->0, no pk."
+        ro = nodes[1].smsgsend(address1, address0, msg)
+        assert ("Public key not in database" in ro["error"])
+
+        ro = nodes[1].smsgsend(address1, address0_pk, msg)
+        assert (ro["result"] == "Sent.")
 
 
 if __name__ == '__main__':
