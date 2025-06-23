@@ -286,14 +286,16 @@ public:
     SecMsgOptions()
     {
         // Default options
-        fNewAddressRecv = true;
-        fNewAddressAnon = true;
-        fScanIncoming   = false;
+        fNewAddressRecv     = true;
+        fNewAddressAnon     = true;
+        fScanIncoming       = false;
+        fAddReceivedPubkeys = true;
     }
 
     bool fNewAddressRecv;
     bool fNewAddressAnon;
     bool fScanIncoming;
+    bool fAddReceivedPubkeys;
 };
 
 class SecMsgStored
@@ -333,6 +335,20 @@ public:
     }
 };
 
+struct SendOptions {
+    bool fTestFee{false};
+    bool fFromFile{false};
+    bool submit_msg{true};
+    bool add_to_outbox{true};
+    bool fund_from_rct{false};
+    size_t rct_ring_size{5};
+    wallet::CCoinControl *coin_control{nullptr};
+    bool fund_paid_msg{true};
+    int plaintext_format_version{0};
+    int compression{-1};
+    CPubKey pkTo;
+};
+
 void AddOptions(ArgsManager& argsman);
 const char *GetString(size_t errorCode);
 
@@ -366,6 +382,7 @@ public:
     std::string LookupLabel(PKHash &hash);
 
     void GetNodesStats(int node_id, UniValue &result);
+    void ListRemoteAddresses(int max_results, int offset, UniValue &result);
     void ClearBanned();
     void ShowFundingTxns(UniValue &result);
 
@@ -390,7 +407,9 @@ public:
 
     int AddAddress(std::string &address, std::string &publicKey);
     int AddLocalAddress(const std::string &sAddress);
+    int RemoveAddress(const std::string &address);
     int ImportPrivkey(const CBitcoinSecret &vchSecret, const std::string &sLabel);
+    int RemovePrivkey(const std::string &address);
     int DumpPrivkey(const CKeyID &idk, CKey &key_out);
 
     bool SetWalletAddressOption(const CKeyID &idk, std::string sOption, bool fValue);
@@ -414,12 +433,12 @@ public:
 
     int AdjustDifficulty(int64_t time);
 
-    int Import(SecureMessage *psmsg, std::string &sError, bool setread, bool submitmsg);
+    int Import(SecureMessage *psmsg, std::string &sError, bool setread, bool submitmsg, bool rehashmsg=true);
 
     int Send(CKeyID &addressFrom, CKeyID &addressTo, std::string &message,
         SecureMessage &smsg, std::string &sError, bool fPaid, size_t nRetention,
-        bool fTestFee=false, CAmount *nFee=nullptr, size_t *nTxBytes=nullptr, bool fFromFile=false, bool submit_msg=true, bool add_to_outbox=true,
-        bool fund_from_rct=false, size_t nRingSize=5, wallet::CCoinControl *coin_control=nullptr, bool fund_paid_msg=true, int plaintext_format_version=1, int compression=2);
+        CAmount *nFee=nullptr, size_t *nTxBytes=nullptr,
+        SendOptions opts = {});
 
     bool GetPowHash(const SecureMessage *psmsg, const uint8_t *pPayload, uint32_t nPayload, uint256 &hash);
     int HashMsg(const SecureMessage &smsg, const uint8_t *pPayload, uint32_t nPayload, uint160 &hash);
@@ -441,12 +460,12 @@ public:
     int Validate(const SecureMessage *psmsg, const uint8_t *pPayload, uint32_t nPayload);
     int SetHash (SecureMessage *psmsg, uint8_t *pPayload, uint32_t nPayload);
 
-    int Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID &addressTo, const std::string &message, int plaintext_format_version=0, int compress=-1);
+    int Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID &addressTo, const std::string &message, SendOptions opts = {});
 
-    int Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg);
+    int Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg, CPubKey *pk_from_out=nullptr);
     int Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, const SecureMessage &smsg, MessageData &msg);
 
-    int Decrypt(bool fTestOnly, const CKeyID &address, const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg);
+    int Decrypt(bool fTestOnly, const CKeyID &address, const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg, CPubKey *pk_from_out=nullptr);
     int Decrypt(bool fTestOnly, const CKeyID &address, const SecureMessage &smsg, MessageData &msg);
 
     RecursiveMutex cs_smsg; // All except inbox and outbox

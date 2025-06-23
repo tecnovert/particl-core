@@ -262,6 +262,57 @@ bool SecMsgDB::ExistsPK(const CKeyID &addr)
     return s.IsNotFound() == false;
 };
 
+bool SecMsgDB::ErasePK(const CKeyID &addr)
+{
+    if (!pdb) {
+        return false;
+    }
+
+    DataStream ssKey{};
+    ssKey.reserve(sizeof(addr)+2);
+    ssKey << uint8_t(DBK_PUBLICKEY[0]);
+    ssKey << uint8_t(DBK_PUBLICKEY[1]);
+    ssKey << addr;
+
+    if (activeBatch) {
+        activeBatch->Delete(ssKey.str());
+        return true;
+    }
+
+    leveldb::WriteOptions writeOptions;
+    writeOptions.sync = true;
+    leveldb::Status s = pdb->Delete(writeOptions, ssKey.str());
+
+    if (s.ok() || s.IsNotFound()) {
+        return true;
+    }
+    LogError("SecMsgDB erase failed: %s\n", s.ToString());
+    return false;
+};
+
+bool SecMsgDB::NextPKKey(leveldb::Iterator *it, CKeyID &key_id)
+{
+    if (!pdb) {
+        return false;
+    }
+
+    if (!it->Valid()) { // First run
+        it->Seek(DBK_PUBLICKEY);
+    } else {
+        it->Next();
+    }
+
+    if (!(it->Valid()
+        && it->key().size() == DBK_PUBLICKEY.size() + 20
+        && memcmp(it->key().data(), DBK_PUBLICKEY.data(), DBK_PUBLICKEY.size()) == 0)) {
+        return false;
+    }
+
+    memcpy(key_id.begin(), it->key().data() + DBK_PUBLICKEY.size(), 20);
+
+    return true;
+}
+
 bool SecMsgDB::ReadKey(const CKeyID &idk, SecMsgKey &key)
 {
     if (!pdb) {
@@ -334,6 +385,34 @@ bool SecMsgDB::WriteKey(const CKeyID &idk, const SecMsgKey &key)
     }
 
     return true;
+};
+
+bool SecMsgDB::EraseKey(const CKeyID &idk)
+{
+    if (!pdb) {
+        return false;
+    }
+
+    DataStream ssKey{};
+    ssKey.reserve(sizeof(idk)+2);
+    ssKey << uint8_t(DBK_SECRETKEY[0]);
+    ssKey << uint8_t(DBK_SECRETKEY[1]);
+    ssKey << idk;
+
+    if (activeBatch) {
+        activeBatch->Delete(ssKey.str());
+        return true;
+    }
+
+    leveldb::WriteOptions writeOptions;
+    writeOptions.sync = true;
+    leveldb::Status s = pdb->Delete(writeOptions, ssKey.str());
+
+    if (s.ok() || s.IsNotFound()) {
+        return true;
+    }
+    LogError("SecMsgDB erase failed: %s\n", s.ToString());
+    return false;
 };
 
 
