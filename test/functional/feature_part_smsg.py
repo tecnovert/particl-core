@@ -41,14 +41,9 @@ class SmsgTest(ParticlTestFramework):
         ro = nodes[0].smsglocalkeys()
         assert(len(ro['wallet_keys']) == 1)
 
-<<<<<<< HEAD
-        ro = nodes[1].smsgaddaddress(address0, ro['wallet_keys'][0]['public_key'])
-        assert(ro['result'] == 'Public key added to db.')
-=======
         address0_pk = ro['wallet_keys'][0]['public_key']
         ro = nodes[1].smsgaddaddress(address0, address0_pk)
         assert (ro['result'] == 'Public key added to db.')
->>>>>>> b436ffd655 (smsg: Add RPC methods for remote address management.)
 
         ro = nodes[1].smsgbuckets()
         assert(ro['total']['numbuckets'] == 0)
@@ -76,10 +71,15 @@ class SmsgTest(ParticlTestFramework):
         self.waitForSmsgExchange(2, 0, 1)
 
         ro = nodes[1].smsginbox()
-        assert(ro['messages'][0]['to'] == address1)
-        assert(ro['messages'][0]['text'] == 'Reply 0->1.')
-        assert(len(nodes[1].smsgview()['messages']) == 2)
-        assert(len(nodes[1].smsgoutbox()['messages']) == 1)
+        assert (ro['messages'][0]['to'] == address1)
+        assert (ro['messages'][0]['text'] == 'Reply 0->1.')
+        smsgview_msges = nodes[1].smsgview()['messages']
+        assert (len(smsgview_msges) == 2)
+        assert ("text" in smsgview_msges[0])
+        smsgview_msges = nodes[1].smsgview("*", "asc", "", "", {"encoding": "hex"})["messages"]
+        assert (len(smsgview_msges) == 2)
+        assert ("hex" in smsgview_msges[0])
+        assert (len(nodes[1].smsgoutbox()['messages']) == 1)
 
         nodes[1].smsgdisable()
 
