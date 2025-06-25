@@ -213,13 +213,8 @@ class SmsgPaidTest(ParticlTestFramework):
 
 
         ro = nodes[0].smsgoptions('list', True)
-<<<<<<< HEAD
-        assert(len(ro['options']) == 3)
-        assert(len(ro['options'][0]['description']) > 0)
-=======
         assert (len(ro['options']) == 4)
         assert (len(ro['options'][0]['description']) > 0)
->>>>>>> b436ffd655 (smsg: Add RPC methods for remote address management.)
 
         ro = nodes[0].smsgoptions('set', 'newAddressAnon', 'false')
         assert('newAddressAnon = false' in json.dumps(ro))
