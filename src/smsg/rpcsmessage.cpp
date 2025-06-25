@@ -54,6 +54,19 @@ static void EnsureSMSGIsEnabled()
     }
 };
 
+inline std::string GetMessageText(const smsg::MessageData &msg)
+{
+    std::string text;
+    if (msg.vchMessage.size() < 1) {
+        return text;
+    }
+    text = std::string(msg.vchMessage.begin(), msg.vchMessage.end());
+    if (text.back() == '\0') {
+        text.pop_back();
+    }
+    return text;
+}
+
 static RPCHelpMan smsgenable()
 {
     return RPCHelpMan{"smsgenable",
@@ -1605,7 +1618,7 @@ static RPCHelpMan smsginbox()
                 int rv = smsgModule.Decrypt(false, smsgStored.addrTo, pHeader, pHeader + smsg::SMSG_HDR_LEN, nPayload, msg);
                 if (rv == 0) {
                     std::string sAddrTo = EncodeDestination(PKHash(smsgStored.addrTo));
-                    std::string sText = std::string((char*)msg.vchMessage.data());
+                    std::string sText = GetMessageText(msg);
                     if (filter.size() > 0 &&
                         !(part::stringsMatchI(msg.sFromAddress, filter, 3) ||
                           part::stringsMatchI(sAddrTo, filter, 3) ||
@@ -1823,7 +1836,7 @@ static RPCHelpMan smsgoutbox()
                 int rv = smsgModule.Decrypt(false, smsgStored.addrOutbox, pHeader, pHeader + smsg::SMSG_HDR_LEN, nPayload, msg);
                 if (rv == 0) {
                     std::string sAddrTo = EncodeDestination(PKHash(smsgStored.addrTo));
-                    std::string sText = std::string((char*)msg.vchMessage.data());
+                    std::string sText = GetMessageText(msg);
                     if (filter.size() > 0 &&
                         !(part::stringsMatchI(msg.sFromAddress, filter, 3) ||
                           part::stringsMatchI(sAddrTo, filter, 3) ||
@@ -2029,6 +2042,11 @@ static RPCHelpMan smsgview()
                     {"arg2", RPCArg::Type::STR, RPCArg::Default{"asc"}, "asc/desc"},
                     {"arg3", RPCArg::Type::STR, RPCArg::Default{""}, "-from yyyy-mm-dd"},
                     {"arg4", RPCArg::Type::STR, RPCArg::Default{""}, "-to yyyy-mm-dd"},
+                    {"options", RPCArg::Type::OBJ, RPCArg::Default{UniValue::VOBJ}, "",
+                        {
+                            {"encoding", RPCArg::Type::STR, RPCArg::Default{"text"}, "Display message data in encoding, values: \"text\", \"hex\", \"none\"."},
+                        },
+                    },
                 },
                 RPCResult{
                     RPCResult::Type::ANY, "", ""
@@ -2107,6 +2125,10 @@ static RPCHelpMan smsgview()
 
     size_t i = 1;
     while (i < request.params.size()) {
+        if (request.params[i].isObject()) {
+            i++;
+            continue;
+        }
         sTemp = request.params[i].get_str();
         if (sTemp == "-from") {
             if (i >= request.params.size()-1) {
@@ -2135,11 +2157,22 @@ static RPCHelpMan smsgview()
         } else
         if (sTemp == "desc") {
             fDesc = true;
+        } else
+        if (sTemp == "") {
+            // Placeholder
         } else {
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Unknown parameter: " + sTemp);
         }
 
         i++;
+    }
+
+    std::string sEnc = "text";
+    if (request.params[4].isObject()) {
+        UniValue options = request.params[4].get_obj();
+        if (options["encoding"].isStr()) {
+            sEnc = options["encoding"].get_str();
+        }
     }
 
     if (!fMatchAll && vMatchAddress.size() < 1) {
@@ -2204,8 +2237,8 @@ static RPCHelpMan smsgview()
                         bool fSkip = true;
 
                         for (its = vMatchAddress.begin(); its < vMatchAddress.end(); ++its) {
-                            if (*its == kiFrom
-                                || *its == smsgStored.addrTo) {
+                            if (*its == kiFrom ||
+                                *its == smsgStored.addrTo) {
                                 fSkip = false;
                                 break;
                             }
@@ -2249,7 +2282,16 @@ static RPCHelpMan smsgview()
                     PushTime(objM, "sent", msg.timestamp);
                     objM.pushKV("from", sFrom);
                     objM.pushKV("to", sTo);
-                    objM.pushKV("text", std::string((char*)&msg.vchMessage[0]));
+                    if (sEnc == "none") {
+                    } else
+                    if (sEnc == "text") {
+                        objM.pushKV("text", GetMessageText(msg));
+                    } else
+                    if (sEnc == "hex") {
+                        objM.pushKV("hex", HexStr(msg.vchMessage));
+                    } else {
+                        objM.pushKV("unknown_encoding", sEnc);
+                    }
 
                     vMessages.push_back(std::make_pair(msg.timestamp, objM));
                 } else {
@@ -2470,13 +2512,13 @@ static RPCHelpMan smsgone()
         if (sEnc == "") {
             // TODO: detect non ascii chars
             if (msg.vchMessage.size() < smsg::SMSG_MAX_MSG_BYTES) {
-                result.pushKV("text", std::string((char*)msg.vchMessage.data()));
+                result.pushKV("text", GetMessageText(msg));
             } else {
                 result.pushKV("hex", HexStr(msg.vchMessage));
             }
         } else
         if (sEnc == "text") {
-            result.pushKV("text", std::string((char*)msg.vchMessage.data()));
+            result.pushKV("text", GetMessageText(msg));
         } else
         if (sEnc == "hex") {
             result.pushKV("hex", HexStr(msg.vchMessage));
