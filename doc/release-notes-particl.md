@@ -4,6 +4,7 @@
 
 - smsg: Fix found messages counter when scanning files.
 - qt: Disable 'Make Blank Wallet' option in Particl mode.
+- smsg:
 
 
 23.2.7
