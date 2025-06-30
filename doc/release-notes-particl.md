@@ -4,6 +4,9 @@
 
 - smsg: Fix found messages counter when scanning files.
 - qt: Disable 'Make Blank Wallet' option in Particl mode.
+- smsg: Add plaintext format version 2 option.
+  - Only affects decrpted messages, the encrypted messages are still compatible with older nodes.
+- smsg: Add RPC methods for remote address management.
 
 
 23.2.7
