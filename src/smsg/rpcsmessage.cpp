@@ -970,7 +970,8 @@ static RPCHelpMan smsgsend()
                             {"rct_ring_size", RPCArg::Type::NUM, RPCArg::Default{(int)DEFAULT_RING_SIZE}, "Ring size to use with fund_from_rct."},
                             {"fundmsg", RPCArg::Type::BOOL, RPCArg::Default{true}, "Fund paid message, if false message will be stashed for later funding."},
                             {"plaintext_format_version", RPCArg::Type::NUM, RPCArg::Default{(int)1}, "Set the format of the plaintext data which gets encrypted."},
-                            {"compression", RPCArg::Type::NUM, RPCArg::Default{(int)2}, "Optionally compress plaintext data before encryption. 0: off, 1: LZ4, 2: LZ4 auto. Only takes effect if plaintext_format_version > 1."}
+                            {"compression", RPCArg::Type::NUM, RPCArg::Default{(int)2}, "Optionally compress plaintext data before encryption. 0: off, 1: LZ4, 2: LZ4 auto. Only takes effect if plaintext_format_version > 1."},
+                            {"returnmsg",  RPCArg::Type::BOOL, RPCArg::Default{false}, "Return hex encoded smsg message."}
                         },
                     },
                     {"coin_control", RPCArg::Type::OBJ, RPCArg::Default{UniValue::VOBJ}, "",
@@ -1035,6 +1036,7 @@ static RPCHelpMan smsgsend()
     bool fDecodeHex = false;
     bool ttl_in_seconds = false;
     send_opts.rct_ring_size = DEFAULT_RING_SIZE;
+    bool return_msg = false;
 
     UniValue options = request.params[6];
     if (options.isObject()) {
@@ -1050,6 +1052,7 @@ static RPCHelpMan smsgsend()
             {"fundmsg",                      UniValueType(UniValue::VBOOL)},
             {"plaintext_format_version",     UniValueType(UniValue::VNUM)},
             {"compression",                  UniValueType(UniValue::VNUM)},
+            {"returnmsg",                    UniValueType(UniValue::VBOOL)},
         }, true, false);
         if (!options["fromfile"].isNull()) {
             send_opts.fFromFile = options["fromfile"].get_bool();
@@ -1080,6 +1083,9 @@ static RPCHelpMan smsgsend()
         }
         if (!options["compression"].isNull()) {
             send_opts.compression = options["compression"].getInt<int>();
+        }
+        if (!options["returnmsg"].isNull()) {
+            return_msg = options["returnmsg"].get_bool();
         }
     }
 
@@ -1163,7 +1169,7 @@ static RPCHelpMan smsgsend()
             result.pushKV("msgid", HexStr(smsgModule.GetMsgID(smsgOut)));
         }
 
-        if (!send_opts.submit_msg) {
+        if (!send_opts.submit_msg || return_msg) {
             unsigned char header_buffer[smsg::SMSG_HDR_LEN];
             smsgOut.WriteHeader(header_buffer);
             result.pushKV("msg", HexStr(Span<const unsigned char>(header_buffer, smsg::SMSG_HDR_LEN)) +
