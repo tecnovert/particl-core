@@ -10,6 +10,13 @@ from test_framework.test_particl import ParticlTestFramework
 from test_framework.authproxy import JSONRPCException
 
 
+def is_hex(s):
+    if not s:
+        return False
+    allowed = set('0123456789abcdefABCDEF')
+    return all(c in allowed for c in s)
+
+
 class SmsgTest(ParticlTestFramework):
     def set_test_params(self):
         self.setup_clean_chain = True  # Don't copy from cache
@@ -90,9 +97,10 @@ class SmsgTest(ParticlTestFramework):
             assert("Secure messaging is disabled." in e.error['message'])
 
         ro = nodes[1].smsgenable()
-
-        ro = nodes[1].smsgsend(address1, address0, "Test 1->0. 2")
+        sendoptions = {'returnmsg': True}
+        ro = nodes[1].smsgsend(address1, address0, "Test 1->0. 2", False, 1, False, sendoptions)
         assert(ro['result'] == 'Sent.')
+        assert(is_hex(ro['msg']) and len(ro['msg']) == 440)
 
         self.waitForSmsgExchange(3, 1, 0)
 
