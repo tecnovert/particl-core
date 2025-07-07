@@ -227,10 +227,11 @@ class SmsgTest(ParticlTestFramework):
         options = {"submitmsg": True, "rehashmsg": False}
         ro = nodes[1].smsgimport(smsg_hex, options)
         assert (ro["msgid"] == smsg_id)
-        ro = nodes[1].smsginbox()
-        assert (ro["messages"][0]["from"] == address0)
-        assert (ro["messages"][0]["text"] == msg)
         options = {"pubkey_from": True}
+        ro = nodes[1].smsginbox("unread", "", options)
+        assert (ro["messages"][0]["from"] == address0)
+        assert (len(ro["messages"][0]["pubkey_from"]) == 66)
+        assert (ro["messages"][0]["text"] == msg)
         ro = nodes[1].smsg(smsg_id, options)
         assert (len(ro["pubkey_from"]) == 66)
 

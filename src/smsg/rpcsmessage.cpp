@@ -1472,6 +1472,7 @@ static RPCHelpMan smsginbox()
                             {"offset", RPCArg::Type::NUM, RPCArg::Default{""}, "Skip the first \"offset\" messages"},
                             {"max_results", RPCArg::Type::NUM, RPCArg::Default{""}, "Return only \"max_results\" messages"},
                             {"unread_only", RPCArg::Type::BOOL, RPCArg::Default{false}, "Count only unread messages"},
+                            {"pubkey_from", RPCArg::Type::BOOL, RPCArg::Default{false}, "Display the public key the message was sent from (if possible)."},
                         },
                     },
                 },
@@ -1499,6 +1500,7 @@ static RPCHelpMan smsginbox()
                                 {RPCResult::Type::STR, "to", /*optional=*/true, "Address the message was sent to"},
                                 {RPCResult::Type::STR, "text", /*optional=*/true, "Message text"},
                                 {RPCResult::Type::STR, "hex", /*optional=*/true, "Message text"},
+                                {RPCResult::Type::STR, "pubkey_from", /*optional=*/true, "Public key the message was sent from"},
                                 {RPCResult::Type::STR, "unknown_encoding", /*optional=*/true, "Message text"},
                                 {RPCResult::Type::STR, "status", /*optional=*/true, "Message status"},
                                 {RPCResult::Type::STR, "error", /*optional=*/true, "Message error"},
@@ -1526,6 +1528,7 @@ static RPCHelpMan smsginbox()
     std::string sEnc = "text";
     bool update_status = true;
     bool unread_only = false;
+    bool pubkey_from = false;
     int offset = 0, max_results = -1;
     if (request.params[2].isObject()) {
         UniValue options = request.params[2].get_obj();
@@ -1535,15 +1538,19 @@ static RPCHelpMan smsginbox()
         if (options["encoding"].isStr()) {
             sEnc = options["encoding"].get_str();
         }
-        if (options["unread_only"].isBool()) {
-            unread_only = options["unread_only"].get_bool();
-        }
         if (options["offset"].isNum()) {
             offset = options["offset"].getInt<int>();
         }
         if (options["max_results"].isNum()) {
             max_results = options["max_results"].getInt<int>();
         }
+        if (options["unread_only"].isBool()) {
+            unread_only = options["unread_only"].get_bool();
+        }
+        if (options["pubkey_from"].isBool()) {
+            pubkey_from = options["pubkey_from"].get_bool();
+        }
+
     }
 
     UniValue result(UniValue::VOBJ);
@@ -1620,8 +1627,10 @@ static RPCHelpMan smsginbox()
                 objM.pushKV("msgid", HexStr(Span<const unsigned char>(&chKey[2], 28))); // timestamp+hash
                 objM.pushKV("version", strprintf("%02x%02x", psmsg->version[0], psmsg->version[1]));
 
+                CPubKey pk_from_out;
+                CPubKey *ppk = pubkey_from ? &pk_from_out : nullptr;
                 uint32_t nPayload = smsgStored.vchMessage.size() - smsg::SMSG_HDR_LEN;
-                int rv = smsgModule.Decrypt(false, smsgStored.addrTo, pHeader, pHeader + smsg::SMSG_HDR_LEN, nPayload, msg);
+                int rv = smsgModule.Decrypt(false, smsgStored.addrTo, pHeader, pHeader + smsg::SMSG_HDR_LEN, nPayload, msg, ppk);
                 if (rv == 0) {
                     std::string sAddrTo = EncodeDestination(PKHash(smsgStored.addrTo));
                     std::string sText = GetMessageText(msg);
@@ -1646,6 +1655,10 @@ static RPCHelpMan smsginbox()
                     objM.pushKV("payloadsize", (int)nPayload);
 
                     objM.pushKV("from", msg.sFromAddress);
+                    if (pk_from_out.IsValid()) {
+                        objM.pushKV("pubkey_from", HexStr(pk_from_out));
+                    }
+
                     objM.pushKV("to", sAddrTo);
                     if (sEnc == "none") {
                     } else
