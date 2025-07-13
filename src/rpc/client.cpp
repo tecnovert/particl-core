@@ -276,6 +276,7 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "smsgoutbox", 2, "options" },
     { "smsggetfeerate", 0, "height" },
     { "smsggetdifficulty", 0, "time" },
+    { "smsggetdifficulty", 1, "as_compact_target" },
     { "smsgscanbuckets", 0, "options" },
     { "smsgpeers", 0, "index" },
     { "smsgview", 4, "options" },

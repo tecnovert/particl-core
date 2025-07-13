@@ -7,6 +7,8 @@
 - smsg: Add plaintext format version 2 option.
   - Only affects decrpted messages, the encrypted messages are still compatible with older nodes.
 - smsg: Add RPC methods for remote address management.
+- smsg rpc:
+  - Added parameter to smsggetdifficulty to return difficulty in compact target form.
 
 
 23.2.7
