@@ -5,7 +5,6 @@ Next Major Version
 - listunspent include_immature parameter is deprecated, replaced by include_immature_coinbase
 - Removed -lookuptorcontrolhost option
 
-
 24.0.2
 ==============
 

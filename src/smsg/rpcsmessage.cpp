@@ -2738,7 +2738,8 @@ static RPCHelpMan smsggetdifficulty()
     return RPCHelpMan{"smsggetdifficulty",
                 "\nReturn free SMSG difficulty.\n",
                 {
-                    {"time", RPCArg::Type::NUM, RPCArg::DefaultHint{"Current time"}, "Chain time to get smsg difficulty for."},
+                    {"time", RPCArg::Type::NUM, RPCArg::DefaultHint{"Current time"}, "Chain time to get smsg difficulty for, <= 0 for current time."},
+                    {"as_compact_target", RPCArg::Type::BOOL, RPCArg::Default{false}, "Return difficulty in compact target form."},
                 },
                 RPCResult{
                     RPCResult::Type::NUM, "difficulty", "smsg difficulty"
@@ -2755,14 +2756,21 @@ static RPCHelpMan smsggetdifficulty()
     ChainstateManager &chainman = EnsureAnyChainman(request.context);
 
     int64_t chain_time = chainman.ActiveChain().Tip()->nTime;
+    bool as_compact_target = request.params[1].isNull() ? false : request.params[1].get_bool();
     if (!request.params[0].isNull()) {
-        chain_time = request.params[0].getInt<int64_t>();
-        if (chain_time > chainman.ActiveChain().Tip()->nTime) {
+        int64_t chain_time_param = request.params[0].getInt<int64_t>();
+        if (chain_time_param > chainman.ActiveChain().Tip()->nTime) {
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Time out of range");
+        }
+        if (chain_time_param > 0) {
+            chain_time = chain_time;
         }
     }
 
     uint32_t target_compact = particl::GetSmsgDifficulty(chainman, chain_time);
+    if (as_compact_target) {
+        return (int)target_compact;
+    }
     return smsg::GetDifficulty(target_compact);
 },
     };
