@@ -183,13 +183,13 @@ class SmsgTest(ParticlTestFramework):
 
         self.log.info('Test plaintext version 2')
         msg = 'Test plaintext version 2' * 5
-        sendoptions = {'submitmsg': False, 'add_to_outbox': False, 'plaintext_format_version': 2, 'compression': 0}
+        sendoptions = {'submitmsg': False, 'savemsg': False, 'plaintext_format_version': 2, 'compression': 0}
         ro = nodes[1].smsgsend(address1, address0, msg, False, 1, False, sendoptions)
 
         assert (len(ro['msg']) == 664)
         assert ('Not Sent' in ro['result'])
 
-        sendoptions = {'submitmsg': False, 'add_to_outbox': False, 'plaintext_format_version': 2, 'compression': 1}
+        sendoptions = {'submitmsg': False, 'savemsg': False, 'plaintext_format_version': 2, 'compression': 1}
         ro = nodes[1].smsgsend(address1, address0, msg, False, 1, False, sendoptions)
         assert (len(ro['msg']) == 472)
         assert ('Not Sent' in ro['result'])
@@ -237,7 +237,7 @@ class SmsgTest(ParticlTestFramework):
 
         msg: str = "Test 0->1, decodehex."
         msg_hex = msg.encode("utf-8").hex()
-        sendoptions = {"submitmsg": False, "decodehex": True, "add_to_outbox": False, "plaintext_format_version": 2, "compression": 0}
+        sendoptions = {"submitmsg": False, "decodehex": True, "savemsg": False, "plaintext_format_version": 2, "compression": 0}
         ro = nodes[0].smsgsend(address0, address1, msg_hex, False, 1, False, sendoptions)
         assert (ro["result"] == "Not Sent.")
         smsg_id = ro["msgid"]
@@ -253,8 +253,13 @@ class SmsgTest(ParticlTestFramework):
         ro = nodes[1].smsgsend(address1, address0, msg)
         assert ("Public key not in database" in ro["error"])
 
-        ro = nodes[1].smsgsend(address1, address0_pk, msg)
+        outbox_before = nodes[1].smsgoutbox()
+        sendoptions = {"savemsg": False,}
+        ro = nodes[1].smsgsend(address1, address0_pk, msg, False, 1, False, sendoptions)
         assert (ro["result"] == "Sent.")
+
+        outbox_after = nodes[1].smsgoutbox()
+        assert len(outbox_before["messages"]) == len(outbox_after["messages"])
 
 
 if __name__ == '__main__':
