@@ -6218,9 +6218,10 @@ int CHDWallet::ExtKeyNew32(CExtKey &out, uint8_t *data, uint32_t lenData)
     return out.IsValid() ? 0 : 1;
 }
 
-int CHDWallet::ExtKeyImportLoose(CHDWalletDB *pwdb, CStoredExtKey &sekIn, CKeyID &idDerived, bool fBip44, bool fSaveBip44)
+int CHDWallet::ExtKeyImportLoose(CHDWalletDB *pwdb, CStoredExtKey &sekIn, CKeyID &idDerived, bool fBip44, bool fSaveBip44, std::optional<std::string> master_path_override)
 {
     // If fBip44, the bip44 keyid is returned in idDerived
+    // master_path_override is the path to the key before the account key
 
     LogPrint(BCLog::HDWALLET, "%s %s\n", GetDisplayName(), __func__);
     AssertLockHeld(cs_wallet);
@@ -6254,6 +6255,31 @@ int CHDWallet::ExtKeyImportLoose(CHDWalletDB *pwdb, CStoredExtKey &sekIn, CKeyID
         fsekInExist = false;
     }
 
+    CStoredExtKey sekDerived;
+    if (master_path_override.has_value()) {
+        std::string sPath = master_path_override.value();
+        std::vector<uint32_t> vPath;
+        int rv;
+        if ((rv = ExtractExtKeyPath(sPath, vPath)) != 0) {
+            return werrorN(1, "%s: ExtractExtKeyPath failed %s.", __func__, ExtKeyGetString(rv));
+        }
+        CExtKey vkWork, vkDerived = sek.kp.GetExtKey();
+        for (std::vector<uint32_t>::iterator it = vPath.begin(); it != vPath.end(); ++it) {
+            if (!vkDerived.Derive(vkWork, *it)) {
+                return werrorN(1, "%s: CExtKey Derive failed.", __func__);
+            }
+            vkDerived = vkWork;
+        }
+        std::vector<uint8_t> v;
+        for (uint32_t node : vPath) {
+            PushUInt32(v, node);
+        }
+        sekDerived.nFlags |= EAF_ACTIVE;
+        sekDerived.kp = CExtKeyPair(vkDerived);
+        sekDerived.mapValue[EKVT_PATH] = v;
+        sekDerived.mapValue[EKVT_ROOT_ID] = SetCKeyID(v, id);
+        sekDerived.sLabel = sek.sLabel + " - path derived.";
+    } else
     if (fBip44) {
         // Import key as bip44 root and derive a new master key
         // NOTE: can't know created at time of derived key here
@@ -6273,13 +6299,14 @@ int CHDWallet::ExtKeyImportLoose(CHDWalletDB *pwdb, CStoredExtKey &sekIn, CKeyID
         PushUInt32(v, BIP44_PURPOSE);
         PushUInt32(v, (uint32_t)Params().BIP44ID());
 
-        CStoredExtKey sekDerived;
         sekDerived.nFlags |= EAF_ACTIVE;
         sekDerived.kp = CExtKeyPair(evDerivedKey);
         sekDerived.mapValue[EKVT_PATH] = v;
         sekDerived.mapValue[EKVT_ROOT_ID] = SetCKeyID(v, id);
         sekDerived.sLabel = sek.sLabel + " - bip44 derived.";
+    }
 
+    if (sekDerived.kp.IsValidV() || sekDerived.kp.IsValidP()) {
         idDerived = sekDerived.GetID();
 
         if (pwdb->ReadExtKey(idDerived, sekExist)) {
