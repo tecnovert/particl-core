@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2023 The Particl Core developers
+// Copyright (c) 2017-2025 The Particl Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -13,6 +13,8 @@
 #include <wallet/receive.h>
 #include <wallet/spend.h>
 #include <wallet/wallet.h>
+
+#include <optional>
 
 using namespace wallet;
 
@@ -249,7 +251,7 @@ public:
     int ExtKeyNew32(CExtKey &out, const char *sPassPhrase, int32_t nHash, const char *sSeed);
     int ExtKeyNew32(CExtKey &out, uint8_t *data, uint32_t lenData);
 
-    int ExtKeyImportLoose(CHDWalletDB *pwdb, CStoredExtKey &sekIn, CKeyID &idDerived, bool fBip44, bool fSaveBip44) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    int ExtKeyImportLoose(CHDWalletDB *pwdb, CStoredExtKey &sekIn, CKeyID &idDerived, bool fBip44, bool fSaveBip44, std::optional<std::string> master_path_override = std::nullopt) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     int ExtKeyImportAccount(CHDWalletDB *pwdb, CStoredExtKey &sekIn, int64_t nCreatedAt, const std::string &sLabel) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     /** Set master to existing key, remove master key tag from old key if exists */

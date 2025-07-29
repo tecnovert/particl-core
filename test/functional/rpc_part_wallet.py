@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2018-2019 The Particl Core developers
+# Copyright (c) 2018-2025 The Particl Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -58,6 +58,14 @@ class WalletRPCTest(ParticlTestFramework):
             assert (evkey_info['pubkey'] == epkey_info['key'])
             assert (evkey_info['address'] == epkey_info['address'])
 
+        nodes[1].extkeyimportmaster(self.get_genesis_coins_a_mnemonic(), "", False, "m", "a", 0, {"master_path": "84h/44h", "replaceaccount": True})
+        extkey_list = nodes[1].extkey('list', True)
+        found_key: bool = False
+        for k in extkey_list:
+            if k["path"] == "m/84h/44h":
+                found_key = True
+                break
+        assert found_key
 
 if __name__ == '__main__':
     WalletRPCTest().main()
