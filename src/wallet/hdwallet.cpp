@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2024 The Particl Core developers
+// Copyright (c) 2017-2025 The Particl Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -6026,9 +6026,10 @@ int CHDWallet::ExtKeyNew32(CExtKey &out, uint8_t *data, uint32_t lenData)
     return out.IsValid() ? 0 : 1;
 };
 
-int CHDWallet::ExtKeyImportLoose(CHDWalletDB *pwdb, CStoredExtKey &sekIn, CKeyID &idDerived, bool fBip44, bool fSaveBip44)
+int CHDWallet::ExtKeyImportLoose(CHDWalletDB *pwdb, CStoredExtKey &sekIn, CKeyID &idDerived, bool fBip44, bool fSaveBip44, std::optional<std::string> master_path_override)
 {
     // If fBip44, the bip44 keyid is returned in idDerived
+    // master_path_override is the path to the key before the account key
 
     LogPrint(BCLog::HDWALLET, "%s %s\n", GetDisplayName(), __func__);
     AssertLockHeld(cs_wallet);
@@ -6045,13 +6046,13 @@ int CHDWallet::ExtKeyImportLoose(CHDWalletDB *pwdb, CStoredExtKey &sekIn, CKeyID
     // It's possible for a public ext key to be added first
     CStoredExtKey sekExist, sek = sekIn;
     if (pwdb->ReadExtKey(id, sekExist)) {
-        if (IsCrypted()
-            && 0 != ExtKeyUnlock(&sekExist)) {
+        if (IsCrypted() &&
+            0 != ExtKeyUnlock(&sekExist)) {
             return werrorN(13, "%s: %s", __func__, ExtKeyGetString(13));
         }
         sek = sekExist;
-        if (!sek.kp.IsValidV()
-            && sekIn.kp.IsValidV()) {
+        if (!sek.kp.IsValidV() &&
+            sekIn.kp.IsValidV()) {
             sek.kp = sekIn.kp;
             std::vector<uint8_t> v;
             sek.mapValue[EKVT_ADDED_SECRET_AT] = SetCompressedInt64(v, GetTime());
@@ -6062,6 +6063,31 @@ int CHDWallet::ExtKeyImportLoose(CHDWalletDB *pwdb, CStoredExtKey &sekIn, CKeyID
         fsekInExist = false;
     }
 
+    CStoredExtKey sekDerived;
+    if (master_path_override.has_value()) {
+        std::string sPath = master_path_override.value();
+        std::vector<uint32_t> vPath;
+        int rv;
+        if ((rv = ExtractExtKeyPath(sPath, vPath)) != 0) {
+            return werrorN(1, "%s: ExtractExtKeyPath failed %s.", __func__, ExtKeyGetString(rv));
+        }
+        CExtKey vkWork, vkDerived = sek.kp.GetExtKey();
+        for (std::vector<uint32_t>::iterator it = vPath.begin(); it != vPath.end(); ++it) {
+            if (!vkDerived.Derive(vkWork, *it)) {
+                return werrorN(1, "%s: CExtKey Derive failed.", __func__);
+            }
+            vkDerived = vkWork;
+        }
+        std::vector<uint8_t> v;
+        for (uint32_t node : vPath) {
+            PushUInt32(v, node);
+        }
+        sekDerived.nFlags |= EAF_ACTIVE;
+        sekDerived.kp = CExtKeyPair(vkDerived);
+        sekDerived.mapValue[EKVT_PATH] = v;
+        sekDerived.mapValue[EKVT_ROOT_ID] = SetCKeyID(v, id);
+        sekDerived.sLabel = sek.sLabel + " - path derived.";
+    } else
     if (fBip44) {
         // Import key as bip44 root and derive a new master key
         // NOTE: can't know created at time of derived key here
@@ -6077,25 +6103,26 @@ int CHDWallet::ExtKeyImportLoose(CHDWalletDB *pwdb, CStoredExtKey &sekIn, CKeyID
         PushUInt32(v, BIP44_PURPOSE);
         PushUInt32(v, (uint32_t)Params().BIP44ID());
 
-        CStoredExtKey sekDerived;
         sekDerived.nFlags |= EAF_ACTIVE;
         sekDerived.kp = CExtKeyPair(evDerivedKey);
         sekDerived.mapValue[EKVT_PATH] = v;
         sekDerived.mapValue[EKVT_ROOT_ID] = SetCKeyID(v, id);
         sekDerived.sLabel = sek.sLabel + " - bip44 derived.";
+    }
 
+    if (sekDerived.kp.IsValidV() || sekDerived.kp.IsValidP()) {
         idDerived = sekDerived.GetID();
 
         if (pwdb->ReadExtKey(idDerived, sekExist)) {
-            if (fSaveBip44
-                && !fsekInExist) {
+            if (fSaveBip44 &&
+                !fsekInExist) {
                 // Assume the user wants to save the bip44 key, drop down
             } else {
                 return werrorN(12, "%s: %s", __func__, ExtKeyGetString(12));
             }
         } else {
-            if (IsCrypted()
-                && (ExtKeyEncrypt(&sekDerived, vMasterKey, false) != 0)) {
+            if (IsCrypted() &&
+                (ExtKeyEncrypt(&sekDerived, vMasterKey, false) != 0)) {
                 return werrorN(1, "%s: ExtKeyEncrypt failed.", __func__);
             }
 

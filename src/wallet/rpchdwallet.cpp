@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2021 The Particl Core developers
+// Copyright (c) 2017-2025 The Particl Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -47,6 +47,7 @@
 #include <undo.h>
 
 #include <univalue.h>
+#include <optional>
 
 using node::ReadBlockFromDisk;
 using node::UndoReadFromDisk;
@@ -490,8 +491,8 @@ static int KeyInfo(CHDWallet *pwallet, CKeyID &idMaster, CKeyID &idKey, CStoredE
     addr.Set(idKey, CChainParams::EXT_KEY_HASH);
     obj.pushKV("id", addr.ToString());
 
-    if (nShowKeys > 1
-        && pwallet->ExtKeyUnlock(&sek) == 0) {
+    if (nShowKeys > 1 &&
+        pwallet->ExtKeyUnlock(&sek) == 0) {
         std::string sKey;
         if (sek.kp.IsValidV()) {
             if (fBip44Root) {
@@ -1645,6 +1646,7 @@ static UniValue extkeyimportinternal(const JSONRPCRequest &request, bool fGenesi
     int64_t nScanFrom = 1;
     int create_extkeys = 0;
     bool replace_account = false;
+    std::optional<std::string> master_path;
 
     if (request.params.size() > 1) {
         sPassphrase = request.params[1].get_str();
@@ -1677,6 +1679,7 @@ static UniValue extkeyimportinternal(const JSONRPCRequest &request, bool fGenesi
                 {"stealthv1lookaheadsize", UniValueType(UniValue::VNUM)},
                 {"stealthv2lookaheadsize", UniValueType(UniValue::VNUM)},
                 {"replaceaccount", UniValueType(UniValue::VBOOL)},
+                {"master_path", UniValueType(UniValue::VSTR)},
             },
             true, true);
 
@@ -1711,7 +1714,12 @@ static UniValue extkeyimportinternal(const JSONRPCRequest &request, bool fGenesi
         if (options.exists("replaceaccount")) {
             replace_account = options["replaceaccount"].get_bool();
         }
-
+        if (options.exists("master_path")) {
+            std::string master_path_option = options["master_path"].get_str();
+            if (ToLower(master_path_option) != "default") {
+                master_path = master_path_option;
+            }
+        }
     }
     if (request.params.size() > 7) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Unknown parameter '%s'", request.params[6].get_str()));
@@ -1727,8 +1735,8 @@ static UniValue extkeyimportinternal(const JSONRPCRequest &request, bool fGenesi
     CExtKey58 eKey58;
     CExtKeyPair ekp;
     if (eKey58.Set58(sMnemonic.c_str()) == 0) {
-        if (!eKey58.IsValid(CChainParams::EXT_SECRET_KEY)
-            && !eKey58.IsValid(CChainParams::EXT_SECRET_KEY_BTC)) {
+        if (!eKey58.IsValid(CChainParams::EXT_SECRET_KEY) &&
+            !eKey58.IsValid(CChainParams::EXT_SECRET_KEY_BTC)) {
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Please specify a private extkey or mnemonic phrase.");
         }
 
@@ -1775,7 +1783,7 @@ static UniValue extkeyimportinternal(const JSONRPCRequest &request, bool fGenesi
             throw JSONRPCError(RPC_MISC_ERROR, "TxnBegin failed.");
         }
 
-        if (0 != (rv = pwallet->ExtKeyImportLoose(&wdb, sek, idDerived, fBip44, fSaveBip44Root))) {
+        if (0 != (rv = pwallet->ExtKeyImportLoose(&wdb, sek, idDerived, fBip44, fSaveBip44Root, master_path))) {
             wdb.TxnAbort();
             throw JSONRPCError(RPC_WALLET_ERROR, strprintf("ExtKeyImportLoose failed, %s", ExtKeyGetString(rv)));
         }
@@ -1899,6 +1907,7 @@ static RPCHelpMan extkeyimportmaster()
                             {"stealthv1lookaheadsize", RPCArg::Type::NUM, RPCArg::Default{(int)DEFAULT_STEALTH_LOOKAHEAD_SIZE}, "Override the stealthv1lookaheadsize parameter."},
                             {"stealthv2lookaheadsize", RPCArg::Type::NUM, RPCArg::Default{(int)DEFAULT_STEALTH_LOOKAHEAD_SIZE}, "Override the stealthv2lookaheadsize parameter."},
                             {"replaceaccount", RPCArg::Type::BOOL, RPCArg::Default{false}, "Prevent importing to a wallet with an existing account if false."},
+                            {"master_path", RPCArg::Type::STR, RPCArg::Default{"default"}, "Override the keypath used to derive the master key (key before account)."},
                         },
                         "options"},
                 },
@@ -1944,6 +1953,7 @@ static RPCHelpMan extkeygenesisimport()
                             {"stealthv1lookaheadsize", RPCArg::Type::NUM, RPCArg::Default{(int)DEFAULT_STEALTH_LOOKAHEAD_SIZE}, "Override the stealthv1lookaheadsize parameter."},
                             {"stealthv2lookaheadsize", RPCArg::Type::NUM, RPCArg::Default{(int)DEFAULT_STEALTH_LOOKAHEAD_SIZE}, "Override the stealthv2lookaheadsize parameter."},
                             {"replaceaccount", RPCArg::Type::BOOL, RPCArg::Default{false}, "Prevent importing to a wallet with an existing account if false."},
+                            {"master_path", RPCArg::Type::STR, RPCArg::Default{"default"}, "Override the keypath used to derive the master key (key before account)."},
                         },
                         "options"},
                 },

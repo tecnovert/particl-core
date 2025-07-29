@@ -3,6 +3,7 @@
 ==============
 
 - smsg: Fix found messages counter when scanning files.
+- rpc: Add master path override to extkeyimport master.
 - qt: Disable 'Make Blank Wallet' option in Particl mode.
 - smsg: Add plaintext format version 2 option.
   - Only affects decrpted messages, the encrypted messages are still compatible with older nodes.
