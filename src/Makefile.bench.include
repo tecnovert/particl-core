@@ -100,6 +100,7 @@ bench_bench_particl_SOURCES += bench/wallet_create_tx.cpp
 bench_bench_particl_SOURCES += bench/wallet_ismine.cpp
 bench_bench_particl_SOURCES += bench/particl_add_tx.cpp
 
+bench_bench_particl_CPPFLAGS += $(BDB_CPPFLAGS) $(SQLITE_CFLAGS)
 bench_bench_particl_LDADD += $(BDB_LIBS) $(SQLITE_LIBS)
 endif
 

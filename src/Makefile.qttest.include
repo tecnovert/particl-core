@@ -52,6 +52,7 @@ qt_test_test_particl_qt_LDADD = $(LIBPARTICLQT) $(LIBPARTICL_NODE) $(LIBTEST_UTI
 if ENABLE_WALLET
 qt_test_test_particl_qt_LDADD += $(LIBPARTICL_UTIL) $(LIBPARTICL_WALLET)
 qt_test_test_particl_qt_DEPENDENCIES += $(LIBPARTICL_WALLET)
+qt_test_test_particl_qt_CPPFLAGS += $(BDB_CPPFLAGS) $(SQLITE_CFLAGS)
 endif
 if ENABLE_ZMQ
 qt_test_test_particl_qt_LDADD += $(LIBPARTICL_ZMQ) $(ZMQ_LIBS)

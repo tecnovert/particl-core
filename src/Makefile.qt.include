@@ -336,6 +336,7 @@ endif
 particl_qt_ldadd = qt/libparticlqt.a $(LIBPARTICL_NODE)
 if ENABLE_WALLET
 particl_qt_ldadd += $(LIBPARTICL_UTIL) $(LIBPARTICL_WALLET)
+qt_libparticlqt_a_CPPFLAGS += $(BDB_CPPFLAGS) $(SQLITE_CFLAGS)
 endif
 if ENABLE_ZMQ
 particl_qt_ldadd += $(LIBPARTICL_ZMQ) $(ZMQ_LIBS)
