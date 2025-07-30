@@ -651,6 +651,12 @@ libparticl_wallet_tool_a_SOURCES = \
   wallet/wallettool.cpp \
   $(BITCOIN_CORE_H)
 #
+if USE_SQLITE
+libparticl_wallet_tool_a_CPPFLAGS += $(SQLITE_CFLAGS)
+endif
+if USE_BDB
+libparticl_wallet_tool_a_CPPFLAGS += $(BDB_CPPFLAGS)
+endif
 
 # crypto #
 
@@ -891,6 +897,15 @@ libparticl_smsg_a_SOURCES = \
   smsg/manager.cpp \
   smsg/rpcsmessage.cpp
 #
+if ENABLE_WALLET
+if USE_SQLITE
+libparticl_smsg_a_CPPFLAGS += $(SQLITE_CFLAGS)
+endif
+if USE_BDB
+libparticl_smsg_a_CPPFLAGS += $(BDB_CPPFLAGS)
+endif
+endif
+
 
 # mnemonic #
 libparticl_mnemonic_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)

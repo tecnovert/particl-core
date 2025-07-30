@@ -427,8 +427,15 @@ test_fuzz_fuzz_SOURCES = \
  test/fuzz/validation_load_mempool.cpp \
  test/fuzz/vecdeque.cpp \
  test/fuzz/versionbits.cpp
-endif # ENABLE_FUZZ_BINARY
 
+if USE_BDB
+test_fuzz_fuzz_CPPFLAGS += $(BDB_CPPFLAGS)
+endif
+if USE_SQLITE
+test_fuzz_fuzz_CPPFLAGS += $(SQLITE_CFLAGS)
+endif # USE_SQLITE
+
+endif # ENABLE_FUZZ_BINARY
 
 nodist_test_test_particl_SOURCES = $(GENERATED_TEST_FILES)
 
