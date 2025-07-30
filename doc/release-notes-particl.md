@@ -10,6 +10,7 @@
 - smsg: Add RPC methods for remote address management.
 - smsg rpc:
   - Added parameter to smsggetdifficulty to return difficulty in compact target form.
+- New checkpoints.
 
 
 23.2.7
