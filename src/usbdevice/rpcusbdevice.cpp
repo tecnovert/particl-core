@@ -604,7 +604,7 @@ static RPCHelpMan devicesignrawtransaction()
                 throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "vout must be positive");
             }
 
-            COutPoint out(txid, nOut);
+            COutPoint out(Txid::FromUint256(txid), nOut);
             std::vector<unsigned char> pkData(ParseHexO(prevOut, "scriptPubKey"));
             CScript scriptPubKey(pkData.begin(), pkData.end());
 
@@ -1126,7 +1126,7 @@ static RPCHelpMan devicegetnewstealthaddress()
         if (nPrefixBits > 0) {
             // If pPrefix is null, set nPrefix from the hash of kScan
             uint8_t tmp32[32];
-            CSHA256().Write(kScan.begin(), 32).Finalize(tmp32);
+            CSHA256().Write(kScan.begin_nc(), 32).Finalize(tmp32);
             memcpy(&nPrefix, tmp32, 4);
         }
 
@@ -1308,7 +1308,7 @@ static RPCHelpMan devicesignrawtransactionwithwallet()
                 throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "vout must be positive");
             }
 
-            COutPoint out(txid, nOut);
+            COutPoint out(Txid::FromUint256(txid), nOut);
             std::vector<unsigned char> pkData(ParseHexO(prevOut, "scriptPubKey"));
             CScript scriptPubKey(pkData.begin(), pkData.end());
 

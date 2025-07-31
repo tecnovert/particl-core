@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2023 The Particl Core developers
+// Copyright (c) 2018-2025 The Particl Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -694,8 +694,9 @@ int CTrezorDevice::CompleteTransaction(int change_pos, const std::vector<uint32_
                 const auto &txin = prev_tx.vin[n];
                 // Set hash reversed
                 std::string hash(32, '0');
+                uint256 uhash = txin.prevout.hash.ToUint256();
                 for (size_t k = 0; k < 32; ++k) {
-                    hash[k] = *(txin.prevout.hash.begin() + (31 - k));
+                    hash[k] = *(uhash.begin() + (31 - k));
                 }
                 msg_input->set_prev_hash(hash);
                 msg_input->set_prev_index(txin.prevout.n);
@@ -760,9 +761,10 @@ int CTrezorDevice::CompleteTransaction(int change_pos, const std::vector<uint32_
                 }
 
                 // Set hash reversed
+                uint256 uhash = txin.prevout.hash.ToUint256();
                 std::string hash(32, '0');
                 for (size_t k = 0; k < 32; ++k) {
-                    hash[k] = *(txin.prevout.hash.begin() + (31 - k));
+                    hash[k] = *(uhash.begin() + (31 - k));
                 }
 
                 msg_input->set_prev_hash(hash);
@@ -786,7 +788,8 @@ int CTrezorDevice::CompleteTransaction(int change_pos, const std::vector<uint32_
                 }
                 std::reverse(s.begin(), s.end());
                 COutPoint prevout;
-                memcpy(prevout.hash.data(), s.data(), 32);
+                uint256 uhash = prevout.hash.ToUint256();
+                memcpy(uhash.data(), s.data(), 32);
                 prevout.n = req.details().request_index();
                 LogPrint(BCLog::HDWALLET, "%s: TXOUTPUT requested: %s.%d\n", __func__, prevout.hash.ToString(), prevout.n);
 
