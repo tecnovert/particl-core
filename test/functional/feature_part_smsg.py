@@ -99,8 +99,8 @@ class SmsgTest(ParticlTestFramework):
         ro = nodes[1].smsgenable()
         sendoptions = {'returnmsg': True}
         ro = nodes[1].smsgsend(address1, address0, "Test 1->0. 2", False, 1, False, sendoptions)
-        assert(ro['result'] == 'Sent.')
-        assert(is_hex(ro['msg']) and len(ro['msg']) == 440)
+        assert (ro['result'] == 'Sent.')
+        assert (is_hex(ro['msg']) and len(ro['msg']) == 440)
 
         self.waitForSmsgExchange(3, 1, 0)
 
