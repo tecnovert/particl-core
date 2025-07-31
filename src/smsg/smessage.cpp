@@ -1609,6 +1609,11 @@ int CSMSG::ReceiveData(PeerManager *peerLogic, CNode *pfrom, const std::string &
             LOCK2(cs_smsg, pfrom->smsgData.cs_smsg_net);
             m_show_requests.erase(time);
 
+            if (n < 1) {
+                // Peer sent empty bucket
+                return SMSG_NO_ERROR;
+            }
+
             if (pfrom->smsgData.m_num_want_sent >= MAX_WANT_SENT) {
                 LogPrint(BCLog::SMSG, "Too many messages already requested from peer: %d, %d.\n", pfrom->GetId(), pfrom->smsgData.m_num_want_sent);
                 return SMSG_NO_ERROR;
