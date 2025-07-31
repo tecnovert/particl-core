@@ -13,7 +13,12 @@
 
 void CallRPCVoid(std::string args, const std::any& context, std::string wallet, bool force_wallet)
 {
-    CallRPC(args, context, wallet, force_wallet);
+    try {
+        CallRPC(args, context, wallet, force_wallet);
+    } catch (const std::exception& e) {
+        // rescan could have been cancelled
+    }
+
     return;
 };
 
