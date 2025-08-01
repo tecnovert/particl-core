@@ -19,6 +19,7 @@
 #include <sync.h>
 #include <util/threadinterrupt.h>
 #include <util/ui_change_type.h>
+#include <compat/endian.h>
 
 #include <atomic>
 #include <boost/signals2/signal.hpp>

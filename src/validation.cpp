@@ -13,6 +13,7 @@
 #include <chain.h>
 #include <checkqueue.h>
 #include <clientversion.h>
+#include <compat/endian.h>
 #include <consensus/amount.h>
 #include <consensus/consensus.h>
 #include <consensus/merkle.h>
@@ -4960,7 +4961,7 @@ static bool ContextualCheckBlock(const CBlock& block, BlockValidationState& stat
             if (vData.size() > 8 && vData[4] == DO_VOTE) {
                 uint32_t voteToken;
                 memcpy(&voteToken, &vData[5], 4);
-                voteToken = le32toh(voteToken);
+                voteToken = le32toh_internal(voteToken);
 
                 LogPrint(BCLog::HDWALLET, _("Block %d casts vote for option %u of proposal %u.\n").translated.c_str(),
                     nHeight, voteToken >> 16, voteToken & 0xFFFF);

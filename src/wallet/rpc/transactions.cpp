@@ -3,6 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <core_io.h>
+#include <compat/endian.h>
 #include <key_io.h>
 #include <policy/rbf.h>
 #include <rpc/util.h>
@@ -82,7 +83,7 @@ static void AddSmsgFundingInfo(const CTransaction &tx, UniValue &entry)
         for (size_t k = 0; k < n; ++k) {
             uint32_t nAmount;
             memcpy(&nAmount, &txd->vData[1+k*24+20], 4);
-            nAmount = le32toh(nAmount);
+            nAmount = le32toh_internal(nAmount);
             smsg_fees += nAmount;
             UniValue funded_smsg(UniValue::VOBJ);
             funded_smsg.pushKV("smsghash", HexStr(Span<const unsigned char>(&txd->vData[1+k*24], 20)));

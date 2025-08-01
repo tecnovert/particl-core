@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Particl Core developers
+// Copyright (c) 2017-2025 The Particl Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -7,6 +7,8 @@
 #include <crypto/sha256.h>
 #include <serialize.h>
 #include <string.h>
+#include <compat/endian.h>
+
 
 static uint32_t BitcoinChecksum(uint8_t *p, uint32_t nBytes)
 {
@@ -22,7 +24,7 @@ static uint32_t BitcoinChecksum(uint8_t *p, uint32_t nBytes)
     // Checksum is the 1st 4 bytes of the hash
     uint32_t checksum;
     memcpy(&checksum, &hash2[0], 4);
-    checksum = le32toh(checksum);
+    checksum = le32toh_internal(checksum);
 
     return checksum;
 };
@@ -35,7 +37,7 @@ bool VerifyChecksum(const std::vector<uint8_t> &data)
 
     uint32_t checksum;
     memcpy(&checksum, &(*(data.end() - 4)), 4);
-    checksum = le32toh(checksum);
+    checksum = le32toh_internal(checksum);
 
     return BitcoinChecksum((uint8_t*)&data[0], data.size()-4) == checksum;
 };

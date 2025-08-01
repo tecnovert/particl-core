@@ -12,6 +12,7 @@
 #include <serialize.h>
 #include <uint256.h>
 #include <util/transaction_identifier.h> // IWYU pragma: export
+#include <compat/endian.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -224,8 +225,8 @@ public:
 
     bool SetAnonInfo(uint32_t nInputs, uint32_t nRingSize)
     {
-        nInputs = htole32(nInputs);
-        nRingSize = htole32(nRingSize);
+        nInputs = htole32_internal(nInputs);
+        nRingSize = htole32_internal(nRingSize);
         memcpy(prevout.hash.data_nc(), &nInputs, 4);
         memcpy(prevout.hash.data_nc() + 4, &nRingSize, 4);
         return true;
@@ -235,8 +236,8 @@ public:
     {
         memcpy(&nInputs, prevout.hash.begin(), 4);
         memcpy(&nRingSize, prevout.hash.begin() + 4, 4);
-        nInputs = le32toh(nInputs);
-        nRingSize = le32toh(nRingSize);
+        nInputs = le32toh_internal(nInputs);
+        nRingSize = le32toh_internal(nRingSize);
         return true;
     }
 
@@ -993,7 +994,7 @@ public:
             return false;
         }
         memcpy(&height, &vData[0], 4);
-        height = le32toh(height);
+        height = le32toh_internal(height);
         return true;
     }
 

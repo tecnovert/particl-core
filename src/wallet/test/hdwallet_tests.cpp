@@ -7,6 +7,7 @@
 #include <wallet/test/hdwallet_test_fixture.h>
 #include <base58.h>
 #include <chainparams.h>
+#include <compat/endian.h>
 #include <smsg/smessage.h>
 #include <key/crypter.h>
 #include <blind.h>
@@ -137,7 +138,7 @@ BOOST_AUTO_TEST_CASE(stealth)
     BOOST_CHECK(vecSend[1].vData[34] == DO_STEALTH_PREFIX);
     uint32_t prefix, mask = SetStealthMask(sx.prefix.number_bits);
     memcpy(&prefix, &vecSend[1].vData[35], 4);
-    prefix = le32toh(prefix);
+    prefix = le32toh_internal(prefix);
 
     BOOST_CHECK((prefix & mask) == (sx.prefix.bitfield & mask));
 
@@ -157,7 +158,7 @@ BOOST_AUTO_TEST_CASE(stealth)
     BOOST_CHECK(vecSend[1].vData[34] == DO_STEALTH_PREFIX);
     mask = SetStealthMask(sx.prefix.number_bits);
     memcpy(&prefix, &vecSend[1].vData[35], 4);
-    prefix = le32toh(prefix);
+    prefix = le32toh_internal(prefix);
 
     BOOST_CHECK((prefix & mask) == (sx.prefix.bitfield & mask));
 
@@ -559,7 +560,7 @@ BOOST_AUTO_TEST_CASE(opiscoinstake_test)
     int nBlockHeight = 1;
     OUTPUT_PTR<CTxOutData> outData = MAKE_OUTPUT<CTxOutData>();
     outData->vData.resize(4);
-    uint32_t tmp32 = htole32(nBlockHeight);
+    uint32_t tmp32 = htole32_internal(nBlockHeight);
     memcpy(&outData->vData[0], &tmp32, 4);
     txn.vpout.push_back(outData);
 

@@ -7,6 +7,7 @@
 #include <base58.h>
 #include <chainparams.h>
 #include <coins.h>
+#include <compat/byteswap.h>
 #include <key_io.h>
 #include <pubkey.h>
 #include <script/solver.h>
@@ -409,7 +410,7 @@ int CTrezorDevice::GetXPub(const std::vector<uint32_t>& vPath, CExtPubKey& ekp, 
     }
 
     ekp.nDepth = msg_out.node().depth();
-    uint32_t fingerprint = bswap_32(msg_out.node().fingerprint()); // bswap_32 still necessary when system is big endian?
+    uint32_t fingerprint = internal_bswap_32(msg_out.node().fingerprint()); // bswap_32 still necessary when system is big endian?
     memcpy(ekp.vchFingerprint, ((uint8_t*)&fingerprint), 4);
     ekp.nChild = msg_out.node().child_num();
     assert(msg_out.node().chain_code().size() == 32);

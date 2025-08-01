@@ -13,6 +13,7 @@
 #include <uint256.h>
 #include <util/strencodings.h>
 #include <util/transaction_identifier.h>
+#include <compat/endian.h>
 
 #include <algorithm>
 #include <cassert>
@@ -64,7 +65,7 @@ bool ExtractCoinStakeUint32(const std::vector<uint8_t> &vData, DataOutputTypes g
             }
             if (get_type == current_type) {
                 memcpy(&out, &vData[ofs + 1], 4);
-                out = le32toh(out);
+                out = le32toh_internal(out);
                 return true;
             }
             ofs += 5;
@@ -336,7 +337,7 @@ CAmount CTransaction::GetTotalSMSGFees() const
         for (size_t k = 0; k < n; ++k) {
             uint32_t nAmount;
             memcpy(&nAmount, &txd->vData[1+k*24+20], 4);
-            nAmount = le32toh(nAmount);
+            nAmount = le32toh_internal(nAmount);
             smsg_fees += nAmount;
         }
     }

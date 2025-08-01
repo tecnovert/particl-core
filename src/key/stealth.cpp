@@ -1,5 +1,5 @@
 // Copyright (c) 2014 The ShadowCoin developers
-// Copyright (c) 2017-2020 The Particl Core developers
+// Copyright (c) 2017-2025 The Particl Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
@@ -13,6 +13,7 @@
 #include <script/script.h>
 #include <serialize.h>
 #include <support/allocators/secure.h>
+#include <compat/endian.h>
 
 #include <secp256k1.h>
 #include <secp256k1_ecdh.h>
@@ -85,7 +86,7 @@ int CStealthAddress::FromRaw(const uint8_t *p, size_t nSize)
 
     if (nPrefixBytes) {
         memcpy(&prefix.bitfield, p, nPrefixBytes);
-        prefix.bitfield = le32toh(prefix.bitfield);
+        prefix.bitfield = le32toh_internal(prefix.bitfield);
     }
 
     return 0;
@@ -117,7 +118,7 @@ int CStealthAddress::ToRaw(std::vector<uint8_t> &raw) const
     raw[o] = number_signatures; o++;
     raw[o] = prefix.number_bits; o++;
     if (nPrefixBytes) {
-        uint32_t tmp = htole32(prefix.bitfield);
+        uint32_t tmp = htole32_internal(prefix.bitfield);
         memcpy(&raw[o], &tmp, nPrefixBytes); o += nPrefixBytes;
     }
 
@@ -424,7 +425,7 @@ int MakeStealthData(const std::string &sNarration, stealth_prefix prefix, const 
     if (prefix.number_bits > 0) {
         vData[o++] = DO_STEALTH_PREFIX;
         nStealthPrefix = FillStealthPrefix(prefix.number_bits, prefix.bitfield);
-        uint32_t tmp = htole32(nStealthPrefix);
+        uint32_t tmp = htole32_internal(nStealthPrefix);
         memcpy(&vData[o], &tmp, 4);
         o+=4;
     }

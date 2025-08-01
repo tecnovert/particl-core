@@ -5,6 +5,7 @@
 #include <consensus/amount.h>
 #include <base58.h>
 #include <chain.h>
+#include <compat/endian.h>
 #include <consensus/validation.h>
 #include <consensus/tx_check.h>
 #include <consensus/tx_verify.h>
@@ -2301,7 +2302,7 @@ static RPCHelpMan importstealthaddress()
             uint8_t tmp32[32];
             CSHA256().Write(UCharCast(skSpend.begin()), 32).Finalize(tmp32);
             memcpy(&nPrefix, tmp32, 4);
-            nPrefix = le32toh(nPrefix);
+            nPrefix = le32toh_internal(nPrefix);
         }
 
         uint32_t nMask = SetStealthMask(num_prefix_bits);
@@ -3360,7 +3361,7 @@ static void ParseOutputs(
             for (size_t k = 0; k < n; ++k) {
                 uint32_t nAmount;
                 memcpy(&nAmount, &txd->vData[1+k*24+20], 4);
-                nAmount = le32toh(nAmount);
+                nAmount = le32toh_internal(nAmount);
                 smsg_fees += nAmount;
                 num_funded += 1;
             }
@@ -8110,7 +8111,7 @@ static RPCHelpMan tallyvotes()
             } else {
                 uint32_t voteToken;
                 memcpy(&voteToken, &vData[5], 4);
-                voteToken = le32toh(voteToken);
+                voteToken = le32toh_internal(voteToken);
                 int option = 0; // default to abstain
 
                 // count only if related to current issue:

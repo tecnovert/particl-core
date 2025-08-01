@@ -763,7 +763,7 @@ bool SecMsgDB::WriteFundingData(const uint256 &key, int height, const std::vecto
     ssKey.write(AsBytes(Span{(const char*)key.begin(), 32}));
     ssValue << data;
 
-    uint32_t be_height = htobe32((uint32_t)height);
+    uint32_t be_height = htobe32_internal((uint32_t)height);
     DataStream ssKeyI{}, ssValueI{};
     ssKeyI.write(AsBytes(Span{(const char*)DBK_FUNDING_TX_LINK.data(), DBK_FUNDING_TX_LINK.size()}));
     ssKeyI.write(AsBytes(Span{(const char*)&be_height, 4}));
@@ -795,7 +795,7 @@ bool SecMsgDB::EraseFundingData(int height, const uint256 &key)
     ssKey.write(AsBytes(Span{(const char*)DBK_FUNDING_TX_DATA.data(), DBK_FUNDING_TX_DATA.size()}));
     ssKey.write(AsBytes(Span{(const char*)key.begin(), 32}));
 
-    uint32_t be_height = htobe32((uint32_t)height);
+    uint32_t be_height = htobe32_internal((uint32_t)height);
     ssKeyI.write(AsBytes(Span{(const char*)DBK_FUNDING_TX_LINK.data(), DBK_FUNDING_TX_LINK.size()}));
     ssKeyI.write(AsBytes(Span{(const char*)&be_height, 4}));
     ssKeyI.write(AsBytes(Span{(const char*)key.begin(), 32}));
@@ -836,7 +836,7 @@ bool SecMsgDB::NextFundingDataLink(leveldb::Iterator *it, int &height, uint256 &
 
     uint32_t be_height;
     memcpy(&be_height, it->key().data() + DBK_FUNDING_TX_LINK.size(), 4);
-    height = (int) be32toh(be_height);
+    height = (int) be32toh_internal(be_height);
     memcpy(key.begin(), it->key().data() + DBK_FUNDING_TX_LINK.size() + 4, 32);
 
     return true;
@@ -948,7 +948,7 @@ bool PutFundingData(leveldb::WriteBatch *batch, const uint256 &key, int height, 
     ssKey.write(AsBytes(Span{(const char*)key.begin(), 32}));
     ssValue << data;
 
-    uint32_t be_height = htobe32((uint32_t)height);
+    uint32_t be_height = htobe32_internal((uint32_t)height);
     DataStream ssKeyI{}, ssValueI{};
     ssKeyI.write(AsBytes(Span{(const char*)DBK_FUNDING_TX_LINK.data(), DBK_FUNDING_TX_LINK.size()}));
     ssKeyI.write(AsBytes(Span{(const char*)&be_height, 4}));

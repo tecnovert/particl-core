@@ -10,6 +10,7 @@
 #include <kernel/cs_main.h>
 #include <logging.h>
 #include <common/args.h>
+#include <compat/endian.h>
 #include <netaddress.h>
 #include <netbase.h>
 #include <node/blockstorage.h>
@@ -357,7 +358,7 @@ bool CZMQPublishSMSGNotifier::NotifySecureMessage(const smsg::SecureMessage *psm
     DataStream ss;
     ss << psmsg->version[0];
     ss << psmsg->version[1];
-    int64_t timestamp_be = (int64_t)htobe64(psmsg->timestamp);
+    int64_t timestamp_be = (int64_t)htobe64_internal(psmsg->timestamp);
     ss << timestamp_be;
     ss << hash;
     return SendZmqMessage(MSG_SMSG, &(*ss.begin()), ss.size());
