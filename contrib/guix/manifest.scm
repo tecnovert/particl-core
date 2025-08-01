@@ -92,7 +92,14 @@ chain for " target " development."))
       (home-page (package-home-page xgcc))
       (license (package-license xgcc)))))
 
-(define base-gcc gcc-10)
+(define base-gcc
+  (package
+    (inherit gcc-10)
+    (arguments
+     (substitute-keyword-arguments (package-arguments gcc-10)
+       ((#:configure-flags flags)
+        `(append '("--disable-libgfortran") ,flags))))))
+
 (define base-linux-kernel-headers linux-libre-headers-6.1)
 
 (define* (make-bitcoin-cross-toolchain target
