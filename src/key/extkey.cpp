@@ -8,6 +8,7 @@
 #include <crypto/hmac_sha512.h>
 #include <key_io.h>
 #include <util/strencodings.h>
+#include <compat/endian.h>
 
 #include <stdint.h>
 
@@ -47,7 +48,7 @@ const char *ExtKeyGetString(int ind)
 
 std::vector<uint8_t> &SetCompressedInt64(std::vector<uint8_t> &v, uint64_t n)
 {
-    n = htole64(n);
+    n = htole64_internal(n);
     int b = GetNumBytesReqForInt(n);
     v.resize(b);
     if (b > 0) {
@@ -65,7 +66,7 @@ int64_t GetCompressedInt64(const std::vector<uint8_t> &v, uint64_t &n)
     } else
     if (b < 9) {
         memcpy((uint8_t*) &n, &v[0], b);
-        n = le64toh(n);
+        n = le64toh_internal(n);
     }
     return (int64_t)n;
 }

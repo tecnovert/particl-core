@@ -10,6 +10,7 @@
 #include <anon.h>
 #include <blind.h>
 #include <common/args.h>
+#include <compat/endian.h>
 #include <consensus/merkle.h>
 #include <consensus/validation.h>
 #include <crypto/hmac_sha256.h>
@@ -83,7 +84,7 @@ static bool ExtractStealthPrefix(const std::vector<uint8_t> &vData, uint32_t &pr
     if (vData.size() >= offset + 5 // Have prefix
         && vData[offset] == DO_STEALTH_PREFIX) {
         memcpy(&prefix, &vData[offset + 1], 4);
-        prefix = le32toh(prefix);
+        prefix = le32toh_internal(prefix);
         return true;
     }
     return false;
@@ -8263,7 +8264,7 @@ int CHDWallet::NewStealthKeyFromAccount(
         uint8_t tmp32[32];
         CSHA256().Write(UCharCast(kSpend.begin()), 32).Finalize(tmp32);
         memcpy(&nPrefix, tmp32, 4);
-        nPrefix = le32toh(nPrefix);
+        nPrefix = le32toh_internal(nPrefix);
     }
 
     uint32_t nMask = SetStealthMask(nPrefixBits);
@@ -8573,7 +8574,7 @@ int CHDWallet::NewStealthKeyV2FromAccount(
         uint8_t tmp32[32];
         CSHA256().Write(UCharCast(kScan.begin()), 32).Finalize(tmp32);
         memcpy(&nPrefix, tmp32, 4);
-        nPrefix = le32toh(nPrefix);
+        nPrefix = le32toh_internal(nPrefix);
     }
 
     uint32_t nMask = SetStealthMask(nPrefixBits);
@@ -11293,7 +11294,7 @@ bool CHDWallet::AddToRecord(CTransactionRecord &rtxIn, const CTransaction &tx, c
                 for (size_t k = 0; k < n; ++k) {
                     uint32_t nAmount;
                     memcpy(&nAmount, &txd->vData[1 + k * 24 + 20], 4);
-                    nAmount = le32toh(nAmount);
+                    nAmount = le32toh_internal(nAmount);
                     smsg_fees += nAmount;
                     smsgs_funded += 1;
                 }
@@ -13616,7 +13617,7 @@ bool CHDWallet::CreateCoinStake(unsigned int nBits, int64_t nTime, int nBlockHei
 
             OUTPUT_PTR<CTxOutData> out0 = MAKE_OUTPUT<CTxOutData>();
             out0->vData.resize(4);
-            uint32_t tmp = htole32(nBlockHeight);
+            uint32_t tmp = htole32_internal(nBlockHeight);
             memcpy(&out0->vData[0], &tmp, 4);
 
             uint32_t voteToken = 0;
@@ -13624,7 +13625,7 @@ bool CHDWallet::CreateCoinStake(unsigned int nBits, int64_t nTime, int nBlockHei
                 size_t origSize = out0->vData.size();
                 out0->vData.resize(origSize + 5);
                 out0->vData[origSize] = DO_VOTE;
-                uint32_t tmp = htole32(voteToken);
+                uint32_t tmp = htole32_internal(voteToken);
                 memcpy(&out0->vData[origSize+1], &tmp, 4);
             }
 
@@ -13839,7 +13840,7 @@ bool CHDWallet::CreateCoinStake(unsigned int nBits, int64_t nTime, int nBlockHei
 
         std::vector<uint8_t> vSmsgDifficulty(5), &vData = *txNew.vpout[0]->GetPData();
         vSmsgDifficulty[0] = DO_SMSG_DIFFICULTY;
-        uint32_t tmp = htole32(next_compact);
+        uint32_t tmp = htole32_internal(next_compact);
         memcpy(&vSmsgDifficulty[1], &tmp, 4);
         vData.insert(vData.end(), vSmsgDifficulty.begin(), vSmsgDifficulty.end());
         assert(ExtractCoinStakeUint32(vData, DO_SMSG_DIFFICULTY, test_compact));
@@ -14079,7 +14080,7 @@ void SetCTOutVData(std::vector<uint8_t> &vData, CPubKey &pkEphem, const CTempRec
     memcpy(&vData[0], pkEphem.begin(), 33);
     if (r.nStealthPrefix > 0) {
         vData[33] = DO_STEALTH_PREFIX;
-        uint32_t tmp = htole32(r.nStealthPrefix);
+        uint32_t tmp = htole32_internal(r.nStealthPrefix);
         memcpy(&vData[34], &tmp, 4);
     }
 }

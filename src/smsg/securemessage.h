@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Particl Core developers
+// Copyright (c) 2023-2025 The Particl Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -7,6 +7,7 @@
 
 #include <inttypes.h>
 #include <string.h>
+#include <compat/endian.h>
 
 namespace smsg {
 
@@ -53,14 +54,14 @@ public:
         memcpy(version, data + ofs, 2); ofs += 2;
         flags = *(data + ofs);  ofs += 1;
         memcpy(&tmp64, data + ofs, 8); ofs += 8;
-        timestamp = le64toh(tmp64);
+        timestamp = le64toh_internal(tmp64);
         memcpy(&tmp32, data + ofs, 4); ofs += 4;
-        m_ttl = le32toh(tmp32);
+        m_ttl = le32toh_internal(tmp32);
         memcpy(iv, data + ofs, 16); ofs += 16;
         memcpy(cpkR, data + ofs, 33); ofs += 33;
         memcpy(mac, data + ofs, 32); ofs += 32;
         memcpy(&tmp32, data + ofs, 4); ofs += 4;
-        nPayload = le32toh(tmp32);
+        nPayload = le32toh_internal(tmp32);
         pPayload = nullptr;
     }
 
@@ -72,14 +73,14 @@ public:
         memcpy(data + ofs, nonce, 4); ofs += 4;
         memcpy(data + ofs, version, 2); ofs += 2;
         *(data + ofs) = flags;  ofs += 1;
-        tmp64 = htole64(timestamp);
+        tmp64 = htole64_internal(timestamp);
         memcpy(data + ofs, &tmp64, 8); ofs += 8;
-        tmp32 = htole32(m_ttl);
+        tmp32 = htole32_internal(m_ttl);
         memcpy(data + ofs, &tmp32, 4); ofs += 4;
         memcpy(data + ofs, iv, 16); ofs += 16;
         memcpy(data + ofs, cpkR, 33); ofs += 33;
         memcpy(data + ofs, mac, 32); ofs += 32;
-        tmp32 = htole32(nPayload);
+        tmp32 = htole32_internal(nPayload);
         memcpy(data + ofs, &tmp32, 4); ofs += 4;
     }
 

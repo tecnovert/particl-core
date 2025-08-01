@@ -7,6 +7,7 @@
 
 #include <blind.h>
 #include <chainparams.h>
+#include <compat/endian.h>
 #include <consensus/merkle.h>
 #include <consensus/tx_check.h>
 #include <consensus/tx_verify.h>
@@ -348,7 +349,7 @@ BOOST_AUTO_TEST_CASE(op_iscoinstake_tests)
 }
 
 inline static void memput_uint32_le(uint8_t *p, uint32_t v) {
-    v = htole32((uint32_t) v);
+    v = htole32_internal((uint32_t) v);
     memcpy(p, &v, 4);
 }
 
@@ -609,7 +610,7 @@ BOOST_AUTO_TEST_CASE(taproot)
     int nBlockHeight = 1;
     OUTPUT_PTR<CTxOutData> outData = MAKE_OUTPUT<CTxOutData>();
     outData->vData.resize(4);
-    uint32_t tmp32 = htole32(nBlockHeight);
+    uint32_t tmp32 = htole32_internal(nBlockHeight);
     memcpy(&outData->vData[0], &tmp32, 4);
     txn.vpout.push_back(outData);
 
@@ -710,7 +711,7 @@ BOOST_AUTO_TEST_CASE(taproot)
         int nBlockHeight = 1;
         OUTPUT_PTR<CTxOutData> outData = MAKE_OUTPUT<CTxOutData>();
         outData->vData.resize(4);
-        uint32_t tmp32 = htole32(nBlockHeight);
+        uint32_t tmp32 = htole32_internal(nBlockHeight);
         memcpy(&outData->vData[0], &tmp32, 4);
         txn.vpout.push_back(outData);
 

@@ -1,5 +1,5 @@
 // Copyright (c) 2014-2016 The ShadowCoin developers
-// Copyright (c) 2017-2024 The Particl Core developers
+// Copyright (c) 2017-2025 The Particl Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -53,6 +53,7 @@ Notes:
 #include <validation.h>
 #include <validationinterface.h>
 #include <wallet/types.h>
+#include <compat/endian.h>
 
 
 #ifdef ENABLE_WALLET
@@ -121,26 +122,26 @@ std::string SecMsgToken::ToString() const
 }
 
 inline static void memput_int64_le(uint8_t *p, int64_t v) {
-    v = (int64_t) htole64((uint64_t) v);
+    v = (int64_t) htole64_internal((uint64_t) v);
     memcpy(p, &v, 8);
 }
 
 inline static uint32_t memget_int64_le(uint8_t *p) {
     int64_t v = 0;
     memcpy(&v, p, 8);
-    v = (int64_t) le64toh((uint64_t) v);
+    v = (int64_t) le64toh_internal((uint64_t) v);
     return v;
 }
 
 inline static void memput_uint32_le(uint8_t *p, uint32_t v) {
-    v = htole32((uint32_t) v);
+    v = htole32_internal((uint32_t) v);
     memcpy(p, &v, 4);
 }
 
 inline static uint32_t memget_uint32_le(uint8_t *p) {
     uint32_t v = 0;
     memcpy(&v, p, 4);
-    v = le32toh(v);
+    v = le32toh_internal(v);
     return v;
 }
 
@@ -2668,7 +2669,7 @@ int CSMSG::ScanMessage(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t
         HashMsg(smsg, pPayload, nPayload-(smsg.IsPaidVersion() ? 32 : 0), hash);
 
         uint8_t chKey[30];
-        int64_t timestamp_be = (int64_t)htobe64(smsg.timestamp);
+        int64_t timestamp_be = (int64_t)htobe64_internal(smsg.timestamp);
         memcpy(&chKey[0], DBK_INBOX.data(), 2);
         memcpy(&chKey[2], &timestamp_be, 8);
         memcpy(&chKey[10], hash.begin(), 20);
@@ -3507,7 +3508,7 @@ int CSMSG::Purge(std::vector<uint8_t> &vMsgId, std::string &sError)
     int64_t now = GetTime();
     int64_t msgtime;
     memcpy(&msgtime, vMsgId.data(), 8);
-    msgtime = (int64_t)htobe64((uint64_t)msgtime);
+    msgtime = (int64_t)htobe64_internal((uint64_t)msgtime);
     SecMsgPurged purged(msgtime, now);
 
     uint8_t chKey[30];
@@ -3956,7 +3957,7 @@ int CSMSG::SetHash(SecureMessage *psmsg, uint8_t *pPayload, uint32_t nPayload)
         if (!fSecMsgEnabled) {
            break;
         }
-        uint32_t tmp_le = htole32(nonce);
+        uint32_t tmp_le = htole32_internal(nonce);
         memcpy(psmsg->nonce, &tmp_le, 4);
         memcpy(header_buffer + 4, &tmp_le, 4);
 
@@ -4178,7 +4179,7 @@ int CSMSG::Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID 
     // Calculate a 32 byte MAC with HMACSHA256, using key_m as salt
     //  Message authentication code, (hash of timestamp + iv + destination + payload)
     CHMAC_SHA256 ctx(&key_m[0], 32);
-    int64_t tmp64 = htole64(smsg.timestamp);
+    int64_t tmp64 = htole64_internal(smsg.timestamp);
     ctx.Write((uint8_t*) &tmp64, sizeof(tmp64));
     ctx.Write((uint8_t*) smsg.iv, sizeof(smsg.iv));
     ctx.Write((uint8_t*) vchCiphertext.data(), vchCiphertext.size());
@@ -4390,7 +4391,7 @@ int CSMSG::Send(CKeyID &addressFrom, CKeyID &addressTo, std::string &message,
 
             // Save sent message to db
             uint8_t chKey[30];
-            int64_t timestamp_be = (int64_t)htobe64(smsgForOutbox.timestamp);
+            int64_t timestamp_be = (int64_t)htobe64_internal(smsgForOutbox.timestamp);
             memcpy(&chKey[0], DBK_OUTBOX.data(), 2);
             memcpy(&chKey[2], &timestamp_be, 8);
             memcpy(&chKey[10], msgId.begin(), 20);
@@ -4595,7 +4596,7 @@ int CSMSG::SubmitMsg(const SecureMessage &smsg, const CKeyID &addressTo, bool st
 
     // Place message in send queue, proof of work will happen in a thread.
     uint8_t chKey[30];
-    int64_t timestamp_be = (int64_t)htobe64(smsg.timestamp);
+    int64_t timestamp_be = (int64_t)htobe64_internal(smsg.timestamp);
     std::string db_prefix = stash ? DBK_STASHED : DBK_QUEUED;
     memcpy(&chKey[0], db_prefix.data(), 2);
     memcpy(&chKey[2], &timestamp_be, 8);
@@ -4637,7 +4638,7 @@ int CSMSG::SubmitMsg(const SecureMessage &smsg, const CKeyID &addressTo, bool st
 std::vector<uint8_t> CSMSG::GetMsgID(const SecureMessage *psmsg, const uint8_t *pPayload)
 {
     std::vector<uint8_t> rv(28);
-    int64_t timestamp_be = (int64_t)htobe64(psmsg->timestamp);
+    int64_t timestamp_be = (int64_t)htobe64_internal(psmsg->timestamp);
     memcpy(rv.data(), &timestamp_be, 8);
 
     HashMsg(*psmsg, pPayload, psmsg->nPayload-(psmsg->IsPaidVersion() ? 32 : 0), *((uint160*)&rv[8]));
@@ -4648,7 +4649,7 @@ std::vector<uint8_t> CSMSG::GetMsgID(const SecureMessage *psmsg, const uint8_t *
 std::vector<uint8_t> CSMSG::GetMsgID(const SecureMessage &smsg)
 {
     std::vector<uint8_t> rv(28);
-    int64_t timestamp_be = (int64_t)htobe64(smsg.timestamp);
+    int64_t timestamp_be = (int64_t)htobe64_internal(smsg.timestamp);
     memcpy(rv.data(), &timestamp_be, 8);
 
     HashMsg(smsg, smsg.pPayload, smsg.nPayload-(smsg.IsPaidVersion() ? 32 : 0), *((uint160*)&rv[8]));
@@ -4704,7 +4705,7 @@ int CSMSG::Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, c
     uint8_t MAC[32];
 
     CHMAC_SHA256 ctx(key_m.data(), 32);
-    int64_t tmp64 = htole64(smsg.timestamp);
+    int64_t tmp64 = htole64_internal(smsg.timestamp);
     ctx.Write((uint8_t*) &tmp64, sizeof(tmp64));
     ctx.Write((uint8_t*) smsg.iv, sizeof(smsg.iv));
     ctx.Write((uint8_t*) pPayload, nPayload);

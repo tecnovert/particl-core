@@ -18,6 +18,7 @@
 #include <univalue.h>
 #include <util/check.h>
 #include <util/strencodings.h>
+#include <compat/endian.h>
 
 #include <map>
 #include <string>
@@ -232,7 +233,7 @@ void OutputToJSON(uint256 &txid, int i,
             if (s->vData.size() >= 9 && s->vData[4] == DO_VOTE) {
                 uint32_t voteToken;
                 memcpy(&voteToken, &s->vData[5], 4);
-                voteToken = le32toh(voteToken);
+                voteToken = le32toh_internal(voteToken);
                 int issue = (int) (voteToken & 0xFFFF);
                 int option = (int) (voteToken >> 16) & 0xFFFF;
                 entry.pushKV("vote", strprintf("%d, %d", issue, option));
