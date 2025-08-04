@@ -4661,7 +4661,7 @@ std::vector<uint8_t> CSMSG::GetMsgID(const SecureMessage &smsg)
   * address is the owned address to decrypt with.
   * validate first in SecureMsgValidate
   */
-int CSMSG::Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg, CPubKey *pk_from_out)
+int CSMSG::Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg, MessageInfo *msg_info)
 {
     if (LogAcceptCategory(BCLog::SMSG, BCLog::Level::Debug)) {
         LogPrintf("%s: using %s, testonly %d.\n", __func__, EncodeDestination(PKHash(address)), fTestOnly);
@@ -4735,6 +4735,7 @@ int CSMSG::Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, c
     int compressed = 2;  // 0: no, 1: yes, 2: legacy (if plaintext > 128)
     int start_offset = 0;
     bool insert_null = true;
+    int payload_version = 1;
     if ((uint32_t)vchPayload[0] == 250) {
         fFromAnonymous = true;
         lenData = vchPayload.size() - 9;
@@ -4742,7 +4743,7 @@ int CSMSG::Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, c
         pMsgData = &vchPayload[9];
     } else
     if ((uint32_t)vchPayload[0] == 249) {
-        // v2.1
+        payload_version = 2;
         compressed = vchPayload[1];
         insert_null = false;
         start_offset = 1;
@@ -4753,6 +4754,9 @@ int CSMSG::Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, c
         lenData = vchPayload.size() - SMSG_PL_HDR_LEN;
         lenPlain = memget_uint32_le(&vchPayload[1+20+65]);
         pMsgData = &vchPayload[SMSG_PL_HDR_LEN];
+    }
+    if (msg_info) {
+        msg_info->payload_version = payload_version;
     }
 
     try {
@@ -4808,8 +4812,8 @@ int CSMSG::Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, c
             return errorN(SMSG_GENERAL_ERROR, "%s: Signature validation failed.", __func__);
         }
 
-        if (pk_from_out) {
-            *pk_from_out = cpkFromSig;
+        if (msg_info) {
+            msg_info->pk_from = cpkFromSig;
         }
         int rv = SMSG_NO_ERROR;
         if (options.fAddReceivedPubkeys) {
@@ -4847,7 +4851,7 @@ int CSMSG::Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, c
     return CSMSG::Decrypt(fTestOnly, keyDest, address, header_buffer, smsg.pPayload, smsg.nPayload, msg);
 };
 
-int CSMSG::Decrypt(bool fTestOnly, const CKeyID &address, const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg, CPubKey *pk_from_out)
+int CSMSG::Decrypt(bool fTestOnly, const CKeyID &address, const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg, MessageInfo *msg_info)
 {
     // Fetch private key k, used to decrypt
     CKey keyDest;
@@ -4873,7 +4877,7 @@ int CSMSG::Decrypt(bool fTestOnly, const CKeyID &address, const uint8_t *pHeader
         return errorN(SMSG_UNKNOWN_KEY, "%s: Could not get private key for addressDest.", __func__);
     }
 
-    return CSMSG::Decrypt(fTestOnly, keyDest, address, pHeader, pPayload, nPayload, msg, pk_from_out);
+    return CSMSG::Decrypt(fTestOnly, keyDest, address, pHeader, pPayload, nPayload, msg, msg_info);
 };
 
 int CSMSG::Decrypt(bool fTestOnly, const CKeyID &address, const SecureMessage &smsg, MessageData &msg)

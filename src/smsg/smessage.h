@@ -1,5 +1,5 @@
 // Copyright (c) 2014-2016 The ShadowCoin developers
-// Copyright (c) 2017-2024 The Particl Core developers
+// Copyright (c) 2017-2025 The Particl Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -351,6 +351,11 @@ struct SendOptions {
     CPubKey pkTo;
 };
 
+struct MessageInfo {
+    CPubKey pk_from;
+    int payload_version{0};
+};
+
 void AddOptions(ArgsManager& argsman);
 const char *GetString(size_t errorCode);
 
@@ -464,10 +469,10 @@ public:
 
     int Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID &addressTo, const std::string &message, SendOptions opts = {});
 
-    int Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg, CPubKey *pk_from_out=nullptr);
+    int Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg, MessageInfo *msg_info=nullptr);
     int Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, const SecureMessage &smsg, MessageData &msg);
 
-    int Decrypt(bool fTestOnly, const CKeyID &address, const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg, CPubKey *pk_from_out=nullptr);
+    int Decrypt(bool fTestOnly, const CKeyID &address, const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg, MessageInfo *msg_info=nullptr);
     int Decrypt(bool fTestOnly, const CKeyID &address, const SecureMessage &smsg, MessageData &msg);
 
     RecursiveMutex cs_smsg; // All except inbox and outbox
