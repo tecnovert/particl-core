@@ -344,7 +344,7 @@ public:
      * Insert additional inputs into the transaction by
      * calling CreateTransaction();
      */
-    bool FundTransaction(const CMutableTransaction& tx, CTransactionRef &tx_new, CAmount& nFeeRet, std::optional<unsigned int> change_pos, bilingual_str& error, bool lockUnspents, const std::set<int>& setSubtractFeeFromOutputs, CCoinControl);
+    bool FundTransaction(const CMutableTransaction& tx, CTransactionRef &tx_new, CAmount& nFeeRet, std::optional<unsigned int> change_pos, bilingual_str& error, bool lockUnspents, const std::set<int>& setSubtractFeeFromOutputs, CCoinControl &coinControl);
     bool SignTransaction(CMutableTransaction& tx) const override EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     /** Reset transaction creation state */

@@ -981,17 +981,6 @@ RPCHelpMan fundrawtransaction()
         throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "TX decode failed");
     }
     UniValue options = request.params[1];
-    std::vector<std::pair<CTxDestination, CAmount>> destinations;
-    for (const auto& tx_out : tx.vout) {
-        CTxDestination dest;
-        ExtractDestination(tx_out.scriptPubKey, dest);
-        destinations.emplace_back(dest, tx_out.nValue);
-    }
-    std::vector<std::string> dummy(destinations.size(), "dummy");
-    std::vector<CRecipient> recipients = CreateRecipients(
-            destinations,
-            InterpretSubtractFeeFromOutputInstructions(options["subtractFeeFromOutputs"], dummy)
-    );
     CCoinControl coin_control;
     // Automatically select (additional) coins. Can be overridden by options.add_inputs.
     coin_control.m_allow_other_inputs = true;
@@ -999,6 +988,7 @@ RPCHelpMan fundrawtransaction()
     // This sets us up for a future PR to completely remove tx from the function signature in favor of passing inputs directly
     tx.vout.clear();
 
+    std::vector<CRecipient> recipients;
     if (pwallet->IsParticlWallet()) {
         // Send old subtractFeeFromOutputs through coin_control, vpout is unchanged
         size_t nOutputs = tx.GetNumVOuts();
@@ -1017,8 +1007,19 @@ RPCHelpMan fundrawtransaction()
                 throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Invalid parameter, position too large: %d", pos));
             coin_control.setSubtractFeeFromOutputs.insert(pos);
         }
+    } else {
+        std::vector<std::pair<CTxDestination, CAmount>> destinations;
+        for (const auto& tx_out : tx.vout) {
+            CTxDestination dest;
+            ExtractDestination(tx_out.scriptPubKey, dest);
+            destinations.emplace_back(dest, tx_out.nValue);
+        }
+        std::vector<std::string> dummy(destinations.size(), "dummy");
+        recipients = CreateRecipients(
+                destinations,
+                InterpretSubtractFeeFromOutputInstructions(options["subtractFeeFromOutputs"], dummy)
+        );
     }
-
     auto txr = FundTransaction(*pwallet, tx, recipients, options, coin_control, /*override_min_fee=*/true);
 
     UniValue result(UniValue::VOBJ);
