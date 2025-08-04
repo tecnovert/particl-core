@@ -1008,7 +1008,11 @@ static util::Result<CreatedTransactionResult> CreateTransactionInternal(
 
         bilingual_str error; // possible error str
         FeeCalculation feeCalc;
-        CTransactionRef tx;
+        CMutableTransaction txNew; // The resulting transaction that we make
+        if (coin_control.m_locktime) {
+            txNew.nLockTime = coin_control.m_locktime.value();
+        }
+        CTransactionRef tx = MakeTransactionRef(std::move(txNew));
         bool rv = phdw->CreateTransaction(vecSend, tx, nFeeRet, change_pos, error, coin_control, feeCalc, sign);
         if (!rv) {
             return util::Error{_("CreateTransaction failed: ") + error};
@@ -1421,17 +1425,6 @@ util::Result<CreatedTransactionResult> CreateTransaction(
 
 util::Result<CreatedTransactionResult> FundTransaction(CWallet& wallet, const CMutableTransaction& tx, const std::vector<CRecipient>& vecSend, std::optional<unsigned int> change_pos, bool lockUnspents, CCoinControl coinControl)
 {
-    if (wallet.IsParticlWallet()) {
-        CHDWallet *phdw = GetParticlWallet(&wallet);
-        CAmount nFeeRet{0};
-        bilingual_str error; // possible error str
-        CTransactionRef tx_new;
-        bool rv = phdw->FundTransaction(tx, tx_new, nFeeRet, change_pos, error, lockUnspents, coinControl.setSubtractFeeFromOutputs, coinControl);
-        if (!rv) {
-            return util::Error{_("FundTransaction failed") + error};
-        }
-        return CreatedTransactionResult(tx_new, nFeeRet, change_pos, coinControl.m_fee_calculation);
-    }
     // We want to make sure tx.vout is not used now that we are passing outputs as a vector of recipients.
     // This sets us up to remove tx completely in a future PR in favor of passing the inputs directly.
     assert(tx.vout.empty());
@@ -1441,6 +1434,23 @@ util::Result<CreatedTransactionResult> FundTransaction(CWallet& wallet, const CM
 
     // Set the user desired version
     coinControl.m_version = tx.nVersion;
+
+    if (wallet.IsParticlWallet()) {
+        CHDWallet *phdw = GetParticlWallet(&wallet);
+        CAmount nFeeRet{0};
+        bilingual_str error; // possible error str
+        CTransactionRef tx_new;
+        bool rv = phdw->FundTransaction(tx, tx_new, nFeeRet, change_pos, error, lockUnspents, coinControl.setSubtractFeeFromOutputs, coinControl);
+        if (!rv) {
+            return util::Error{_("FundTransaction failed") + error};
+        }
+        if (coinControl.nChangePos == -1) {
+            change_pos = std::nullopt;
+        } else {
+            change_pos = coinControl.nChangePos;
+        }
+        return CreatedTransactionResult(tx_new, nFeeRet, change_pos, coinControl.m_fee_calculation);
+    }
 
     // Acquire the locks to prevent races to the new locked unspents between the
     // CreateTransaction call and LockCoin calls (when lockUnspents is true).

@@ -3773,16 +3773,18 @@ int CHDWallet::AddStandardInputs(CWalletTx &wtx, CTransactionRecord &rtx,
     txNew.nVersion = PARTICL_TXN_VERSION;
     txNew.vout.clear();
 
-    // Discourage fee sniping. See CWallet::CreateTransaction
-    txNew.nLockTime = chain().getHeightInt();
-
-    // 1/10 chance of random time further back to increase privacy
-    if (GetRand<int>(10) == 0) {
-        txNew.nLockTime = std::max(0, (int)txNew.nLockTime - GetRand<int>(100));
+    if (coin_control.m_locktime) {
+        txNew.nLockTime = coin_control.m_locktime.value();
+    } else {
+        // Discourage fee sniping. See CWallet::CreateTransaction
+        txNew.nLockTime = chain().getHeightInt();
+        // 1/10 chance of random time further back to increase privacy
+        if (GetRand<int>(10) == 0) {
+            txNew.nLockTime = std::max(0, (int)txNew.nLockTime - GetRand<int>(100));
+        }
+        assert(txNew.nLockTime <= (unsigned int)chain().getHeightInt());
+        assert(txNew.nLockTime < LOCKTIME_THRESHOLD);
     }
-
-    assert(txNew.nLockTime <= (unsigned int)chain().getHeightInt());
-    assert(txNew.nLockTime < LOCKTIME_THRESHOLD);
 
     coinControl->fHaveAnonOutputs = HaveAnonOutputs(vecSend);
     FeeCalculation feeCalc;
@@ -4404,16 +4406,18 @@ int CHDWallet::AddBlindedInputs(CWalletTx &wtx, CTransactionRecord &rtx,
     txNew.nVersion = PARTICL_TXN_VERSION;
     txNew.vout.clear();
 
-    // Discourage fee sniping. See CWallet::CreateTransaction
-    txNew.nLockTime = chain().getHeightInt();
-
-    // 1/10 chance of random time further back to increase privacy
-    if (GetRand<int>(10) == 0) {
-        txNew.nLockTime = std::max(0, (int)txNew.nLockTime - GetRand<int>(100));
+    if (coinControl->m_locktime) {
+        txNew.nLockTime = coinControl->m_locktime.value();
+    } else {
+        // Discourage fee sniping. See CWallet::CreateTransaction
+        txNew.nLockTime = chain().getHeightInt();
+        // 1/10 chance of random time further back to increase privacy
+        if (GetRand<int>(10) == 0) {
+            txNew.nLockTime = std::max(0, (int)txNew.nLockTime - GetRand<int>(100));
+        }
+        assert(txNew.nLockTime <= (unsigned int)chain().getHeightInt());
+        assert(txNew.nLockTime < LOCKTIME_THRESHOLD);
     }
-
-    assert(txNew.nLockTime <= (unsigned int)chain().getHeightInt());
-    assert(txNew.nLockTime < LOCKTIME_THRESHOLD);
 
     coinControl->fHaveAnonOutputs = HaveAnonOutputs(vecSend);
     FeeCalculation feeCalc;
@@ -8876,7 +8880,7 @@ bool CHDWallet::GetFullChainPath(const CExtKeyAccount *pa, size_t nChain, std::v
     return true;
 };
 
-bool CHDWallet::FundTransaction(const CMutableTransaction& tx, CTransactionRef &tx_new, CAmount& nFeeRet, std::optional<unsigned int> change_pos, bilingual_str& error, bool lockUnspents, const std::set<int>& setSubtractFeeFromOutputs, CCoinControl coinControl)
+bool CHDWallet::FundTransaction(const CMutableTransaction& tx, CTransactionRef &tx_new, CAmount& nFeeRet, std::optional<unsigned int> change_pos, bilingual_str& error, bool lockUnspents, const std::set<int>& setSubtractFeeFromOutputs, CCoinControl &coinControl)
 {
     std::vector<CTempRecipient> vecSend;
 
@@ -8933,6 +8937,12 @@ bool CHDWallet::FundTransaction(const CMutableTransaction& tx, CTransactionRef &
     if (nFeeRet > this->m_default_max_tx_fee) {
         error = Untranslated(TransactionErrorString(TransactionError::MAX_FEE_EXCEEDED).original);
         return false;
+    }
+
+    if (lockUnspents) {
+        for (const CTxIn& txin : tx_new->vin) {
+            LockCoin(txin.prevout);
+        }
     }
 
     return true;
@@ -9040,6 +9050,7 @@ bool CHDWallet::CreateTransaction(std::vector<CTempRecipient>& vecSend, CTransac
 
     CTransactionRecord rtxTemp;
     CWalletTx wtxNew(tx, TxStateInactive{});
+
     std::string str_error;
     if (0 != AddStandardInputs(wtxNew, rtxTemp, vecSend, sign, nFeeRet, &coin_control, str_error)) {
         if (!str_error.empty()) {
@@ -9049,8 +9060,8 @@ bool CHDWallet::CreateTransaction(std::vector<CTempRecipient>& vecSend, CTransac
     }
 
     for (const auto &r : vecSend) {
-        if (r.fChange && !change_pos) {
-            change_pos = r.n;
+        if (r.fChange && coin_control.nChangePos == -1) {
+            coin_control.nChangePos = r.n;
             break;
         }
     }
