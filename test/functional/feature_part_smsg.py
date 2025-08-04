@@ -167,6 +167,7 @@ class SmsgTest(ParticlTestFramework):
         ro = nodes[0].smsginbox()
         assert (len(ro['messages']) == 1)
         assert (ro['messages'][0]['text'] == 'Test 1->0 no network')
+        assert (ro['messages'][0]["payloadversion"] == 1)
 
         sendoptions = {'submitmsg': False, 'savemsg': False}
         ro = nodes[1].smsgsend(address1, address0, 'Test 1->0 no network, no outbox', False, 1, False, sendoptions)
@@ -232,6 +233,7 @@ class SmsgTest(ParticlTestFramework):
         assert (ro["messages"][0]["from"] == address0)
         assert (len(ro["messages"][0]["pubkey_from"]) == 66)
         assert (ro["messages"][0]["text"] == msg)
+        assert (ro["messages"][0]["payloadversion"] == 2)
         ro = nodes[1].smsg(smsg_id, options)
         assert (len(ro["pubkey_from"]) == 66)
 
