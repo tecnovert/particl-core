@@ -192,6 +192,7 @@ struct RPCArg {
         AMOUNT,        //!< Special type representing a floating point amount (can be either NUM or STR)
         STR_HEX,       //!< Special type that is a STR with only hex chars
         RANGE,         //!< Special type that is a NUM or [NUM,NUM]
+        STR_OR_NUM,    //!< Special type that can be STR or NUM
     };
 
     enum class Optional {
