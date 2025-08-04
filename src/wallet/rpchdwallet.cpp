@@ -9386,7 +9386,7 @@ static RPCHelpMan verifyrawtransaction()
                         {RPCResult::Type::NUM, "validscripts", "The number of scripts which passed verification"},
                         {RPCResult::Type::ARR, "errors", /*optional=*/true, "Script verification errors (if there are any)",
                         {
-                            {RPCResult::Type::OBJ, "", "",
+                            {RPCResult::Type::ELISION, "", "",
                             {
                                 {RPCResult::Type::STR_HEX, "txid", "The hash of the referenced, previous transaction"},
                                 {RPCResult::Type::NUM, "vout", "The index of the output to spent and used as input"},

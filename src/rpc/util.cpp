@@ -483,6 +483,7 @@ struct Sections {
         switch (arg.m_type) {
         case RPCArg::Type::STR_HEX:
         case RPCArg::Type::STR:
+        case RPCArg::Type::STR_OR_NUM:
         case RPCArg::Type::NUM:
         case RPCArg::Type::AMOUNT:
         case RPCArg::Type::RANGE:
@@ -621,10 +622,10 @@ RPCHelpMan::RPCHelpMan(std::string name, std::string description, std::vector<RP
                 CHECK_NONFATAL(type == RPCArg::Type::ARR);
                 break;
             case UniValue::VSTR:
-                CHECK_NONFATAL(type == RPCArg::Type::STR || type == RPCArg::Type::STR_HEX || type == RPCArg::Type::AMOUNT);
+                CHECK_NONFATAL(type == RPCArg::Type::STR || type == RPCArg::Type::STR_HEX || type == RPCArg::Type::AMOUNT || type == RPCArg::Type::STR_OR_NUM);
                 break;
             case UniValue::VNUM:
-                CHECK_NONFATAL(type == RPCArg::Type::NUM || type == RPCArg::Type::AMOUNT || type == RPCArg::Type::RANGE);
+                CHECK_NONFATAL(type == RPCArg::Type::NUM || type == RPCArg::Type::AMOUNT || type == RPCArg::Type::RANGE || type == RPCArg::Type::STR_OR_NUM);
                 break;
             case UniValue::VBOOL:
                 CHECK_NONFATAL(type == RPCArg::Type::BOOL);
@@ -911,6 +912,10 @@ static std::optional<UniValue::VType> ExpectedType(RPCArg::Type type)
     case Type::ARR: {
         return UniValue::VARR;
     }
+    case Type::STR_OR_NUM: {
+        // STR or NUM, checked in MatchesType
+        return std::nullopt;
+    }
     } // no default case, so the compiler can warn about missing cases
     NONFATAL_UNREACHABLE();
 }
@@ -920,6 +925,12 @@ UniValue RPCArg::MatchesType(const UniValue& request) const
     if (m_opts.skip_type_check) return true;
     if (IsOptional() && request.isNull()) return true;
     const auto exp_type{ExpectedType(m_type)};
+    if (m_type == Type::STR_OR_NUM) {
+        if (request.getType() != UniValue::VNUM and request.getType() != UniValue::VSTR) {
+            return strprintf("JSON value of type %s is not of expected type str or number.", uvTypeName(request.getType()));
+        }
+        return true;
+    }
     if (!exp_type) return true; // nothing to check
 
     if (*exp_type != request.getType()) {
@@ -985,6 +996,10 @@ std::string RPCArg::ToDescriptionString(bool is_named_arg) const
         }
         case Type::ARR: {
             ret += "json array";
+            break;
+        }
+        case Type::STR_OR_NUM: {
+            ret += "numeric or string";
             break;
         }
         } // no default case, so the compiler can warn about missing cases
@@ -1214,7 +1229,7 @@ UniValue RPCResult::MatchesType(const UniValue& result) const
 
 void RPCResult::CheckInnerDoc() const
 {
-    if (m_type == Type::OBJ) {
+    if (m_type == Type::OBJ || m_type == Type::ELISION) {
         // May or may not be empty
         return;
     }
@@ -1244,6 +1259,8 @@ std::string RPCArg::ToStringObj(const bool oneline) const
         return res + "n or [n,n]";
     case Type::AMOUNT:
         return res + "amount";
+    case Type::STR_OR_NUM:
+        return res + "n or \"str\"";
     case Type::BOOL:
         return res + "bool";
     case Type::ARR:
@@ -1276,6 +1293,7 @@ std::string RPCArg::ToString(const bool oneline) const
 
     switch (m_type) {
     case Type::STR_HEX:
+    case Type::STR_OR_NUM:
     case Type::STR: {
         return "\"" + GetFirstName() + "\"";
     }
