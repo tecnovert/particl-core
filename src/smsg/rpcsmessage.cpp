@@ -1486,6 +1486,7 @@ static RPCHelpMan smsginbox()
                                 {RPCResult::Type::STR, "expiration_local", /*optional=*/true, "Time Expired"},
                                 {RPCResult::Type::STR, "expiration_utc", /*optional=*/true, "Time Expired"},
                                 {RPCResult::Type::NUM, "payloadsize", /*optional=*/true, "Size in bytes of payload"},
+                                {RPCResult::Type::NUM, "payloadversion", /*optional=*/true, "Payload format version"},
                                 {RPCResult::Type::BOOL, "paid", /*optional=*/true, "True if paid message"},
                                 {RPCResult::Type::STR, "from", /*optional=*/true, "Address the message was sent from"},
                                 {RPCResult::Type::STR, "to", /*optional=*/true, "Address the message was sent to"},
@@ -1619,10 +1620,9 @@ static RPCHelpMan smsginbox()
                 objM.pushKV("msgid", HexStr(Span<const unsigned char>(&chKey[2], 28))); // timestamp+hash
                 objM.pushKV("version", strprintf("%02x%02x", psmsg->version[0], psmsg->version[1]));
 
-                CPubKey pk_from_out;
-                CPubKey *ppk = pubkey_from ? &pk_from_out : nullptr;
                 uint32_t nPayload = smsgStored.vchMessage.size() - smsg::SMSG_HDR_LEN;
-                int rv = smsgModule.Decrypt(false, smsgStored.addrTo, pHeader, pHeader + smsg::SMSG_HDR_LEN, nPayload, msg, ppk);
+                smsg::MessageInfo msg_info;
+                int rv = smsgModule.Decrypt(false, smsgStored.addrTo, pHeader, pHeader + smsg::SMSG_HDR_LEN, nPayload, msg, &msg_info);
                 if (rv == 0) {
                     std::string sAddrTo = EncodeDestination(PKHash(smsgStored.addrTo));
                     std::string sText = GetMessageText(msg);
@@ -1645,10 +1645,11 @@ static RPCHelpMan smsginbox()
 
                     uint32_t nPayload = smsgStored.vchMessage.size() - smsg::SMSG_HDR_LEN;
                     objM.pushKV("payloadsize", (int)nPayload);
+                    objM.pushKV("payloadversion", msg_info.payload_version);
 
                     objM.pushKV("from", msg.sFromAddress);
-                    if (pk_from_out.IsValid()) {
-                        objM.pushKV("pubkey_from", HexStr(pk_from_out));
+                    if (pubkey_from && msg_info.pk_from.IsValid()) {
+                        objM.pushKV("pubkey_from", HexStr(msg_info.pk_from));
                     }
 
                     objM.pushKV("to", sAddrTo);
@@ -1730,6 +1731,7 @@ static RPCHelpMan smsgoutbox()
                                 {RPCResult::Type::STR, "expiration_local", /*optional=*/true, "Time Expired"},
                                 {RPCResult::Type::STR, "expiration_utc", /*optional=*/true, "Time Expired"},
                                 {RPCResult::Type::NUM, "payloadsize", /*optional=*/true, "Size in bytes of payload"},
+                                {RPCResult::Type::NUM, "payloadversion", /*optional=*/true, "Payload format version"},
                                 {RPCResult::Type::BOOL, "paid", /*optional=*/true, "True if paid message"},
                                 {RPCResult::Type::STR, "from", /*optional=*/true, "Address the message was sent from"},
                                 {RPCResult::Type::STR, "to", /*optional=*/true, "Address the message was sent to"},
@@ -1846,7 +1848,8 @@ static RPCHelpMan smsgoutbox()
                 objM.pushKV("version", strprintf("%02x%02x", psmsg->version[0], psmsg->version[1]));
 
                 uint32_t nPayload = smsgStored.vchMessage.size() - smsg::SMSG_HDR_LEN;
-                int rv = smsgModule.Decrypt(false, smsgStored.addrOutbox, pHeader, pHeader + smsg::SMSG_HDR_LEN, nPayload, msg);
+                smsg::MessageInfo msg_info;
+                int rv = smsgModule.Decrypt(false, smsgStored.addrOutbox, pHeader, pHeader + smsg::SMSG_HDR_LEN, nPayload, msg, &msg_info);
                 if (rv == 0) {
                     std::string sAddrTo = EncodeDestination(PKHash(smsgStored.addrTo));
                     std::string sText = GetMessageText(msg);
@@ -1868,6 +1871,7 @@ static RPCHelpMan smsgoutbox()
 
                     uint32_t nPayload = smsgStored.vchMessage.size() - smsg::SMSG_HDR_LEN;
                     objM.pushKV("payloadsize", (int)nPayload);
+                    objM.pushKV("payloadversion", msg_info.payload_version);
 
                     objM.pushKV("from", msg.sFromAddress);
                     objM.pushKV("to", sAddrTo);
@@ -2379,6 +2383,7 @@ static RPCHelpMan smsgone()
                         {RPCResult::Type::STR, "expiration_local", /*optional=*/true, "Time Expired"},
                         {RPCResult::Type::STR, "expiration_utc", /*optional=*/true, "Time Expired"},
                         {RPCResult::Type::NUM, "payloadsize", "Size of user message"},
+                        {RPCResult::Type::NUM, "payloadversion", /*optional=*/true, "Payload format version"},
                         {RPCResult::Type::STR, "from", /*optional=*/true, "Address the message was sent from"},
                         {RPCResult::Type::STR, "pubkey_from", /*optional=*/true, "Public key for address the message was sent from"},
                         {RPCResult::Type::STR, "to", /*optional=*/true, "Address the message was sent to"},
@@ -2505,15 +2510,14 @@ static RPCHelpMan smsgone()
 
     bool pubkey_from = options.isObject() && options["pubkey_from"].isBool() ? options["pubkey_from"].get_bool() : false;
 
-    CPubKey pk_from_out;
-    CPubKey *ppk = pubkey_from ? &pk_from_out : nullptr;
-
+    smsg::MessageInfo msg_info;
     int rv;
     if ((rv = smsgModule.Decrypt(false, fInbox ? smsgStored.addrTo : smsgStored.addrOutbox,
-        smsgStored.vchMessage.data(), &smsgStored.vchMessage[smsg::SMSG_HDR_LEN], nPayload, msg, ppk)) == 0) {
+        smsgStored.vchMessage.data(), &smsgStored.vchMessage[smsg::SMSG_HDR_LEN], nPayload, msg, &msg_info)) == 0) {
+        result.pushKV("payloadversion", msg_info.payload_version);
         result.pushKV("from", msg.sFromAddress);
-        if (pk_from_out.IsValid()) {
-            result.pushKV("pubkey_from", HexStr(pk_from_out));
+        if (pubkey_from && msg_info.pk_from.IsValid()) {
+            result.pushKV("pubkey_from", HexStr(msg_info.pk_from));
         }
 
         if (sEnc == "none") {
