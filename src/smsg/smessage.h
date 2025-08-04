@@ -345,7 +345,7 @@ struct SendOptions {
     size_t rct_ring_size{5};
     wallet::CCoinControl *coin_control{nullptr};
     bool fund_paid_msg{true};
-    int plaintext_format_version{0};
+    int payload_format_version{0};
     int compression{-1};
     CPubKey pkTo;
 };

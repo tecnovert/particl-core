@@ -4065,7 +4065,7 @@ int CSMSG::Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID 
     uint32_t lenMsg = message.size();
 
     bool lz4_compression = false;
-    if (opts.plaintext_format_version < 2 && lenMsg > 128) {
+    if (opts.payload_format_version < 2 && lenMsg > 128) {
         lz4_compression = true;
     } else
     if (opts.compression == 1) {
@@ -4104,7 +4104,7 @@ int CSMSG::Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID 
         // Next 4 bytes are unused - there to ensure encrypted payload always > 8 bytes
         memput_uint32_le(&vchPayload[5], lenMsg);  // Length of uncompressed plain text
     } else {
-        size_t extra_length = opts.plaintext_format_version < 2 ? 0 : 1;
+        size_t extra_length = opts.payload_format_version < 2 ? 0 : 1;
         try { vchPayload.resize(SMSG_PL_HDR_LEN + lenMsgData + extra_length); } catch (std::exception &e) {
             return errorN(SMSG_ALLOCATE_FAILED, "%s: vchPayload.resize %u threw: %s.", __func__, SMSG_PL_HDR_LEN + lenMsgData, e.what());
         }
@@ -4121,15 +4121,15 @@ int CSMSG::Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID 
 
         size_t offset = 1;
         // Save some bytes by sending address raw
-        if (opts.plaintext_format_version < 2) {
+        if (opts.payload_format_version < 2) {
             vchPayload[0] = (static_cast<CBitcoinAddress*>(&coinAddrFrom))->getVersion(); // vchPayload[0] = coinAddrDest.nVersion;
         } else
-        if (opts.plaintext_format_version == 2) {
+        if (opts.payload_format_version == 2) {
             vchPayload[0] = 249;
             vchPayload[1] = opts.compression;
             offset += 1;
         } else {
-            return errorN(SMSG_UNKNOWN_VERSION, "%s: Unknown plaintext format version.", __func__);
+            return errorN(SMSG_UNKNOWN_VERSION, "%s: Unknown payload format version.", __func__);
         }
 
         memcpy(&vchPayload[offset], ckidFrom.begin(), 20); // memcpy(&vchPayload[1], ckidDest.pn, 20);
