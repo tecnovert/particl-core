@@ -969,7 +969,7 @@ static RPCHelpMan smsgsend()
                             {"fund_from_rct", RPCArg::Type::BOOL, RPCArg::Default{false}, "Fund message from anon balance."},
                             {"rct_ring_size", RPCArg::Type::NUM, RPCArg::Default{(int)DEFAULT_RING_SIZE}, "Ring size to use with fund_from_rct."},
                             {"fundmsg", RPCArg::Type::BOOL, RPCArg::Default{true}, "Fund paid message, if false message will be stashed for later funding."},
-                            {"plaintext_format_version", RPCArg::Type::NUM, RPCArg::Default{(int)1}, "Set the format of the plaintext data which gets encrypted."},
+                            {"payload_format_version", RPCArg::Type::NUM, RPCArg::Default{(int)1}, "Set the format of the plaintext data which gets encrypted."},
                             {"compression", RPCArg::Type::NUM, RPCArg::Default{(int)2}, "Optionally compress plaintext data before encryption. 0: off, 1: LZ4, 2: LZ4 auto. Only takes effect if plaintext_format_version > 1."},
                             {"returnmsg",  RPCArg::Type::BOOL, RPCArg::Default{false}, "Return hex encoded smsg message."}
                         },
@@ -1050,7 +1050,7 @@ static RPCHelpMan smsgsend()
             {"fund_from_rct",                UniValueType(UniValue::VBOOL)},
             {"rct_ring_size",                UniValueType(UniValue::VNUM)},
             {"fundmsg",                      UniValueType(UniValue::VBOOL)},
-            {"plaintext_format_version",     UniValueType(UniValue::VNUM)},
+            {"payload_format_version",       UniValueType(UniValue::VNUM)},
             {"compression",                  UniValueType(UniValue::VNUM)},
             {"returnmsg",                    UniValueType(UniValue::VBOOL)},
         }, true, false);
@@ -1078,8 +1078,8 @@ static RPCHelpMan smsgsend()
         if (!options["fundmsg"].isNull()) {
             send_opts.fund_paid_msg = options["fundmsg"].get_bool();
         }
-        if (!options["plaintext_format_version"].isNull()) {
-            send_opts.plaintext_format_version = options["plaintext_format_version"].getInt<int>();
+        if (!options["payload_format_version"].isNull()) {
+            send_opts.payload_format_version = options["payload_format_version"].getInt<int>();
         }
         if (!options["compression"].isNull()) {
             send_opts.compression = options["compression"].getInt<int>();

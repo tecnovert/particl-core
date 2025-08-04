@@ -182,15 +182,15 @@ class SmsgTest(ParticlTestFramework):
         self.log.info('Test smsgpeers')
         assert (len(nodes[0].smsgpeers()) == 2)
 
-        self.log.info('Test plaintext version 2')
+        self.log.info('Test payload version 2')
         msg = 'Test plaintext version 2' * 5
-        sendoptions = {'submitmsg': False, 'savemsg': False, 'plaintext_format_version': 2, 'compression': 0}
+        sendoptions = {'submitmsg': False, 'savemsg': False, 'payload_format_version': 2, 'compression': 0}
         ro = nodes[1].smsgsend(address1, address0, msg, False, 1, False, sendoptions)
 
         assert (len(ro['msg']) == 664)
         assert ('Not Sent' in ro['result'])
 
-        sendoptions = {'submitmsg': False, 'savemsg': False, 'plaintext_format_version': 2, 'compression': 1}
+        sendoptions = {'submitmsg': False, 'savemsg': False, 'payload_format_version': 2, 'compression': 1}
         ro = nodes[1].smsgsend(address1, address0, msg, False, 1, False, sendoptions)
         assert (len(ro['msg']) == 472)
         assert ('Not Sent' in ro['result'])
@@ -220,7 +220,7 @@ class SmsgTest(ParticlTestFramework):
         assert ("addReceivedPubkeys = false" in json.dumps(ro))
 
         msg: str = "Test 0->1, no pk."
-        sendoptions = {"submitmsg": False, "plaintext_format_version": 2, "compression": 0}
+        sendoptions = {"submitmsg": False, "payload_format_version": 2, "compression": 0}
         ro = nodes[0].smsgsend(address0, address1, msg, False, 1, False, sendoptions)
         assert (ro["result"] == "Not Sent.")
         smsg_id = ro["msgid"]
@@ -239,7 +239,7 @@ class SmsgTest(ParticlTestFramework):
 
         msg: str = "Test 0->1, decodehex."
         msg_hex = msg.encode("utf-8").hex()
-        sendoptions = {"submitmsg": False, "decodehex": True, "savemsg": False, "plaintext_format_version": 2, "compression": 0}
+        sendoptions = {"submitmsg": False, "decodehex": True, "savemsg": False, "payload_format_version": 2, "compression": 0}
         ro = nodes[0].smsgsend(address0, address1, msg_hex, False, 1, False, sendoptions)
         assert (ro["result"] == "Not Sent.")
         smsg_id = ro["msgid"]
