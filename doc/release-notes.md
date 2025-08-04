@@ -1,9 +1,9 @@
-27.1 Release Notes
+27.x Release Notes
 =====================
 
-Bitcoin Core version 27.1 is now available from:
+Bitcoin Core version 27.x is now available from:
 
-  <https://bitcoincore.org/bin/bitcoin-core-27.1/>
+  <https://bitcoincore.org/bin/bitcoin-core-27.x/>
 
 This release includes various bug fixes and performance
 improvements, as well as updated translations.
@@ -40,75 +40,39 @@ unsupported systems.
 Notable changes
 ===============
 
-### Miniscript
-
-- #29853 sign: don't assume we are parsing a sane TapMiniscript
-
-### RPC
-
-- #29869 rpc, bugfix: Enforce maximum value for setmocktime
-- #29870 rpc: Reword SighashFromStr error message
-- #30094 rpc: move UniValue in blockToJSON
-
-### Index
-
-- #29776 Fix #29767, set m_synced = true after Commit()
-
-### Gui
-
-- #gui812 Fix create unsigned transaction fee bump
-- #gui813 Don't permit port in proxy IP option
+External signing is not currently supported when compiling with Boost version 1.88.0 or later.
 
 ### Test
 
-- #29892 test: Fix failing univalue float test
-
-### P2P
-
-- #30085 p2p: detect addnode cjdns peers in GetAddedNodeInfo()
+- #31419 test: fix MIN macro redefinition
+- #32286 test: Handle empty string returned by CLI as None in RPC tests
+- #32336 test: Suppress upstream -Wduplicate-decl-specifier in bpfcc
 
 ### Build
 
-- #29747 depends: fix mingw-w64 Qt DEBUG=1 build
-- #29859 build: Fix false positive CHECK_ATOMIC test
-- #29985 depends: Fix build of Qt for 32-bit platforms with recent glibc
-- #30097 crypto: disable asan for sha256_sse4 with clang and -O0
-- #30151 depends: Fetch miniupnpc sources from an alternative website
-- #30216 build: Fix building fuzz binary on on SunOS / illumos
-- #30217 depends: Update Boost download link
-
-### Doc
-
-- #29934 doc: add LLVM instruction for macOS < 13
-
-### CI
-
-- #29856 ci: Bump s390x to ubuntu:24.04
+- #31502 depends: Fix CXXFLAGS on NetBSD
+- #31627 depends: Fix spacing issue
+- #32070 build: use make < 3.82 syntax for define directive
+- #32439 guix: accomodate migration to codeberg
+- #32568 depends: use "mkdir -p" when installing xproto
 
 ### Misc
 
-- #29691 Change Luke Dashjr seed to dashjr-list-of-p2p-nodes.us
-- #30149 contrib: Renew Windows code signing certificate
+- #31623 tracing: Rename the MIN macro to TRACEPOINT_TEST_MIN in log_raw_p2p_msgs
+- #32187 refactor: Remove spurious virtual from final ~CZMQNotificationInterface
+
 
 Credits
 =======
 
 Thanks to everyone who directly contributed to this release:
 
-- Antoine Poinsot
-- Ava Chow
-- Cory Fields
-- dergoegge
+- 0xb10c
+- Brandon Odiwuor
 - fanquake
-- furszy
 - Hennadii Stepanov
-- Jon Atack
-- laanwj
-- Luke Dashjr
 - MarcoFalke
-- nanlour
 - Sjors Provoost
-- willcl-ark
 
 As well as to everyone that helped with translations on
 [Transifex](https://www.transifex.com/bitcoin/bitcoin/).
