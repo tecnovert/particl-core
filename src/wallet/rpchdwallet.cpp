@@ -2820,15 +2820,18 @@ static RPCHelpMan deriverangekeys()
 
             ExtKeyAccountMap::iterator mi = pwallet->mapExtAccounts.begin();
             for (; mi != pwallet->mapExtAccounts.end(); ++mi) {
-                sea = mi->second;
-                for (uint32_t i = 0; i < sea->vExtKeyIDs.size(); ++i) {
-                    if (sea->vExtKeyIDs[i] != keyId)
+                CExtKeyAccount *loop_sea = mi->second;
+                for (uint32_t i = 0; i < loop_sea->vExtKeyIDs.size(); ++i) {
+                    if (loop_sea->vExtKeyIDs[i] != keyId) {
                         continue;
+                    }
                     nChain = i;
-                    sek = sea->vExtKeys[i];
+                    sek = loop_sea->vExtKeys[i];
+                    sea = loop_sea;
                 }
-                if (sek)
+                if (sek) {
                     break;
+                }
             }
         }
 
@@ -2868,9 +2871,6 @@ static RPCHelpMan deriverangekeys()
         if (fHardened && !sek->kp.IsValidV()) {
             throw JSONRPCError(RPC_INVALID_PARAMETER, "extkey must have private key to derive hardened keys.");
         }
-        if (fSave && !sea) {
-            throw JSONRPCError(RPC_INVALID_PARAMETER, "Must have account to save keys.");
-        }
 
         uint32_t idIndex;
         if (fAddToAddressBook) {
@@ -2902,31 +2902,45 @@ static RPCHelpMan deriverangekeys()
             } else {
                 result.push_back(CBitcoinAddress(PKHash(idk)).ToString());
             }
-
-            if (fSave) {
+            if (!fSave) {
+                continue;
+            }
+            if (sea) {
                 if (HK_YES != sea->HaveSavedKey(idk)) {
                     CEKAKey ak(nChain, nChildOut);
                     if (0 != pwallet->ExtKeySaveKey(sea, idk, ak)) {
                         throw JSONRPCError(RPC_WALLET_ERROR, "ExtKeySaveKey failed.");
                     }
                 }
+            } else {
+                // Derive and save the private key
+                if (!sek->kp.IsValidV()) {
+                    throw JSONRPCError(RPC_INVALID_PARAMETER, "extkey must have private key to save loose keys.");
+                }
+                CKey key;
+                if (0 != sek->DeriveKey(key, nChildIn, nChildOut, fHardened)) {
+                    throw JSONRPCError(RPC_WALLET_ERROR, "DeriveKey failed.");
+                }
+                if (!pwallet->ImportPrivKeys({{idk, key}}, 1)) {
+                    throw JSONRPCError(RPC_WALLET_ERROR, "Error adding key to wallet");
+                }
+            }
 
-                if (fAddToAddressBook) {
-                    std::vector<uint32_t> vPath;
-                    vPath.push_back(idIndex); // first entry is the index to the account / master key
+            if (fAddToAddressBook) {
+                std::vector<uint32_t> vPath;
+                vPath.push_back(idIndex); // first entry is the index to the account / master key
 
-                    if (0 == AppendChainPath(sek, vPath)) {
-                        vPath.push_back(nChildOut);
-                    } else {
-                        vPath.clear();
-                    }
+                if (0 == AppendChainPath(sek, vPath)) {
+                    vPath.push_back(nChildOut);
+                } else {
+                    vPath.clear();
+                }
 
-                    std::string strAccount = "";
-                    if (f256bit) {
-                        pwallet->SetAddressBook(&wdb, idk256, strAccount, "receive", vPath, false);
-                    } else {
-                        pwallet->SetAddressBook(&wdb, PKHash(idk), strAccount, "receive", vPath, false);
-                    }
+                std::string strAccount;
+                if (f256bit) {
+                    pwallet->SetAddressBook(&wdb, idk256, strAccount, "receive", vPath, false);
+                } else {
+                    pwallet->SetAddressBook(&wdb, PKHash(idk), strAccount, "receive", vPath, false);
                 }
             }
         }
