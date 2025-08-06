@@ -18,7 +18,7 @@ qt_mingw32_packages=qt
 bdb_packages=bdb
 sqlite_packages=sqlite
 
-zmq_packages=zeromq
+zmq_packages=sodium zeromq
 
 upnp_packages=miniupnpc
 natpmp_packages=libnatpmp
