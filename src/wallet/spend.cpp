@@ -272,12 +272,21 @@ util::Result<PreSelectedInputs> FetchSelectedInputs(const CWallet& wallet, const
             input_bytes = GetVirtualTransactionSize(input_bytes, 0, 0);
         }
         CTxOut txout;
+
         if (auto ptr_wtx = wallet.GetWalletTx(outpoint.hash)) {
-            // Clearly invalid input, fail
-            if (ptr_wtx->tx->vout.size() <= outpoint.n) {
-                return util::Error{strprintf(_("Invalid pre-selected input %s"), outpoint.ToString())};
+            if (ptr_wtx->tx->vpout.size() > outpoint.n) {
+                const auto vpout = ptr_wtx->tx->vpout[outpoint.n];
+                if (!vpout->IsType(OUTPUT_STANDARD)) {
+                    return util::Error{strprintf(_("Invalid pre-selected input %s"), outpoint.ToString())};
+                }
+                txout = std::move(vpout->GetCTxOut());
+            } else {
+                // Clearly invalid input, fail
+                if (ptr_wtx->tx->vout.size() <= outpoint.n) {
+                    return util::Error{strprintf(_("Invalid pre-selected input %s"), outpoint.ToString())};
+                }
+                txout = ptr_wtx->tx->vout.at(outpoint.n);
             }
-            txout = ptr_wtx->tx->vout.at(outpoint.n);
             if (input_bytes == -1) {
                 input_bytes = CalculateMaximumSignedInputSize(txout, &wallet, &coin_control);
             }
@@ -295,7 +304,7 @@ util::Result<PreSelectedInputs> FetchSelectedInputs(const CWallet& wallet, const
             input_bytes = CalculateMaximumSignedInputSize(txout, outpoint, &coin_control.m_external_provider, can_grind_r, &coin_control);
         }
 
-        if (input_bytes == -1) {
+        if (input_bytes == -1 && !wallet.IsParticlWallet()) {
             return util::Error{strprintf(_("Not solvable pre-selected input %s"), outpoint.ToString())}; // Not solvable, can't estimate size for fee
         }
 

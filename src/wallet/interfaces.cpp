@@ -815,15 +815,17 @@ public:
 
     bool isUnlockForStakingOnlySet() override
     {
-        if (!m_wallet_part)
+        if (!m_wallet_part) {
             return false;
+        }
         return m_wallet_part->fUnlockForStakingOnly;
     }
 
     CAmount getAvailableAnonBalance(const CCoinControl& coin_control) override
     {
-        if (!m_wallet_part)
+        if (!m_wallet_part) {
             return 0;
+        }
         return m_wallet_part->GetAvailableAnonBalance(&coin_control);
     }
 
