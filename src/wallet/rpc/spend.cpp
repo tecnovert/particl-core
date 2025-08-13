@@ -985,9 +985,6 @@ RPCHelpMan fundrawtransaction()
     CCoinControl coin_control;
     // Automatically select (additional) coins. Can be overridden by options.add_inputs.
     coin_control.m_allow_other_inputs = true;
-    // Clear tx.vout since it is not meant to be used now that we are passing outputs directly.
-    // This sets us up for a future PR to completely remove tx from the function signature in favor of passing inputs directly
-    tx.vout.clear();
 
     std::vector<CRecipient> recipients;
     if (pwallet->IsParticlWallet()) {
@@ -1021,6 +1018,10 @@ RPCHelpMan fundrawtransaction()
                 InterpretSubtractFeeFromOutputInstructions(options["subtractFeeFromOutputs"], dummy)
         );
     }
+    // Clear tx.vout since it is not meant to be used now that we are passing outputs directly.
+    // This sets us up for a future PR to completely remove tx from the function signature in favor of passing inputs directly
+    tx.vout.clear();
+
     auto txr = FundTransaction(*pwallet, tx, recipients, options, coin_control, /*override_min_fee=*/true);
 
     UniValue result(UniValue::VOBJ);
