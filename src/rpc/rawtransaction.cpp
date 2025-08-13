@@ -1510,7 +1510,11 @@ static RPCHelpMan decodepsbt()
             have_a_utxo = true;
         }
         if (input.non_witness_utxo) {
-            txout = input.non_witness_utxo->vout[psbtx.tx->vin[i].prevout.n];
+            if (input.non_witness_utxo->IsParticlVersion()) {
+                txout = input.non_witness_utxo->vpout[psbtx.tx->vin[i].prevout.n]->GetCTxOut();
+            } else {
+                txout = input.non_witness_utxo->vout[psbtx.tx->vin[i].prevout.n];
+            }
 
             UniValue non_wit(UniValue::VOBJ);
             TxToUniv(*input.non_witness_utxo, /*block_hash=*/uint256(), /*entry=*/non_wit, /*include_hex=*/false);
@@ -1806,9 +1810,16 @@ static RPCHelpMan decodepsbt()
 
         outputs.push_back(std::move(out));
 
+        CAmount vout_i_value{0};
+        if (psbtx.tx->IsParticlVersion()) {
+            vout_i_value = psbtx.tx->vpout[i]->GetValue();
+        } else {
+            vout_i_value = psbtx.tx->vout[i].nValue;
+        }
+
         // Fee calculation
-        if (MoneyRange(psbtx.tx->vout[i].nValue) && MoneyRange(output_value + psbtx.tx->vout[i].nValue)) {
-            output_value += psbtx.tx->vout[i].nValue;
+        if (MoneyRange(vout_i_value) && MoneyRange(output_value + vout_i_value)) {
+            output_value += vout_i_value;
         } else {
             // Hack to just not show fee later
             have_all_utxos = false;

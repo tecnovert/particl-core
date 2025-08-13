@@ -419,6 +419,7 @@ PARTICL_SCRIPTS = [
     'feature_part_taproot.py',
     'wallet_part_particl.py',
     'rpc_part_mnemonic.py',
+    'rpc_part_psbt.py',
     'feature_part_smsg.py',
     'feature_part_smsgpaid.py',
     'feature_part_smsgpaidfee.py',

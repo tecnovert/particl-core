@@ -10,10 +10,19 @@
 #include <util/check.h>
 #include <util/strencodings.h>
 
+
+static CTxOut GetTxVout(const CTransactionRef &tx, int n)
+{
+    if (tx->IsParticlVersion()) {
+        return tx->vpout[n]->GetCTxOut();
+    }
+    return tx->vout.at(n);
+}
+
 PartiallySignedTransaction::PartiallySignedTransaction(const CMutableTransaction& tx) : tx(tx)
 {
     inputs.resize(tx.vin.size());
-    outputs.resize(tx.vout.size());
+    outputs.resize(tx.GetNumVOuts());
 }
 
 bool PartiallySignedTransaction::IsNull() const
@@ -61,7 +70,11 @@ bool PartiallySignedTransaction::AddInput(const CTxIn& txin, PSBTInput& psbtin)
 
 bool PartiallySignedTransaction::AddOutput(const CTxOut& txout, const PSBTOutput& psbtout)
 {
-    tx->vout.push_back(txout);
+    if (tx->IsParticlVersion()) {
+        tx->vpout.emplace_back(MAKE_OUTPUT<CTxOutStandard>(txout.nValue, txout.scriptPubKey));
+    } else {
+        tx->vout.push_back(txout);
+    }
     outputs.push_back(psbtout);
     return true;
 }
@@ -71,13 +84,13 @@ bool PartiallySignedTransaction::GetInputUTXO(CTxOut& utxo, int input_index) con
     const PSBTInput& input = inputs[input_index];
     uint32_t prevout_index = tx->vin[input_index].prevout.n;
     if (input.non_witness_utxo) {
-        if (prevout_index >= input.non_witness_utxo->vout.size()) {
+        if (prevout_index >= input.non_witness_utxo->GetNumVOuts()) {
             return false;
         }
         if (input.non_witness_utxo->GetHash() != tx->vin[input_index].prevout.hash) {
             return false;
         }
-        utxo = input.non_witness_utxo->vout[prevout_index];
+        utxo = std::move(GetTxVout(input.non_witness_utxo, prevout_index));
     } else if (!input.witness_utxo.IsNull()) {
         utxo = input.witness_utxo;
     } else {
@@ -304,13 +317,13 @@ bool PSBTInputSignedAndVerified(const PartiallySignedTransaction psbt, unsigned 
     if (input.non_witness_utxo) {
         // If we're taking our information from a non-witness UTXO, verify that it matches the prevout.
         COutPoint prevout = psbt.tx->vin[input_index].prevout;
-        if (prevout.n >= input.non_witness_utxo->vout.size()) {
+        if (prevout.n >= input.non_witness_utxo->GetNumVOuts()) {
             return false;
         }
         if (input.non_witness_utxo->GetHash() != prevout.hash) {
             return false;
         }
-        utxo = input.non_witness_utxo->vout[prevout.n];
+        utxo = std::move(GetTxVout(input.non_witness_utxo, prevout.n));
     } else if (!input.witness_utxo.IsNull()) {
         utxo = input.witness_utxo;
     } else {
@@ -338,7 +351,7 @@ size_t CountPSBTUnsignedInputs(const PartiallySignedTransaction& psbt) {
 void UpdatePSBTOutput(const SigningProvider& provider, PartiallySignedTransaction& psbt, int index)
 {
     CMutableTransaction& tx = *Assert(psbt.tx);
-    const CTxOut& out = tx.vout.at(index);
+    CTxOut out = GetTxVout(MakeTransactionRef(tx), index);
     PSBTOutput& psbt_out = psbt.outputs.at(index);
 
     // Fill a SignatureData with output info
@@ -392,13 +405,13 @@ bool SignPSBTInput(const SigningProvider& provider, PartiallySignedTransaction& 
     if (input.non_witness_utxo) {
         // If we're taking our information from a non-witness UTXO, verify that it matches the prevout.
         COutPoint prevout = tx.vin[index].prevout;
-        if (prevout.n >= input.non_witness_utxo->vout.size()) {
+        if (prevout.n >= input.non_witness_utxo->GetNumVOuts()) {
             return false;
         }
         if (input.non_witness_utxo->GetHash() != prevout.hash) {
             return false;
         }
-        utxo = input.non_witness_utxo->vout[prevout.n];
+        utxo = std::move(GetTxVout(input.non_witness_utxo, prevout.n));
     } else if (!input.witness_utxo.IsNull()) {
         utxo = input.witness_utxo;
         // When we're taking our information from a witness UTXO, we can't verify it is actually data from

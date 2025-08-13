@@ -731,7 +731,7 @@ std::optional<PSBTError> LegacyScriptPubKeyMan::FillPSBT(PartiallySignedTransact
 
         // Check non_witness_utxo has specified prevout
         if (input.non_witness_utxo) {
-            if (txin.prevout.n >= input.non_witness_utxo->vout.size()) {
+            if (txin.prevout.n >= input.non_witness_utxo->GetNumVOuts()) {
                 return PSBTError::MISSING_INPUTS;
             }
         } else if (input.witness_utxo.IsNull()) {
@@ -750,7 +750,7 @@ std::optional<PSBTError> LegacyScriptPubKeyMan::FillPSBT(PartiallySignedTransact
     }
 
     // Fill in the bip32 keypaths and redeemscripts for the outputs so that hardware wallets can identify change
-    for (unsigned int i = 0; i < psbtx.tx->vout.size(); ++i) {
+    for (unsigned int i = 0; i < psbtx.tx->GetNumVOuts(); ++i) {
         UpdatePSBTOutput(HidingSigningProvider(this, true, !bip32derivs), psbtx, i);
     }
 

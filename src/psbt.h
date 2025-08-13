@@ -5,6 +5,7 @@
 #ifndef BITCOIN_PSBT_H
 #define BITCOIN_PSBT_H
 
+#include <common/globals.h>
 #include <node/transaction.h>
 #include <policy/feerate.h>
 #include <primitives/transaction.h>
@@ -96,6 +97,7 @@ void SerializeToVector(Stream& s, const X&... args)
     SizeComputer sizecomp;
     SerializeMany(sizecomp, args...);
     WriteCompactSize(s, sizecomp.size());
+
     SerializeMany(s, args...);
 }
 
@@ -399,7 +401,11 @@ struct PSBTInput
                         throw std::ios_base::failure("Non-witness utxo key is more than one byte type");
                     }
                     // Set the stream to unserialize with witness since this is always a valid network transaction
-                    UnserializeFromVector(s, TX_WITH_WITNESS(non_witness_utxo));
+                    if (fParticlMode) {
+                        UnserializeFromVector(s, TX_NO_WITNESS(non_witness_utxo)); // Particl: Off by the witness size byte otherwise
+                    } else {
+                        UnserializeFromVector(s, TX_WITH_WITNESS(non_witness_utxo));
+                    }
                     break;
                 }
                 case PSBT_IN_WITNESS_UTXO:
@@ -1189,14 +1195,14 @@ struct PartiallySignedTransaction
 
         // Read output data
         i = 0;
-        while (!s.empty() && i < tx->vout.size()) {
+        while (!s.empty() && i < tx->GetNumVOuts()) {
             PSBTOutput output;
             s >> output;
             outputs.push_back(output);
             ++i;
         }
         // Make sure that the number of outputs matches the number of outputs in the transaction
-        if (outputs.size() != tx->vout.size()) {
+        if (outputs.size() != tx->GetNumVOuts()) {
             throw std::ios_base::failure("Outputs provided does not match the number of outputs in transaction.");
         }
     }
