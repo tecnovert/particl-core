@@ -286,8 +286,6 @@ RPCHelpMan sendtoaddress()
     // the user could have gotten from another RPC command prior to now
     pwallet->BlockUntilSyncedToCurrentChain();
 
-    LOCK(pwallet->cs_wallet);
-
     // Wallet comments
     mapValue_t mapValue;
     if (!request.params[2].isNull() && !request.params[2].get_str().empty())
@@ -304,8 +302,6 @@ RPCHelpMan sendtoaddress()
     coin_control.m_avoid_address_reuse = GetAvoidReuseFlag(*pwallet, request.params[9]);
     // We also enable partial spend avoidance if reuse avoidance is set.
     coin_control.m_avoid_partial_spends |= coin_control.m_avoid_address_reuse;
-
-    SetFeeEstimateMode(*pwallet, coin_control, /*conf_target=*/request.params[7], /*estimate_mode=*/request.params[8], /*fee_rate=*/request.params[10], /*override_min_fee=*/false);
 
     if (pwallet->IsParticlWallet()) {
         JSONRPCRequest newRequest;
@@ -374,6 +370,9 @@ RPCHelpMan sendtoaddress()
         newRequest.params = params;
         return SendTypeToInner(newRequest);
     }
+
+    LOCK(pwallet->cs_wallet);
+    SetFeeEstimateMode(*pwallet, coin_control, /*conf_target=*/request.params[7], /*estimate_mode=*/request.params[8], /*fee_rate=*/request.params[10], /*override_min_fee=*/false);
 
     EnsureWalletIsUnlocked(*pwallet);
 
