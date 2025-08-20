@@ -800,10 +800,10 @@ void TransactionTableModel::unsubscribeFromCoreSignals()
     m_handler_show_progress->disconnect();
 }
 
-
 void TransactionTableModel::updateOptions()
 {
     beginResetModel();
+    priv->m_loaded = false;
     priv->show_zero_value_coinstakes = walletModel->getOptionsModel()->getShowZeroValueCoinstakes();
     priv->refreshWallet(walletModel->wallet());
     endResetModel();
