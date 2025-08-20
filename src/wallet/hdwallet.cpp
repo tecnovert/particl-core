@@ -1298,6 +1298,11 @@ bool CHDWallet::GetKey(const CKeyID &address, CKey &keyOut) const
 {
     LOCK(cs_wallet);
 
+    // Havekey checks and updates maplookahead
+    if (!HaveKey(address)) {
+        return false;
+    }
+
     for (auto it = mapExtAccounts.cbegin(); it != mapExtAccounts.cend(); ++it) {
         if (it->second->GetKey(address, keyOut)) {
             return true;
