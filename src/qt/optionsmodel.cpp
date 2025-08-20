@@ -55,6 +55,9 @@ static const char* SettingName(OptionsModel::OptionID option)
     case OptionsModel::ProxyPortTor: return "onion";
     case OptionsModel::ProxyUseTor: return "onion";
     case OptionsModel::Language: return "lang";
+    case OptionsModel::ShowIncomingStakeNotifications: return "fShowIncomingStakeNotifications";
+    case OptionsModel::ShowZeroValueCoinstakes: return "show_zero_value_coinstakes";
+    case OptionsModel::ReserveBalance: return "reservebalance";
     default: throw std::logic_error(strprintf("GUI option %i has no corresponding node setting.", option));
     }
 }
@@ -247,12 +250,12 @@ bool OptionsModel::Init(bilingual_str& error)
     if (!settings.contains("fShowIncomingStakeNotifications")) {
         settings.setValue("fShowIncomingStakeNotifications", true);
     }
-    fShowIncomingStakeNotifications = settings.value("fShowIncomingStakeNotifications").toBool();
+    fShowIncomingStakeNotifications = settings.value("fShowIncomingStakeNotifications", true).toBool();
 
     if (!settings.contains("show_zero_value_coinstakes")) {
         settings.setValue("show_zero_value_coinstakes", true);
     }
-    show_zero_value_coinstakes = settings.value("show_zero_value_coinstakes").toBool();
+    show_zero_value_coinstakes = settings.value("show_zero_value_coinstakes", true).toBool();
 #endif
 
     // Display
@@ -476,9 +479,9 @@ QVariant OptionsModel::getOption(OptionID option, const std::string& suffix) con
     case SubFeeFromAmount:
         return m_sub_fee_from_amount;
     case ShowIncomingStakeNotifications:
-        return SettingToBool(setting(), true);
+        return fShowIncomingStakeNotifications;
     case ShowZeroValueCoinstakes:
-        return SettingToBool(setting(), true);
+        return show_zero_value_coinstakes;
 #endif
     case DisplayUnit:
         return QVariant::fromValue(m_display_bitcoin_unit);
