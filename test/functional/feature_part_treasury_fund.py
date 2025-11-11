@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
-# Copyright (c) 2020-2021 tecnovert
+# Copyright (c) 2020-2025 tecnovert
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+import time
+from decimal import Decimal
 
 from test_framework.test_particl import ParticlTestFramework
 from test_framework.messages import COIN
@@ -119,6 +122,50 @@ class TreasuryFundTest(ParticlTestFramework):
         block_reward_14 = nodes[0].getblockreward(14)
         assert (block_reward_14['stakereward'] * COIN == expect_reward)
         assert (block_reward_14['blockreward'] * COIN == expect_reward - ((expect_reward * 10) // 100))
+
+        self.log.info('Test zero minstakepercent')
+        for n in nodes:
+            n.pushtreasuryfundsetting({'timefrom': int(time.time()), 'fundaddress': fund_addr, 'minstakepercent': 0, 'outputperiod': 2})
+        staking_opts['treasurydonationpercent'] = 0
+        nodes[0].walletsettings('stakingoptions', staking_opts)
+        nodes[0].walletsettings('stakelimit', {'height': 16})
+
+        self.wait_for_height(nodes[0], 16)
+        si = nodes[0].getstakinginfo()
+        block_reward_16 = nodes[0].getblockreward(16)
+        assert (block_reward_16['stakereward'] * COIN == expect_reward)
+        assert (block_reward_16['blockreward'] * COIN == expect_reward)
+
+        # Payout should still occur (in block 16)
+        coinstake_15 = nodes[0].decoderawtransaction(nodes[0].getrawtransaction(nodes[0].getblockreward(15)["coinstake"]))
+        assert "treasury_fund_cfwd" in coinstake_15["vout"][0]
+        for n in range(1, len(coinstake_15["vout"])):
+            assert coinstake_15["vout"][n]["scriptPubKey"]["address"] != fund_addr
+
+        coinstake_16 = nodes[0].decoderawtransaction(nodes[0].getrawtransaction(block_reward_16["coinstake"]))
+        assert "treasury_fund_cfwd" not in coinstake_16["vout"][0]
+        assert coinstake_16["vout"][1]["scriptPubKey"]["address"] == fund_addr
+
+        for n in nodes:
+            n.pushtreasuryfundsetting({'timefrom': int(time.time()), 'fundaddress': fund_addr, 'minstakepercent': 0, 'outputperiod': 2})
+
+        self.log.info('Test mintreasurypayout')  # payout should skip block 18
+        for n in nodes:
+            min_payout_value = Decimal(expect_reward * 3) / COIN
+            n.pushtreasuryfundsetting({'timefrom': int(time.time()), 'fundaddress': fund_addr, 'minstakepercent': 0, 'outputperiod': 2, 'minpayoutvalue': min_payout_value})
+
+        staking_opts['treasurydonationpercent'] = 100
+        nodes[0].walletsettings('stakingoptions', staking_opts)
+        nodes[0].walletsettings('stakelimit', {'height': 20})
+        self.wait_for_height(nodes[0], 20)
+        coinstake_18 = nodes[0].decoderawtransaction(nodes[0].getrawtransaction(nodes[0].getblockreward(18)["coinstake"]))
+        assert "treasury_fund_cfwd" in coinstake_18["vout"][0]
+        for n in range(1, len(coinstake_18["vout"])):
+            assert coinstake_18["vout"][n]["scriptPubKey"]["address"] != fund_addr
+
+        coinstake_20 = nodes[0].decoderawtransaction(nodes[0].getrawtransaction(nodes[0].getblockreward(20)["coinstake"]))
+        assert "treasury_fund_cfwd" not in coinstake_20["vout"][0]
+        assert coinstake_20["vout"][1]["scriptPubKey"]["address"] == fund_addr
 
 
 if __name__ == '__main__':

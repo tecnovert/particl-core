@@ -618,7 +618,8 @@ public:
             particl::TreasuryFundSettings("RBiiQBnQsVPPQkUaJVQTjsZM9K2xMKozST", 10, 60));
         vTreasuryFundSettings.emplace_back(consensus.exploit_fix_2_time,
             particl::TreasuryFundSettings("RQYUDd3EJohpjq62So4ftcV5XZfxZxJPe9", 50, 650));
-
+        vTreasuryFundSettings.emplace_back(consensus.inflation_adjust_time,
+            particl::TreasuryFundSettings("RQYUDd3EJohpjq62So4ftcV5XZfxZxJPe9", 0, 650, 1 * COIN));
 
         base58Prefixes[PUBKEY_ADDRESS]     = {0x38}; // P
         base58Prefixes[SCRIPT_ADDRESS]     = {0x3c};
