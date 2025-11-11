@@ -341,7 +341,7 @@ static std::vector<RPCResult> DecodeTxDoc(const std::string& txid_field_doc)
                 {RPCResult::Type::STR_HEX, "data_hex", /*optional=*/true, "Data component"},
                 {RPCResult::Type::STR_AMOUNT, "ct_fee", /*optional=*/true, "data - SMSG confidential transaction fee"},
                 {RPCResult::Type::STR_AMOUNT, "smsgfeerate", /*optional=*/true, "data - SMSG fee rate"},
-                {RPCResult::Type::STR_AMOUNT, "treasury_fund_cfwd", /*optional=*/true, "data - SMSG treasury fund carried forward"},
+                {RPCResult::Type::STR_AMOUNT, "treasury_fund_cfwd", /*optional=*/true, "data - Treasury fund carried forward"},
                 {RPCResult::Type::STR_HEX, "smsgdifficulty", /*optional=*/true, "data - SMSG difficulty"},
                 {RPCResult::Type::STR, "vote", /*optional=*/true, "data - Voting entry"},
                 {RPCResult::Type::STR_HEX, "pubkey", /*optional=*/true, "pubkey for anon output"},
