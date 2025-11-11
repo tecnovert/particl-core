@@ -178,6 +178,7 @@ public:
     bool m_clamp_tx_version = false;
     bool m_exploit_fix_1 = false;
     bool m_exploit_fix_2 = false;
+    bool m_exploit_fix_3{false}; // inflation_adjust_time
     bool m_in_block = false;
     bool m_check_equal_rct_txid = true;
     CAmount tx_balances[6] = {0};
@@ -196,6 +197,7 @@ public:
         m_clamp_tx_version = time >= consensusParams.clamp_tx_version_time;
         m_exploit_fix_1 = time >= consensusParams.exploit_fix_1_time;
         m_exploit_fix_2 = time >= consensusParams.exploit_fix_2_time;
+        m_exploit_fix_3 = time >= consensusParams.inflation_adjust_time;
         if (m_in_block && m_time < 1632177542) {
             m_check_equal_rct_txid = false;
         }
@@ -213,6 +215,7 @@ public:
         m_clamp_tx_version = state_from.m_clamp_tx_version;
         m_exploit_fix_1 = state_from.m_exploit_fix_1;
         m_exploit_fix_2 = state_from.m_exploit_fix_2;
+        m_exploit_fix_3 = state_from.m_exploit_fix_3;
         m_check_equal_rct_txid = state_from.m_check_equal_rct_txid;
     }
 };
