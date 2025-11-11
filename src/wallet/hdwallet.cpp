@@ -11910,6 +11910,8 @@ void CHDWallet::AvailableBlindedCoins(std::vector<COutputR>& vCoins, const CCoin
 
     vCoins.clear();
 
+    int64_t time_now = GetTime();
+
     const int min_depth = {coinControl ? coinControl->m_min_depth : DEFAULT_MIN_DEPTH};
     const int max_depth = {coinControl ? coinControl->m_max_depth : DEFAULT_MAX_DEPTH};
     //const bool fIncludeImmature = {coinControl ? coinControl->m_include_immature : false};  // Blinded coins can't stake
@@ -12007,7 +12009,7 @@ void CHDWallet::AvailableBlindedCoins(std::vector<COutputR>& vCoins, const CCoin
             }
 
             if (spend_frozen && !include_tainted_frozen) {
-                if (r.nValue > consensusParams.m_max_tainted_value_out) {
+                if (time_now >= consensusParams.inflation_adjust_time || r.nValue > consensusParams.m_max_tainted_value_out) {
                     if (IsFrozenBlindOutput(txid)) {
                         continue;
                     }
@@ -12263,7 +12265,8 @@ void CHDWallet::AvailableAnonCoins(std::vector<COutputR> &vCoins, const CCoinCon
                     !stx.tx->vpout[r.n]->IsType(OUTPUT_RINGCT) ||
                     !chain().readRCTOutputLink(((CTxOutRingCT*)stx.tx->vpout[r.n].get())->pk, index) ||
                     IsBlacklistedAnonOutput(index) ||
-                    (!IsWhitelistedAnonOutput(index, time_now, consensusParams) && r.nValue > consensusParams.m_max_tainted_value_out)) {
+                    (!IsWhitelistedAnonOutput(index, time_now, consensusParams) &&
+                     (time_now >= consensusParams.inflation_adjust_time || r.nValue > consensusParams.m_max_tainted_value_out))) {
                     continue;
                 }
             }
