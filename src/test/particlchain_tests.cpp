@@ -452,7 +452,17 @@ BOOST_AUTO_TEST_CASE(coin_year_reward)
     BOOST_CHECK(Params().GetCoinYearReward(1626109200 + seconds_in_year * 3) == 7 * CENT);
     BOOST_CHECK(Params().GetCoinYearReward(1626109200 + seconds_in_year * 4 - 1) == 7 * CENT);
     BOOST_CHECK(Params().GetCoinYearReward(1626109200 + seconds_in_year * 4) == 6 * CENT);          // 2025-07-11 17:00:00 UTC
-    BOOST_CHECK(Params().GetCoinYearReward(1626109200 + seconds_in_year * 6) == 6 * CENT);
+
+    int64_t hf3_time = Params().GetConsensus().inflation_adjust_time;
+    BOOST_CHECK(Params().GetCoinYearReward(hf3_time - 1) == 6 * CENT);
+    BOOST_CHECK(Params().GetCoinYearReward(hf3_time) == 3.5 * CENT);
+    BOOST_CHECK(Params().GetCoinYearReward(hf3_time + seconds_in_year * 1 - 1) == 3.5 * CENT);
+    BOOST_CHECK(Params().GetCoinYearReward(hf3_time + seconds_in_year * 1) == 3 * CENT);
+    BOOST_CHECK(Params().GetCoinYearReward(hf3_time + seconds_in_year * 2) == 2.5 * CENT);
+    BOOST_CHECK(Params().GetCoinYearReward(hf3_time + seconds_in_year * 3) == 2.0 * CENT);
+    BOOST_CHECK(Params().GetCoinYearReward(hf3_time + seconds_in_year * 4) == 1.5 * CENT);
+    BOOST_CHECK(Params().GetCoinYearReward(hf3_time + seconds_in_year * 5) == 1 * CENT);
+    BOOST_CHECK(Params().GetCoinYearReward(hf3_time + seconds_in_year * 6) == 1 * CENT);
 }
 
 BOOST_AUTO_TEST_CASE(taproot)
