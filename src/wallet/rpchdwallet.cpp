@@ -4455,6 +4455,7 @@ static RPCHelpMan getstakinginfo()
                         {RPCResult::Type::STR_AMOUNT, "reserve", "The reserve balance of the wallet in " + CURRENCY_UNIT},
                         {RPCResult::Type::STR_AMOUNT, "wallettreasurydonationpercent", "User set percentage of the block reward ceded to the treasury"},
                         {RPCResult::Type::STR_AMOUNT, "treasurydonationpercent", "Network enforced percentage of the block reward ceded to the treasury"},
+                        {RPCResult::Type::STR_AMOUNT, "treasurydonationminpayout", "Minimum (brought forward) treasury amount to trigger payout."},
                         {RPCResult::Type::STR_AMOUNT, "minstakeablevalue", "The minimum value for an output to attempt staking in " + CURRENCY_UNIT},
                         {RPCResult::Type::NUM, "minstakeabledepth", "Minimum depth required in the chain for an output to stake"},
                         {RPCResult::Type::NUM, "currentblocksize", "The last approximate block size in bytes"},
@@ -4549,6 +4550,7 @@ static RPCHelpMan getstakinginfo()
     const TreasuryFundSettings *pTreasuryFundSettings = Params().GetTreasuryFundSettings(nTipTime);
     if (pTreasuryFundSettings && pTreasuryFundSettings->nMinTreasuryStakePercent > 0) {
         obj.pushKV("treasurydonationpercent", pTreasuryFundSettings->nMinTreasuryStakePercent);
+        obj.pushKV("treasurydonationminpayout", ValueFromAmount(pTreasuryFundSettings->nMinPayoutAmount));
     }
 
     obj.pushKV("minstakeablevalue", ValueFromAmount(pwallet->m_min_stakeable_value));
