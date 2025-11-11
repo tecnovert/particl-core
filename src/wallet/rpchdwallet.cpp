@@ -4283,6 +4283,7 @@ static UniValue getstakinginfo(const JSONRPCRequest &request)
     const TreasuryFundSettings *pTreasuryFundSettings = Params().GetTreasuryFundSettings(nTipTime);
     if (pTreasuryFundSettings && pTreasuryFundSettings->nMinTreasuryStakePercent > 0) {
         obj.pushKV("treasurydonationpercent", pTreasuryFundSettings->nMinTreasuryStakePercent);
+        obj.pushKV("treasurydonationminpayout", ValueFromAmount(pTreasuryFundSettings->nMinPayoutAmount));
     }
 
     obj.pushKV("minstakeablevalue", pwallet->m_min_stakeable_value);

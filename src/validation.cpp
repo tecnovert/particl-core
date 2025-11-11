@@ -2969,7 +2969,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                 }
             }
 
-            if (!pTreasuryFundSettings || pTreasuryFundSettings->nMinTreasuryStakePercent <= 0) {
+            if (!pTreasuryFundSettings || pTreasuryFundSettings->nMinTreasuryStakePercent < 0) {
                 if (nStakeReward < 0 || nStakeReward > nCalculatedStakeReward) {
                     return state.Invalid(ValidationInvalidReason::CONSENSUS, error("%s: Coinstake pays too much(actual=%d vs calculated=%d)", __func__, nStakeReward, nCalculatedStakeReward), REJECT_INVALID, "bad-cs-amount");
                 }
@@ -2995,7 +2995,8 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                     }
                 }
 
-                if (pindex->nHeight % pTreasuryFundSettings->nTreasuryOutputPeriod == 0) {
+                if (pindex->nHeight % pTreasuryFundSettings->nTreasuryOutputPeriod == 0 &&
+                    nTreasuryBfwd >= pTreasuryFundSettings->nMinPayoutAmount) {
                     // Fund output must exist and match cfwd, cfwd data output must be unset
                     // nStakeReward must == nTreasuryBfwd + nCalculatedStakeReward
 
@@ -3027,18 +3028,17 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                     // Ensure cfwd data output is correct and nStakeReward is <= nHolderPart
                     // cfwd must == nTreasuryBfwd + (nCalculatedStakeReward - nStakeReward) // Allowing users to set a higher split
 
+                    CAmount nTreasuryCfwd = nTreasuryBfwd + nCalculatedStakeReward - nStakeReward;
                     if (nStakeReward < 0 || nStakeReward > nMaxHolderPart) {
                         return state.Invalid(ValidationInvalidReason::CONSENSUS, error("%s: Bad stake-reward (actual=%d vs maxholderpart=%d)", __func__, nStakeReward, nMaxHolderPart), REJECT_INVALID, "bad-cs-amount");
                     }
-                    CAmount nTreasuryCfwd = nTreasuryBfwd + nCalculatedStakeReward - nStakeReward;
                     if (!txCoinstake->GetTreasuryFundCfwd(nTreasuryCfwdCheck)
                         || nTreasuryCfwdCheck != nTreasuryCfwd) {
                         return state.Invalid(ValidationInvalidReason::CONSENSUS, error("%s: Coinstake treasury fund carried forward mismatch (actual=%d vs expected=%d)", __func__, nTreasuryCfwdCheck, nTreasuryCfwd), REJECT_INVALID, "bad-cs-cfwd");
                     }
                 }
-
-                coinStakeCache.InsertCoinStake(blockHash, txCoinstake);
             }
+            coinStakeCache.InsertCoinStake(blockHash, txCoinstake);
         } else {
             if (blockHash != chainparams.GetConsensus().hashGenesisBlock) {
                 return state.Invalid(ValidationInvalidReason::CONSENSUS, error("%s: Block isn't coinstake or genesis.", __func__), REJECT_INVALID, "bad-cs");

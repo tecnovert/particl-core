@@ -150,6 +150,8 @@ BOOST_AUTO_TEST_CASE(frozen_blinded_test)
     // Exploit should fail
     AddTxn(pwallet, stealth_address, OUTPUT_STANDARD, OUTPUT_RINGCT, 10 * COIN, 9000000 * COIN, "bad-commitment-sum (code 16)");
 
+    gArgs.ClearForced("-acceptanontxn");
+    gArgs.ClearForced("-acceptblindtxn");
     gArgs.SoftSetBoolArg("-acceptanontxn", false);
     gArgs.SoftSetBoolArg("-acceptblindtxn", false);
     BOOST_REQUIRE(!gArgs.GetBoolArg("-acceptanontxn", true));

@@ -54,10 +54,13 @@ class TreasuryFundSettings
 public:
     TreasuryFundSettings(std::string sAddrTo, int nMinTreasuryStakePercent_, int nTreasuryOutputPeriod_)
         : sTreasuryFundAddresses(sAddrTo), nMinTreasuryStakePercent(nMinTreasuryStakePercent_), nTreasuryOutputPeriod(nTreasuryOutputPeriod_) {};
+    TreasuryFundSettings(std::string sAddrTo, int nMinTreasuryStakePercent_, int nTreasuryOutputPeriod_, CAmount nMinPayoutAmount_)
+        : sTreasuryFundAddresses(sAddrTo), nMinTreasuryStakePercent(nMinTreasuryStakePercent_), nTreasuryOutputPeriod(nTreasuryOutputPeriod_), nMinPayoutAmount(nMinPayoutAmount_) {};
 
     std::string sTreasuryFundAddresses;
     int nMinTreasuryStakePercent; // [0, 100]
     int nTreasuryOutputPeriod; // treasury fund output is created every n blocks
+    CAmount nMinPayoutAmount{0};
 };
 
 /**

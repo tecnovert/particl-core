@@ -13230,7 +13230,7 @@ bool CHDWallet::CreateCoinStake(unsigned int nBits, int64_t nTime, int nBlockHei
     CTransactionRef txPrevCoinstake = nullptr;
     CAmount nRewardOut;
     const TreasuryFundSettings *pTreasuryFundSettings = Params().GetTreasuryFundSettings(nTime);
-    if (!pTreasuryFundSettings || pTreasuryFundSettings->nMinTreasuryStakePercent <= 0) {
+    if (!pTreasuryFundSettings || pTreasuryFundSettings->nMinTreasuryStakePercent < 0) {
         nRewardOut = nReward;
     } else {
         int64_t nStakeSplit = std::max(pTreasuryFundSettings->nMinTreasuryStakePercent, nWalletTreasuryFundCedePercent);
@@ -13251,7 +13251,8 @@ bool CHDWallet::CreateCoinStake(unsigned int nBits, int64_t nTime, int nBlockHei
         }
 
         CAmount nTreasuryCfwd = nTreasuryBfwd + nTreasuryPart;
-        if (nBlockHeight % pTreasuryFundSettings->nTreasuryOutputPeriod == 0) {
+        if (nBlockHeight % pTreasuryFundSettings->nTreasuryOutputPeriod == 0 &&
+            nTreasuryBfwd >= pTreasuryFundSettings->nMinPayoutAmount) {
             // Place treasury fund output
             OUTPUT_PTR<CTxOutStandard> outTreasurySplit = MAKE_OUTPUT<CTxOutStandard>();
             outTreasurySplit->nValue = nTreasuryCfwd;

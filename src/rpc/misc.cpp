@@ -429,6 +429,7 @@ static UniValue pushtreasuryfundsetting(const JSONRPCRequest& request)
                     {"fundaddress", RPCArg::Type::STR, RPCArg::Optional::NO, "Address accumulated treasury fund coin is paid out to"},
                     {"minstakepercent", RPCArg::Type::NUM, RPCArg::Optional::NO, "Minimum percentage of the block reward allocated to treasury fund"},
                     {"outputperiod", RPCArg::Type::NUM, RPCArg::Optional::NO, "Blocks between treasury fund outputs"},
+                    {"minpayoutvalue", RPCArg::Type::AMOUNT, RPCArg::Optional::OMITTED, "Minimum payment output value.  Skip payment if treasury amount is less than."},
                 },
             },
         },
@@ -441,22 +442,27 @@ static UniValue pushtreasuryfundsetting(const JSONRPCRequest& request)
     }
 
     RPCTypeCheck(request.params, {UniValue::VOBJ});
-    const UniValue &setting = request.params[0].get_obj();
-    RPCTypeCheckObj(setting,
+    const UniValue &options = request.params[0].get_obj();
+    RPCTypeCheckObj(options,
         {
             {"timefrom", UniValueType(UniValue::VNUM)},
             {"fundaddress", UniValueType(UniValue::VSTR)},
             {"minstakepercent", UniValueType(UniValue::VNUM)},
             {"outputperiod", UniValueType(UniValue::VNUM)},
-        });
+        }, false /* allow null */, false /* strict */);
 
     LOCK(cs_main);
 
-    TreasuryFundSettings settings(setting["fundaddress"].get_str(), setting["minstakepercent"].get_int(), setting["outputperiod"].get_int());
-    RegtestParams().PushTreasuryFundSettings(setting["timefrom"].get_int(), settings);
+    CAmount minpayoutvalue{0};
+    if (options.exists("minpayoutvalue")) {
+        minpayoutvalue = AmountFromValue(options["minpayoutvalue"]);
+    }
 
-    LogPrintf("Added treasury fund setting from %d: (%s, %d, %d)\n",
-        setting["timefrom"].get_int(), setting["fundaddress"].get_str(), setting["minstakepercent"].get_int(), setting["outputperiod"].get_int());
+    TreasuryFundSettings settings(options["fundaddress"].get_str(), options["minstakepercent"].get_int(), options["outputperiod"].get_int(), minpayoutvalue);
+    RegtestParams().PushTreasuryFundSettings(options["timefrom"].get_int(), settings);
+
+    LogPrintf("Added treasury fund setting from %d: (%s, %d, %d, %d)\n",
+        options["timefrom"].get_int(), options["fundaddress"].get_str(), options["minstakepercent"].get_int(), options["outputperiod"].get_int(), minpayoutvalue);
 
     return NullUniValue;
 }
