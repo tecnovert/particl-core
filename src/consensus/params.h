@@ -112,6 +112,8 @@ struct Params {
     uint32_t exploit_fix_2_height = 0;
     /** Exploit fix 3 */
     uint32_t exploit_fix_3_time = 0xffffffff;
+    /** Time dev fund is removed and inflation reduced */
+    uint32_t inflation_adjust_time = 0xffffffff;
     /** Last prefork anonoutput index */
     int64_t m_frozen_anon_index = 0;
     /** Last block height of prefork blinded txns */
