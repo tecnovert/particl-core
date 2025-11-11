@@ -35,8 +35,16 @@ int64_t CChainParams::GetCoinYearReward(int64_t nTime) const
     static const int64_t nSecondsInYear = 365 * 24 * 60 * 60;
 
     if (GetChainType() != ChainType::REGTEST) {
-        // After HF2: 8%, 8%, 7%, 7%, 6%
+        if (nTime >= consensus.inflation_adjust_time) {
+            // After HF3: 3.5, 3.0 .. 1.5, 1.0
+            int64_t nPeriodsSinceHF3 = (nTime - consensus.inflation_adjust_time) / nSecondsInYear;
+            if (nPeriodsSinceHF3 >= 0 && nPeriodsSinceHF3 < 6) {
+                return (7 - nPeriodsSinceHF3) * (CENT / 2);
+            }
+            return 1 * CENT;
+        }
         if (nTime >= consensus.exploit_fix_2_time) {
+            // After HF2: 8%, 8%, 7%, 7%, 6%
             int64_t nPeriodsSinceHF2 = (nTime - consensus.exploit_fix_2_time) / (nSecondsInYear * 2);
             if (nPeriodsSinceHF2 >= 0 && nPeriodsSinceHF2 < 2) {
                 return (8 - nPeriodsSinceHF2) * CENT;
