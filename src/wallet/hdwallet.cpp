@@ -1127,7 +1127,7 @@ isminetype CHDWallet::HaveAddress(const CTxDestination &dest)
     return ISMINE_NO;
 };
 
-isminetype CHDWallet::HaveKey(const CKeyID &address, const CEKAKey *&pak, const CEKASCKey *&pasc, CExtKeyAccount *&pa) const
+isminetype CHDWallet::HaveKey(const CKeyID &address, const CEKAKey *&pak, const CEKASCKey *&pasc, CExtKeyAccount *&pa, CEKLKey *pextkey_info) const
 {
     AssertLockHeld(cs_wallet);
 
@@ -1163,6 +1163,9 @@ isminetype CHDWallet::HaveKey(const CKeyID &address, const CEKAKey *&pak, const 
     if (itl != mapLooseLookAhead.end()) {
         auto itek = mapExtKeys.find(itl->second.chain_id);
         if (itek != mapExtKeys.end()) {
+            if (pextkey_info) {
+                *pextkey_info = itl->second;
+            }
             CStoredExtKey *sek = itek->second;
             ExtKeyPromoteKey(sek, itl->second.nKey);
             // NOTE: itl is likely invalid after ExtKeyPromoteKey
@@ -1180,6 +1183,9 @@ isminetype CHDWallet::HaveKey(const CKeyID &address, const CEKAKey *&pak, const 
 
     itl = mapLooseKeys.find(address);
     if (itl != mapLooseKeys.end()) {
+        if (pextkey_info) {
+            *pextkey_info = itl->second;
+        }
         auto itek = mapExtKeys.find(itl->second.chain_id);
         if (itek != mapExtKeys.end()) {
             return itek->second->IsMine();
@@ -2059,7 +2065,7 @@ std::set< std::set<CTxDestination> > CHDWallet::GetAddressGroupings() const
 }
 
 isminetype CHDWallet::IsMine(const CScript &scriptPubKey, CKeyID &keyID,
-    const CEKAKey *&pak, const CEKASCKey *&pasc, CExtKeyAccount *&pa, bool &isInvalid, SigVersion sigversion) const
+    const CEKAKey *&pak, const CEKASCKey *&pasc, CExtKeyAccount *&pa, bool &isInvalid, SigVersion sigversion, CEKLKey *pextkey_info) const
 {
     if (scriptPubKey.StartsWithICS()) {
         CScript scriptA, scriptB;
@@ -2098,7 +2104,7 @@ isminetype CHDWallet::IsMine(const CScript &scriptPubKey, CKeyID &keyID,
             isInvalid = true;
             return ISMINE_NO;
         }
-        if ((mine = HaveKey(keyID, pak, pasc, pa))) {
+        if ((mine = HaveKey(keyID, pak, pasc, pa, pextkey_info))) {
             return mine;
         }
         break;
@@ -2119,7 +2125,7 @@ isminetype CHDWallet::IsMine(const CScript &scriptPubKey, CKeyID &keyID,
                 return ISMINE_NO;
             }
         }
-        if ((mine = HaveKey(keyID, pak, pasc, pa))) {
+        if ((mine = HaveKey(keyID, pak, pasc, pa, pextkey_info))) {
             return mine;
         }
         break;
@@ -2150,7 +2156,7 @@ isminetype CHDWallet::IsMine(const CScript &scriptPubKey, CKeyID &keyID,
     case TxoutType::WITNESS_V0_KEYHASH:
     {
         keyID = CKeyID(uint160(vSolutions[0]));
-        if ((mine = HaveKey(keyID, pak, pasc, pa))) {
+        if ((mine = HaveKey(keyID, pak, pasc, pa, pextkey_info))) {
             return mine;
         }
         break;
@@ -3838,7 +3844,11 @@ int CHDWallet::AddStandardInputs(CWalletTx &wtx, CTransactionRecord &rtx,
         std::vector<COutput> vAvailableCoins;
         std::vector<std::shared_ptr<COutput>> selected_coins;
         CoinsResult available_coins;
-        available_coins = AvailableCoins(coinControl, coin_selection_params.m_effective_feerate, coinControl->m_minimum_output_amount, coinControl->m_maximum_output_amount);
+
+        CoinFilterParams params;
+        params.min_amount = coinControl->m_minimum_output_amount;
+        params.max_amount = coinControl->m_maximum_output_amount;
+        available_coins = AvailableCoins(coinControl, coin_selection_params.m_effective_feerate, params);
 
         nFeeRet = 0;
         size_t nSubFeeTries = 100;
@@ -11545,7 +11555,7 @@ void CHDWallet::ResubmitWalletTransactions(bool relay, bool force) {
     }
 }
 
-CoinsResult CHDWallet::AvailableCoins(const CCoinControl *coinControl, std::optional<CFeeRate> feerate, const CAmount &nMinimumAmount, const CAmount &nMaximumAmount, const CAmount &nMinimumSumAmount, const uint64_t nMaximumCount) const
+CoinsResult CHDWallet::AvailableCoins(const CCoinControl *coinControl, std::optional<CFeeRate> feerate, const CoinFilterParams& params) const
 {
     AssertLockHeld(cs_wallet);
 
@@ -11628,7 +11638,7 @@ CoinsResult CHDWallet::AvailableCoins(const CCoinControl *coinControl, std::opti
             }
             const CTxOutStandard *txout = wtx.tx->vpout[i]->GetStandardOutput();
 
-            if (txout->nValue < nMinimumAmount || txout->nValue > nMaximumAmount) {
+            if (txout->nValue < params.min_amount || txout->nValue > params.max_amount) {
                 continue;
             }
             if (coinControl && coinControl->HasSelected() && !coinControl->m_allow_other_inputs && !coinControl->IsSelected(COutPoint(Txid::FromUint256(wtxid), i))) {
@@ -11652,6 +11662,8 @@ CoinsResult CHDWallet::AvailableCoins(const CCoinControl *coinControl, std::opti
 
             auto provider = GetLegacyScriptPubKeyMan();
             bool fSpendableIn = ((mine & ISMINE_SPENDABLE) != ISMINE_NO) || (coinControl && coinControl->fAllowWatchOnly && (mine & ISMINE_WATCH_ONLY_) != ISMINE_NO);
+            // Filter by spendable outputs only
+            if (!fSpendableIn && params.only_spendable) continue;
             //bool fSolvableIn = (mine & (ISMINE_SPENDABLE | ISMINE_WATCH_SOLVABLE)) != ISMINE_NO;
             bool fSolvableIn = false;
             if (provider) {
@@ -11669,14 +11681,14 @@ CoinsResult CHDWallet::AvailableCoins(const CCoinControl *coinControl, std::opti
             result.total_amount += txout->nValue;
 
             // Checks the sum amount of all UTXO's.
-            if (nMinimumSumAmount != MAX_MONEY) {
-                if (result.total_amount >= nMinimumSumAmount) {
+            if (params.min_sum_amount != MAX_MONEY) {
+                if (result.total_amount >= params.min_sum_amount) {
                     return result;
                 }
             }
 
             // Checks the maximum number of UTXO's.
-            if (nMaximumCount > 0 && result.Size() >= nMaximumCount) {
+            if (params.max_count > 0 && result.Size() >= params.max_count) {
                 return result;
             }
         }
@@ -11726,7 +11738,7 @@ CoinsResult CHDWallet::AvailableCoins(const CCoinControl *coinControl, std::opti
             if (IsSpent(COutPoint(Txid::FromUint256(txid), r.n))) {
                 continue;
             }
-            if (r.nValue < nMinimumAmount || r.nValue > nMaximumAmount) {
+            if (r.nValue < params.min_amount || r.nValue > params.max_amount) {
                 continue;
             }
             if (coinControl && coinControl->HasSelected() && !coinControl->m_allow_other_inputs && !coinControl->IsSelected(COutPoint(Txid::FromUint256(txid), r.n))) {
@@ -11749,6 +11761,8 @@ CoinsResult CHDWallet::AvailableCoins(const CCoinControl *coinControl, std::opti
             }
 
             bool fSpendableIn = (r.nFlags & ORF_OWNED) || (coinControl && coinControl->fAllowWatchOnly);
+            // Filter by spendable outputs only
+            if (!fSpendableIn && params.only_spendable) continue;
             bool fNeedHardwareKey = (r.nFlags & ORF_HARDWARE_DEVICE);
 
             CTxOut txout(r.nValue, r.scriptPubKey);
@@ -11758,14 +11772,14 @@ CoinsResult CHDWallet::AvailableCoins(const CCoinControl *coinControl, std::opti
             result.coins[OutputType::UNKNOWN].emplace_back(COutPoint(Txid::FromUint256(txid), r.n), txout, nDepth, input_bytes, fSpendableIn, /*solvable*/true, safeTx, time, from_me, feerate, /*mature*/true, fNeedHardwareKey);
             result.total_amount += r.nValue;
 
-            if (nMinimumSumAmount != MAX_MONEY) {
-                if (result.total_amount >= nMinimumSumAmount) {
+            if (params.min_sum_amount != MAX_MONEY) {
+                if (result.total_amount >= params.min_sum_amount) {
                     return result;
                 }
             }
 
             // Checks the maximum number of UTXO's.
-            if (nMaximumCount > 0 && result.Size() >= nMaximumCount) {
+            if (params.max_count > 0 && result.Size() >= params.max_count) {
                 return result;
             }
         }
@@ -13151,14 +13165,14 @@ size_t CHDWallet::CountColdstakeOutputs()
     LOCK(cs_wallet);
 
     size_t nColdstakeOutputs = 0;
-    CAmount nMinimumAmount = 0, nMaximumAmount = MAX_MONEY, nMinimumSumAmount = 0;
-    uint64_t nMaximumCount = 0;
     CoinsResult available_coins;
 
     CCoinControl coinControl;
     coinControl.m_include_immature = true;
     coinControl.m_include_unsafe_inputs = true;
-    available_coins = AvailableCoins(&coinControl, std::nullopt, nMinimumAmount, nMaximumAmount, nMinimumSumAmount, nMaximumCount);
+    CoinFilterParams params;
+    params.min_amount = 0;
+    available_coins = AvailableCoins(&coinControl, std::nullopt, params);
     for (const auto &coin : available_coins.All()) {
         if (HasIsCoinstakeOp(coin.txout.scriptPubKey)) {
             nColdstakeOutputs++;

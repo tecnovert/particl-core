@@ -324,7 +324,7 @@ CoinsResult AvailableCoins(const CWallet& wallet,
     if (wallet.IsParticlWallet()) {
         const CHDWallet *phdw = GetParticlWallet(&wallet);
         LOCK(phdw->cs_wallet); // LockAssertion
-        return phdw->AvailableCoins(coinControl, feerate, params.min_amount, params.max_amount, params.min_sum_amount, params.max_count);
+        return phdw->AvailableCoins(coinControl, feerate, params);
     }
 
     // Either the WALLET_FLAG_AVOID_REUSE flag is not set (in which case we always allow), or we default to avoiding, and only in the case where

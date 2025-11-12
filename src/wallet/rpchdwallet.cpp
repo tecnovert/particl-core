@@ -4676,7 +4676,12 @@ static RPCHelpMan getcoldstakinginfo()
         LOCK(pwallet->cs_wallet);
         nHeight = pwallet->chain().getHeightInt();
         nRequiredDepth = std::min((int)(Params().GetStakeMinConfirmations() - 1), (int)(nHeight / 2));
-        available_coins = pwallet->AvailableCoins(&cctl, std::nullopt, nMinimumAmount, nMaximumAmount, nMinimumSumAmount, nMaximumCount);
+        CoinFilterParams params;
+        params.min_amount = nMinimumAmount;
+        params.max_amount = nMaximumAmount;
+        params.min_sum_amount = nMinimumSumAmount;
+        params.max_count = nMaximumCount;
+        available_coins = pwallet->AvailableCoins(&cctl, std::nullopt, params);
     }
 
     LOCK(pwallet->cs_wallet);

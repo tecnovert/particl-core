@@ -763,8 +763,18 @@ RPCHelpMan getaddressinfo()
             const CEKASCKey *pasc = nullptr;
             CExtKeyAccount *pa = nullptr;
             bool isInvalid = false;
-            mine = phdw->IsMine(scriptPubKey, idk, pak, pasc, pa, isInvalid);
 
+            CEKLKey extkey_info;
+            mine = phdw->IsMine(scriptPubKey, idk, pak, pasc, pa, isInvalid, SigVersion::BASE, &extkey_info);
+
+            if (!extkey_info.chain_id.IsNull()) {
+                ret.pushKV("from_ext_address_id", HDKeyIDToString(extkey_info.chain_id));
+                std::string sPath;
+                std::vector<uint32_t> vPath;
+                vPath.push_back(extkey_info.nKey);
+                PathToString(vPath, sPath);
+                ret.pushKV("path", sPath);
+            } else
             if (pa && pak) {
                 CStoredExtKey *sek = pa->GetChain(pak->nParent);
                 if (sek) {
