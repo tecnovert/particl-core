@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2017-2021 The Particl Core developers
+# Copyright (c) 2017-2025 The Particl Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -166,8 +166,22 @@ class ExtKeyTest(ParticlTestFramework):
         assert (balances_2['watchonly']['trusted'] == 1.0)
         assert (balances_2['mine']['trusted'] == 2.0)
 
+        unspents = self.nodes[2].listunspent()
+        assert len(unspents) == 2
+        for utxo in unspents:
+            addrinfo = self.nodes[2].getaddressinfo(utxo["address"])
+            if utxo["amount"] == 1.0:
+                assert utxo["solvable"] is True
+                assert utxo["spendable"] is False
+                assert addrinfo["iswatchonly"] is True
+            elif utxo["amount"] == 2.0:
+                assert utxo["solvable"] is True
+                assert utxo["spendable"] is True
+                assert addrinfo["iswatchonly"] is False
+            else:
+                raise ValueError("Unexpected amount")
+
         debugwallet = self.nodes[2].debugwallet()
-        print('debugwallet', self.dumpj(debugwallet))
         assert (debugwallet['map_loose_keys_size'] == 7)
         assert (debugwallet['map_loose_lookahead_size'] == 64 * 3)
 

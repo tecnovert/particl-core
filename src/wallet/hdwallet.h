@@ -107,7 +107,7 @@ public:
 
 
     isminetype HaveAddress(const CTxDestination &dest);
-    isminetype HaveKey(const CKeyID &address, const CEKAKey *&pak, const CEKASCKey *&pasc, CExtKeyAccount *&pa) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    isminetype HaveKey(const CKeyID &address, const CEKAKey *&pak, const CEKASCKey *&pasc, CExtKeyAccount *&pa, CEKLKey *pextkey_info = nullptr) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     isminetype IsMine(const CKeyID &address) const override;
     bool HaveKey(const CKeyID &address) const override;
 
@@ -147,7 +147,7 @@ public:
 
     using CWallet::IsMine;
     isminetype IsMine(const CScript &scriptPubKey, CKeyID &keyID,
-        const CEKAKey *&pak, const CEKASCKey *&pasc, CExtKeyAccount *&pa, bool &isInvalid, SigVersion = SigVersion::BASE) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+        const CEKAKey *&pak, const CEKASCKey *&pasc, CExtKeyAccount *&pa, bool &isInvalid, SigVersion = SigVersion::BASE, CEKLKey *pextkey_info = nullptr) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     isminetype IsMineP2SH(const CScript& script) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     isminetype IsMine(const CTxOutBase *txout) const override EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
@@ -433,7 +433,7 @@ public:
     /**
      * populate vCoins with vector of available COutputs.
      */
-    CoinsResult AvailableCoins(const CCoinControl *coinControl = nullptr, std::optional<CFeeRate> feerate = std::nullopt, const CAmount& nMinimumAmount = 1, const CAmount& nMaximumAmount = MAX_MONEY, const CAmount& nMinimumSumAmount = MAX_MONEY, const uint64_t nMaximumCount = 0) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    CoinsResult AvailableCoins(const CCoinControl *coinControl = nullptr, std::optional<CFeeRate> feerate = std::nullopt, const CoinFilterParams& params = {}) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     util::Result<SelectionResult> SelectCoins(const std::vector<COutput>& vAvailableCoins, const CAmount& nTargetValue,
         const CCoinControl& coin_control, const CoinSelectionParams& coin_selection_params) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
