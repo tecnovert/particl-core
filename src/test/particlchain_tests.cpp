@@ -474,14 +474,21 @@ BOOST_AUTO_TEST_CASE(coin_year_reward)
 
     int64_t hf3_time = Params().GetConsensus().inflation_adjust_time;
     BOOST_CHECK(Params().GetCoinYearReward(hf3_time - 1) == 6 * CENT);
-    BOOST_CHECK(Params().GetCoinYearReward(hf3_time) == 3.5 * CENT);
-    BOOST_CHECK(Params().GetCoinYearReward(hf3_time + seconds_in_year * 1 - 1) == 3.5 * CENT);
-    BOOST_CHECK(Params().GetCoinYearReward(hf3_time + seconds_in_year * 1) == 3 * CENT);
-    BOOST_CHECK(Params().GetCoinYearReward(hf3_time + seconds_in_year * 2) == 2.5 * CENT);
-    BOOST_CHECK(Params().GetCoinYearReward(hf3_time + seconds_in_year * 3) == 2.0 * CENT);
-    BOOST_CHECK(Params().GetCoinYearReward(hf3_time + seconds_in_year * 4) == 1.5 * CENT);
-    BOOST_CHECK(Params().GetCoinYearReward(hf3_time + seconds_in_year * 5) == 1 * CENT);
-    BOOST_CHECK(Params().GetCoinYearReward(hf3_time + seconds_in_year * 6) == 1 * CENT);
+    auto check_rate_at_time = [&](int64_t time, CAmount expect_value, const char *expect_time_str = nullptr) {
+        BOOST_CHECK_EQUAL(Params().GetCoinYearReward(time), expect_value);
+        if (expect_time_str) {
+            BOOST_CHECK_EQUAL(FormatISO8601DateTime(time), expect_time_str);
+        }
+    };
+    check_rate_at_time(hf3_time - 1,                        6   * CENT);
+    check_rate_at_time(hf3_time,                            3.5 * CENT,     "2026-02-01T12:00:00Z");
+    check_rate_at_time(hf3_time + seconds_in_year * 1 - 1,  3.5 * CENT);
+    check_rate_at_time(hf3_time + seconds_in_year * 1,      3   * CENT,     "2027-02-01T12:00:00Z");
+    check_rate_at_time(hf3_time + seconds_in_year * 2,      2.5 * CENT,     "2028-02-01T12:00:00Z");
+    check_rate_at_time(hf3_time + seconds_in_year * 3,      2   * CENT,     "2029-01-31T12:00:00Z");
+    check_rate_at_time(hf3_time + seconds_in_year * 4,      1.5 * CENT,     "2030-01-31T12:00:00Z");
+    check_rate_at_time(hf3_time + seconds_in_year * 5,      1   * CENT,     "2031-01-31T12:00:00Z");
+    check_rate_at_time(hf3_time + seconds_in_year * 6,      1   * CENT,     "2032-01-31T12:00:00Z");
 }
 
 BOOST_AUTO_TEST_CASE(taproot)

@@ -473,6 +473,7 @@ public:
         consensus.clamp_tx_version_time = 1643734800;   // 2022-02-01 17:00:00 UTC
         consensus.exploit_fix_3_time = 1643734800;      // 2022-02-01 17:00:00 UTC
         consensus.m_taproot_time = 1643734800;          // 2022-02-01 17:00:00 UTC
+        consensus.inflation_adjust_time = 1769947200;   // 2026-02-01 12:00:00 UTC
 
         consensus.m_frozen_anon_index = 27340;
         consensus.m_frozen_blinded_height = 884433;
