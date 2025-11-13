@@ -432,7 +432,8 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, TxValidationState& state, 
         if (nRingCTOutputs > 0 || nCTOutputs > 0) {
             return state.Invalid(TxValidationResult::TX_CONSENSUS, "bad-txns-frozen-blinded-out");
         }
-        if (spends_tainted_blinded && nPlainValueOut + txfee > state.m_consensus_params->m_max_tainted_value_out) {
+        if (spends_tainted_blinded &&
+            (state.m_exploit_fix_3 || nPlainValueOut + txfee > state.m_consensus_params->m_max_tainted_value_out)) {
             return state.Invalid(TxValidationResult::TX_CONSENSUS, "bad-txns-frozen-blinded-too-large");
         }
         /* TODO? Limit to spending one frozen output at a time

@@ -35,8 +35,16 @@ int64_t CChainParams::GetCoinYearReward(int64_t nTime) const
     static const int64_t nSecondsInYear = 365 * 24 * 60 * 60;
 
     if (GetChainType() != ChainType::REGTEST) {
-        // After HF2: 8%, 8%, 7%, 7%, 6%
+        if (nTime >= consensus.inflation_adjust_time) {
+            // After HF3: 3.5, 3.0 .. 1.5, 1.0
+            int64_t nPeriodsSinceHF3 = (nTime - consensus.inflation_adjust_time) / nSecondsInYear;
+            if (nPeriodsSinceHF3 >= 0 && nPeriodsSinceHF3 < 6) {
+                return (7 - nPeriodsSinceHF3) * (CENT / 2);
+            }
+            return 1 * CENT;
+        }
         if (nTime >= consensus.exploit_fix_2_time) {
+            // After HF2: 8%, 8%, 7%, 7%, 6%
             int64_t nPeriodsSinceHF2 = (nTime - consensus.exploit_fix_2_time) / (nSecondsInYear * 2);
             if (nPeriodsSinceHF2 >= 0 && nPeriodsSinceHF2 < 2) {
                 return (8 - nPeriodsSinceHF2) * CENT;
@@ -526,6 +534,7 @@ public:
         consensus.clamp_tx_version_time = 1643734800;   // 2022-02-01 17:00:00 UTC
         consensus.exploit_fix_3_time = 1643734800;      // 2022-02-01 17:00:00 UTC
         consensus.m_taproot_time = 1643734800;          // 2022-02-01 17:00:00 UTC
+        consensus.inflation_adjust_time = 1769947200;   // 2026-02-01 12:00:00 UTC
 
         consensus.m_frozen_anon_index = 27340;
         consensus.m_frozen_blinded_height = 884433;
@@ -610,7 +619,8 @@ public:
             particl::TreasuryFundSettings("RBiiQBnQsVPPQkUaJVQTjsZM9K2xMKozST", 10, 60));
         vTreasuryFundSettings.emplace_back(consensus.exploit_fix_2_time,
             particl::TreasuryFundSettings("RQYUDd3EJohpjq62So4ftcV5XZfxZxJPe9", 50, 650));
-
+        vTreasuryFundSettings.emplace_back(consensus.inflation_adjust_time,
+            particl::TreasuryFundSettings("RQYUDd3EJohpjq62So4ftcV5XZfxZxJPe9", 0, 650, 1 * COIN));
 
         base58Prefixes[PUBKEY_ADDRESS]     = {0x38}; // P
         base58Prefixes[SCRIPT_ADDRESS]     = {0x3c};
