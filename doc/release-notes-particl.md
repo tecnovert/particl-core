@@ -4,8 +4,9 @@
 
 - Hard Fork
   - 2026-02-01 12:00:00 UTC
-  - Reduces stake reward to 3.5% of moneysupply.
-  - Removes forced treasury fund donation stake split.
+  - Reduce stake reward to 3.5% of moneysupply.
+  - Remove forced treasury fund donation stake split.
+  - Disable frozen blinded spends below 200 PART.
 - New checkpoints.
 - rpc:
   - gettransaction shows total amount for tx records.
