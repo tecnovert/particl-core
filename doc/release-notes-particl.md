@@ -5,6 +5,18 @@ Next Major Version
 - listunspent include_immature parameter is deprecated, replaced by include_immature_coinbase
 - Removed -lookuptorcontrolhost option
 
+
+27.2.3
+==============
+
+- Hard Fork
+  - 2026-02-01 12:00:00 UTC
+  - Reduce stake reward to 3.5% of moneysupply.
+  - Remove forced treasury fund donation stake split.
+  - Disable frozen blinded spends below 200 PART.
+- New checkpoints.
+
+
 24.0.2
 ==============
 
