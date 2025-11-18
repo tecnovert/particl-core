@@ -35,6 +35,7 @@ public:
     SHA3_256() {}
     SHA3_256& Write(Span<const unsigned char> data);
     SHA3_256& Finalize(Span<unsigned char> output);
+    SHA3_256& Finalize_keccak256(Span<unsigned char> output);
     SHA3_256& Reset();
 };
 

@@ -7,6 +7,7 @@
 #endif
 
 #include "addresstype.h"
+#include <crypto/sha3.h>
 
 #include <chainparams.h>
 #include <chainparamsbase.h>
@@ -62,9 +63,10 @@ static void SetupWalletToolArgs(ArgsManager& argsman)
     argsman.AddCommand("mpbf", "Mnemonic password brute forcer");
     argsman.AddArg("-btcmode", "", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
     argsman.AddArg("-targetaddress=<address>", "Target address for mpbf", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
-    argsman.AddArg("-testnumderives=<n>", "Number of addresses to derive for each test (default: 10)", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
+    argsman.AddArg("-testnumderives=<n>", "Number of addresses to derive for each test (default: 50)", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
     argsman.AddArg("-insertchars=<str>", "Characters to insert into the password", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
     argsman.AddArg("-passwordistemplate", "Password is in template format (default: false).", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
+    argsman.AddArg("-maxinsertchars", "Maximum number of charcters to insert into password (default: 2).", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
 }
 
 static std::optional<int> WalletAppInit(ArgsManager& args, int argc, char* argv[])
@@ -137,7 +139,9 @@ class PasswordFinderState {
 public:
     PasswordFinderState(ArgsManager &args): m_args(args) {
         m_print_to_console = m_args.GetBoolArg("-printtoconsole", false);
-        m_test_num_derives = m_args.GetIntArg("-testnumderives", 10);
+        m_test_num_derives = m_args.GetIntArg("-testnumderives", 50);
+        m_max_inserts = m_args.GetIntArg("-maxinsertchars", 2);
+        m_bip44_id = (uint32_t)Params().BIP44ID();
     };
     ArgsManager &m_args;
     std::string m_mnemonic;
@@ -148,6 +152,8 @@ public:
     size_t m_test_num_derives{10};
     CKeyID m_id_find;
     size_t m_max_inserts{2};
+    uint32_t m_bip44_id;
+    bool m_eth_mode{false};
 };
 
 bool test_password(PasswordFinderState &pfs, const std::string &password_iteration)
@@ -163,7 +169,7 @@ bool test_password(PasswordFinderState &pfs, const std::string &password_iterati
     }
     std::vector<uint8_t> seed;
     // purpose'/coin_type'/account'/chain/nkey
-    std::vector<uint32_t> bip44_account_chain_path {WithHardenedBit(44), (uint32_t)Params().BIP44ID(), WithHardenedBit(0), 0};
+    std::vector<uint32_t> bip44_account_chain_path {WithHardenedBit(44), pfs.m_bip44_id, WithHardenedBit(0), 0};
     if (0 != mnemonic::ToSeed(pfs.m_mnemonic, password_iteration, seed)) {
         tfm::format(std::cerr, "Error: mnemonic::ToSeed failed.\n");
         return false;
@@ -186,11 +192,26 @@ bool test_password(PasswordFinderState &pfs, const std::string &password_iterati
             tfm::format(std::cerr, "Error: epk_chain.Derive failed: %d.\n", i);
             return false;
         }
-        CKeyID id_test = epk_test.pubkey.GetID();
+        CKeyID id_test;
+        if (pfs.m_eth_mode) {
+            SHA3_256 sha;
+            unsigned char out[SHA3_256::OUTPUT_SIZE];
+            CPubKey pk = epk_test.pubkey;
+            pk.Decompress();
+            std::vector<uint8_t> data64(pk.begin() + 1, pk.end());
+            sha.Write(data64).Finalize_keccak256(out);
+            memcpy(id_test.data(), out + 12, 20);
+        } else {
+            id_test = epk_test.pubkey.GetID();
+        }
 
         if (id_test == pfs.m_id_find) {
             pfs.m_found_password = true;
-            tfm::format(std::cout, "Found password: %s\n", password_iteration);
+            if (password_iteration.empty()) {
+                tfm::format(std::cout, "Found without password, key number %d\n", i);
+            } else {
+                tfm::format(std::cout, "Found password: %s, key number %d\n", password_iteration, i);
+            }
             return true;
         }
     }
@@ -358,16 +379,31 @@ int mpbf(ArgsManager& args)
         std::getline(std::cin, target_address);
     }
     tfm::format(std::cout, "target_address: %s\n", target_address);
-    CTxDestination dest = DecodeDestination(target_address);
-    if (!IsValidDestination(dest)) {
-        tfm::format(std::cerr, "Error: Invalid target address.\n");
-        return EXIT_FAILURE;
+
+    if (target_address.size() == 42 && target_address.starts_with("0x")) {
+        // eth address
+        std::vector<uint8_t> id_data = ParseHex(target_address.substr(2));
+        if (id_data.size() != 20) {
+            tfm::format(std::cerr, "Error: Invalid target eth address.\n");
+            return EXIT_FAILURE;
+        }
+
+        std::string str_data = target_address.substr(2);
+        memcpy(pfs.m_id_find.data(), id_data.data(), id_data.size());
+        pfs.m_bip44_id = WithHardenedBit(60);
+        pfs.m_eth_mode = true;
+    } else {
+        CTxDestination dest = DecodeDestination(target_address);
+        if (!IsValidDestination(dest)) {
+            tfm::format(std::cerr, "Error: Invalid target address.\n");
+            return EXIT_FAILURE;
+        }
+        if (!std::holds_alternative<PKHash>(dest)) {
+            tfm::format(std::cerr, "Error: target address must be a legacy address.\n");
+            return EXIT_FAILURE;
+        }
+        pfs.m_id_find = ToKeyID(std::get<PKHash>(dest));
     }
-    if (!std::holds_alternative<PKHash>(dest)) {
-        tfm::format(std::cerr, "Error: target address must be a legacy address.\n");
-        return EXIT_FAILURE;
-    }
-    pfs.m_id_find = ToKeyID(std::get<PKHash>(dest));
 
     std::string password_try;
     for (const auto &ct : password_template) {
@@ -376,6 +412,11 @@ int mpbf(ArgsManager& args)
             return EXIT_FAILURE;
         }
         password_try += ct.m_value;
+    }
+
+    if (pfs.m_max_inserts > password_try.size()) {
+        pfs.m_max_inserts = password_try.size();
+        tfm::format(std::cout, "Reduced max inputs to %d.\n", pfs.m_max_inserts);
     }
 
     std::vector<size_t> case_changeable_chars;
@@ -388,7 +429,8 @@ int mpbf(ArgsManager& args)
 
     auto start = std::chrono::high_resolution_clock::now();
 
-    if (!test_password(pfs, password_try)) {
+    std::string empty_pwd;
+    if (!test_password(pfs, empty_pwd) && !test_password(pfs, password_try)) {
         try_inserts(pfs, password_try, 1, pfs.m_max_inserts);
     }
 

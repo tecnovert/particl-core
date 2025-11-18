@@ -147,6 +147,20 @@ SHA3_256& SHA3_256::Finalize(Span<unsigned char> output)
     return *this;
 }
 
+SHA3_256& SHA3_256::Finalize_keccak256(Span<unsigned char> output)
+{
+    assert(output.size() == OUTPUT_SIZE);
+    std::fill(m_buffer + m_bufsize, m_buffer + sizeof(m_buffer), 0);
+    m_buffer[m_bufsize] ^= 0x01;
+    m_state[m_pos] ^= ReadLE64(m_buffer);
+    m_state[RATE_BUFFERS - 1] ^= 0x8000000000000000;
+    KeccakF(m_state);
+    for (unsigned i = 0; i < 4; ++i) {
+        WriteLE64(output.data() + 8 * i, m_state[i]);
+    }
+    return *this;
+}
+
 SHA3_256& SHA3_256::Reset()
 {
     m_bufsize = 0;
