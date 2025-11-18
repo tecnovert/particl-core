@@ -6,6 +6,8 @@
 #include <config/bitcoin-config.h>
 #endif
 
+#include "addresstype.h"
+
 #include <chainparams.h>
 #include <chainparamsbase.h>
 #include <clientversion.h>
@@ -57,7 +59,12 @@ static void SetupWalletToolArgs(ArgsManager& argsman)
 
     // Particl
     argsman.AddCommand("generatemnemonic", "Generate a new mnemonic: <language> <bytes_entropy>");
+    argsman.AddCommand("mpbf", "Mnemonic password brute forcer");
     argsman.AddArg("-btcmode", "", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
+    argsman.AddArg("-targetaddress=<address>", "Target address for mpbf", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
+    argsman.AddArg("-testnumderives=<n>", "Number of addresses to derive for each test (default: 10)", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
+    argsman.AddArg("-insertchars=<str>", "Characters to insert into the password", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
+    argsman.AddArg("-passwordistemplate", "Password is in template format (default: false).", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
 }
 
 static std::optional<int> WalletAppInit(ArgsManager& args, int argc, char* argv[])
@@ -112,6 +119,314 @@ static std::optional<int> WalletAppInit(ArgsManager& args, int argc, char* argv[
     return std::nullopt;
 }
 
+class PasswordCharacter {
+public:
+    PasswordCharacter(size_t index): m_index(index) {};
+    PasswordCharacter(size_t index, bool actual, char value): m_index(index), m_actual(actual), m_value(value) {
+        m_can_switch_case = (m_value >= 'a' && m_value <= 'z') || (m_value >= 'A' && m_value <= 'Z');
+    }
+
+    size_t m_index;
+    bool m_actual{false};
+    char m_value{'*'};
+    char m_current_value{0};
+    bool m_can_switch_case{false};
+};
+
+class PasswordFinderState {
+public:
+    PasswordFinderState(ArgsManager &args): m_args(args) {
+        m_print_to_console = m_args.GetBoolArg("-printtoconsole", false);
+        m_test_num_derives = m_args.GetIntArg("-testnumderives", 10);
+    };
+    ArgsManager &m_args;
+    std::string m_mnemonic;
+    std::string m_insert_chars;
+    size_t m_num_tests{0};
+    bool m_found_password{false};
+    bool m_print_to_console{false};
+    size_t m_test_num_derives{10};
+    CKeyID m_id_find;
+    size_t m_max_inserts{2};
+};
+
+bool test_password(PasswordFinderState &pfs, const std::string &password_iteration)
+{
+    pfs.m_num_tests++;
+
+    if (pfs.m_num_tests % 1000 == 0) {
+        tfm::format(std::cout, "Passwords tried: %d\n", pfs.m_num_tests);
+    }
+
+    if (pfs.m_print_to_console) {
+        tfm::format(std::cout, "%s\n", password_iteration);
+    }
+    std::vector<uint8_t> seed;
+    // purpose'/coin_type'/account'/chain/nkey
+    std::vector<uint32_t> bip44_account_chain_path {WithHardenedBit(44), (uint32_t)Params().BIP44ID(), WithHardenedBit(0), 0};
+    if (0 != mnemonic::ToSeed(pfs.m_mnemonic, password_iteration, seed)) {
+        tfm::format(std::cerr, "Error: mnemonic::ToSeed failed.\n");
+        return false;
+    }
+    CExtKeyPair ekp;
+    ekp.SetSeed(seed.data(), seed.size());
+
+    CExtKey vkOut, vkWork = ekp.GetExtKey();
+    for (auto chain_node : bip44_account_chain_path) {
+        if (!vkWork.Derive(vkOut, chain_node)) {
+            tfm::format(std::cerr, "Error: CExtKey Derive failed.\n");
+            return false;
+        }
+        vkWork = vkOut;
+    }
+
+    CExtPubKey epk_test, epk_chain = vkWork.Neutered();
+    for (size_t i = 0; i < pfs.m_test_num_derives; i++) {
+        if (!epk_chain.Derive(epk_test, i)) {
+            tfm::format(std::cerr, "Error: epk_chain.Derive failed: %d.\n", i);
+            return false;
+        }
+        CKeyID id_test = epk_test.pubkey.GetID();
+
+        if (id_test == pfs.m_id_find) {
+            pfs.m_found_password = true;
+            tfm::format(std::cout, "Found password: %s\n", password_iteration);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool try_inserts(PasswordFinderState &pfs, std::string test_string, size_t c_depth, size_t max_depth)
+{
+    for (char insert_c : pfs.m_insert_chars) {
+        // Replace
+        for (size_t replace_i = 0; replace_i < test_string.size(); replace_i++) {
+            std::string password_iteration = test_string;
+            password_iteration[replace_i] = insert_c;
+            if (test_password(pfs, password_iteration)) {
+                return true;
+            }
+            if (c_depth < max_depth) {
+                if (try_inserts(pfs, password_iteration, c_depth + 1, max_depth)) {
+                    return true;
+                }
+            }
+        }
+
+        // Insert
+        for (size_t insert_i = 0; insert_i <= test_string.size(); insert_i++) {
+            std::string password_iteration = test_string;
+            password_iteration.insert(insert_i, 1, insert_c);
+            if (test_password(pfs, password_iteration)) {
+                return true;
+            }
+            if (c_depth < max_depth) {
+                if (try_inserts(pfs, password_iteration, c_depth + 1, max_depth)) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+static int64_t ipow(int64_t base, int exp)
+{
+    int64_t result = 1;
+    while (exp) {
+        if (exp & 1) {
+            result *= base;
+        }
+        exp >>= 1;
+        base *= base;
+    }
+    return result;
+}
+
+int mpbf(ArgsManager& args)
+{
+    PasswordFinderState pfs(args);
+    std::string password_template_in, target_address, errmsg;
+    std::vector<uint8_t> entropy;
+
+    tfm::format(std::cout, "Enter mnemonic:\n");
+    std::getline(std::cin, pfs.m_mnemonic);
+    tfm::format(std::cout, "mnemonic: %s\n", pfs.m_mnemonic);
+
+    int language_ind = -1;
+    if (0 != mnemonic::Decode(language_ind, pfs.m_mnemonic, entropy, errmsg)) {
+        tfm::format(std::cerr, "Error: Invalid mnemonic: %s.\n", errmsg);
+        return EXIT_FAILURE;
+    }
+
+    // password template: 1as,2vn,11a,.
+    // char num, actual / variable, char / *-any char, a-alpha any_case, c-lowercase alpha, C-uppercase alpha, n-numeric, s-special
+    tfm::format(std::cout, "Enter password%s:\n", args.IsArgSet("-passwordistemplate") ? " template" : "");
+    std::getline(std::cin, password_template_in);
+    tfm::format(std::cout, "password_template: %s\n", password_template_in);
+
+    std::vector<PasswordCharacter> password_template;
+    size_t i = 0;
+
+    if (!args.IsArgSet("-passwordistemplate")) {
+        for (size_t i = 0; i < password_template_in.size(); i++) {
+            char c = password_template_in[i];
+            password_template.emplace_back(i, true, c);
+        }
+    } else
+    while (i < password_template_in.size()) {
+        char c = password_template_in[i];
+        std::string word_index_s;
+        if (c == ',') {
+            i++;
+            continue;
+        }
+        while (IsDigit(c)) {
+            word_index_s += c;
+            i++;
+            if (i >= password_template_in.size()) {
+                tfm::format(std::cerr, "Error: Invalid password_template.\n");
+                return EXIT_FAILURE;
+            }
+            c = password_template_in[i];
+        }
+        uint32_t word_index{0};
+        if (word_index_s.size() < 1 || !ParseUInt32(word_index_s, &word_index)) {
+            tfm::format(std::cerr, "Error: Invalid password_template, invalid word index.\n");
+            return EXIT_FAILURE;
+        }
+
+        bool actual{false};
+        if (c == 'a') {
+            actual = true;
+        } else if (c == 'v') {
+        } else {
+            tfm::format(std::cerr, "Error: Invalid password_template, unknown actual/variable indicator.\n");
+            return EXIT_FAILURE;
+        }
+
+        i++;
+        if (i >= password_template_in.size()) {
+            tfm::format(std::cerr, "Error: Invalid password_template.\n");
+            return EXIT_FAILURE;
+        }
+        c = password_template_in[i];
+
+        if (!actual) {
+            std::string possible_values{"*acCns"};
+            if (possible_values.find(c) == std::string::npos) {
+                tfm::format(std::cerr, "Error: Invalid password_template, unknown variable type.\n");
+                return EXIT_FAILURE;
+            }
+        }
+
+        if (!password_template.empty()) {
+            const auto &last_entry = password_template.back();
+            if (word_index <= last_entry.m_index) {
+                tfm::format(std::cerr, "Error: Invalid password_template, word index must be > last index.\n");
+                return EXIT_FAILURE;
+            }
+
+            for (size_t expand_i = last_entry.m_index + 1; expand_i < word_index; expand_i++) {
+                password_template.emplace_back(expand_i);
+            }
+        }
+
+        password_template.emplace_back(word_index, actual, c);
+        i++;
+    }
+    /*
+    for (const auto &ct : password_template) {
+        tfm::format(std::cerr, "ct %d %d %c.\n", ct.m_index, ct.m_actual, ct.m_value);
+    }
+    */
+
+    if (gArgs.IsArgSet("-insertchars")) {
+        pfs.m_insert_chars = gArgs.GetArg("-insertchars", "");
+    } else {
+        tfm::format(std::cout, "Enter insert chars:\n");
+        std::getline(std::cin, pfs.m_insert_chars);
+    }
+    tfm::format(std::cout, "insert_chars: %s\n", pfs.m_insert_chars);
+
+    if (gArgs.IsArgSet("-targetaddress")) {
+        target_address = gArgs.GetArg("-targetaddress", "");
+    } else {
+        tfm::format(std::cout, "Enter target address:\n");
+        std::getline(std::cin, target_address);
+    }
+    tfm::format(std::cout, "target_address: %s\n", target_address);
+    CTxDestination dest = DecodeDestination(target_address);
+    if (!IsValidDestination(dest)) {
+        tfm::format(std::cerr, "Error: Invalid target address.\n");
+        return EXIT_FAILURE;
+    }
+    if (!std::holds_alternative<PKHash>(dest)) {
+        tfm::format(std::cerr, "Error: target address must be a legacy address.\n");
+        return EXIT_FAILURE;
+    }
+    pfs.m_id_find = ToKeyID(std::get<PKHash>(dest));
+
+    std::string password_try;
+    for (const auto &ct : password_template) {
+        if (!ct.m_actual) {
+            tfm::format(std::cerr, "Error: TODO.\n");
+            return EXIT_FAILURE;
+        }
+        password_try += ct.m_value;
+    }
+
+    std::vector<size_t> case_changeable_chars;
+    for (size_t ic = 0; ic < password_try.size(); ic++) {
+        char c = password_try[ic];
+        if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
+            case_changeable_chars.push_back(ic);
+        }
+    }
+
+    auto start = std::chrono::high_resolution_clock::now();
+
+    if (!test_password(pfs, password_try)) {
+        try_inserts(pfs, password_try, 1, pfs.m_max_inserts);
+    }
+
+    if (!pfs.m_found_password && case_changeable_chars.size()) {
+        size_t nc = case_changeable_chars.size();
+        size_t max_case_combinations = ipow(2, nc);
+        tfm::format(std::cout, "Trying %d case combinations.\n", max_case_combinations);
+        for (size_t icc = 0; icc < max_case_combinations; icc++) {
+            std::string password_current = password_try;
+            for (size_t ic = 0; ic < case_changeable_chars.size(); ic++) {
+                bool upper_case = (icc & (1 << ic)) != 0;
+                char c = password_current[case_changeable_chars[ic]];
+                password_current[case_changeable_chars[ic]] = upper_case ? ToUpper(c) : ToLower(c);
+            }
+            if (password_current == password_try) {
+                continue;
+            }
+
+            tfm::format(std::cout, "password_current %s\n", password_current);
+            if (test_password(pfs, password_current)) {
+                break;
+            }
+            if (try_inserts(pfs, password_current, 1, pfs.m_max_inserts)) {
+                break;
+            }
+        }
+    }
+
+    std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start;
+    tfm::format(std::cout, "Tried: %d combinations in %d seconds\n", pfs.m_num_tests, elapsed.count());
+
+    if (pfs.m_found_password) {
+        return EXIT_SUCCESS;
+    }
+
+    return EXIT_FAILURE;
+}
+
 MAIN_FUNCTION
 {
     ArgsManager& args = gArgs;
@@ -140,44 +455,6 @@ MAIN_FUNCTION
             }
             continue;
         }
-        if (strcmp(argv[i], "generatemnemonic") == 0) {
-            if (show_help) {
-                std::string usage = "generatemnemonic <language> <bytes_entropy>\n"
-                    "\nArguments:\n"
-                    "1. language        (string, optional, default=english) Which wordlist to use (" + mnemonic::ListEnabledLanguages(", ") + ").\n"
-                    "2. bytes_entropy   (numeric, optional, default=32) Affects length of mnemonic, [16, 64].\n";
-                tfm::format(std::cout, "%s\n", usage);
-                return EXIT_SUCCESS;
-            }
-
-            int nLanguage = mnemonic::WLL_ENGLISH;
-            int nBytesEntropy = 32;
-
-            if (argc > i + 1) {
-                nLanguage = mnemonic::GetLanguageOffset(argv[i+1]);
-            }
-            if (argc > i + 2) {
-                if (!ParseInt32(argv[i+2], &nBytesEntropy)) {
-                    tfm::format(std::cerr, "Error: Invalid num bytes entropy.\n");
-                    return EXIT_FAILURE;
-                }
-                if (nBytesEntropy < 16 || nBytesEntropy > 64) {
-                    tfm::format(std::cerr, "Error: Num bytes entropy out of range [16,64].\n");
-                    return EXIT_FAILURE;
-                }
-            }
-            std::string sMnemonic, sError;
-            std::vector<uint8_t> vEntropy(nBytesEntropy);
-
-            GetStrongRandBytes2(&vEntropy[0], nBytesEntropy);
-            if (0 != mnemonic::Encode(nLanguage, vEntropy, sMnemonic, sError)) {
-                tfm::format(std::cerr, "Error: MnemonicEncode failed %s.\n", sError);
-                return EXIT_FAILURE;
-            }
-
-            tfm::format(std::cout, "%s\n", sMnemonic);
-            return EXIT_SUCCESS;
-        }
     }
 
 
@@ -196,12 +473,55 @@ MAIN_FUNCTION
         tfm::format(std::cerr, "No method provided. Run `particl-wallet -help` for valid methods.\n");
         return EXIT_FAILURE;
     }
+
+    ECC_Start();
+
+    if (command->command == "generatemnemonic") {
+        if (show_help) {
+            std::string usage = "generatemnemonic <language> <bytes_entropy>\n"
+                "\nArguments:\n"
+                "1. language        (string, optional, default=english) Which wordlist to use (" + mnemonic::ListEnabledLanguages(", ") + ").\n"
+                "2. bytes_entropy   (numeric, optional, default=32) Affects length of mnemonic, [16, 64].\n";
+            tfm::format(std::cout, "%s\n", usage);
+            return EXIT_SUCCESS;
+        }
+
+        int nLanguage = mnemonic::WLL_ENGLISH;
+        int nBytesEntropy = 32;
+
+        if (command->args.size() >= 1) {
+            nLanguage = mnemonic::GetLanguageOffset(command->args[1]);
+        }
+        if (command->args.size() >= 2) {
+            if (!ParseInt32(command->args[2], &nBytesEntropy)) {
+                tfm::format(std::cerr, "Error: Invalid num bytes entropy.\n");
+                return EXIT_FAILURE;
+            }
+            if (nBytesEntropy < 16 || nBytesEntropy > 64) {
+                tfm::format(std::cerr, "Error: Num bytes entropy out of range [16,64].\n");
+                return EXIT_FAILURE;
+            }
+        }
+        std::string sMnemonic, sError;
+        std::vector<uint8_t> vEntropy(nBytesEntropy);
+
+        GetStrongRandBytes2(&vEntropy[0], nBytesEntropy);
+        if (0 != mnemonic::Encode(nLanguage, vEntropy, sMnemonic, sError)) {
+            tfm::format(std::cerr, "Error: MnemonicEncode failed %s.\n", sError);
+            return EXIT_FAILURE;
+        }
+
+        tfm::format(std::cout, "%s\n", sMnemonic);
+        return EXIT_SUCCESS;
+    } else if (command->command == "mpbf") {
+        return mpbf(args);
+    }
+
     if (command->args.size() != 0) {
         tfm::format(std::cerr, "Error: Additional arguments provided (%s). Methods do not take arguments. Please refer to `-help`.\n", Join(command->args, ", "));
         return EXIT_FAILURE;
     }
 
-    ECC_Start();
     if (!wallet::WalletTool::ExecuteWalletToolFunc(args, command->command)) {
         return EXIT_FAILURE;
     }
