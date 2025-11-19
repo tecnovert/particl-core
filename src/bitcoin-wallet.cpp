@@ -66,7 +66,9 @@ static void SetupWalletToolArgs(ArgsManager& argsman)
     argsman.AddArg("-testnumderives=<n>", "Number of addresses to derive for each test (default: 50)", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
     argsman.AddArg("-insertchars=<str>", "Characters to insert into the password", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
     argsman.AddArg("-passwordistemplate", "Password is in template format (default: false).", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
-    argsman.AddArg("-maxinsertchars", "Maximum number of charcters to insert into password (default: 2).", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
+    argsman.AddArg("-modifycase", "Test all case variations (default: true).", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
+    argsman.AddArg("-maxinsertchars=<n>", "Maximum number of charcters to insert into password (default: 2).", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
+    argsman.AddArg("-dropchars=<n>", "Maximum number of charcters to drop from password (default: 0).", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
 }
 
 static std::optional<int> WalletAppInit(ArgsManager& args, int argc, char* argv[])
@@ -139,22 +141,25 @@ class PasswordFinderState {
 public:
     PasswordFinderState(ArgsManager &args): m_args(args) {
         m_print_to_console = m_args.GetBoolArg("-printtoconsole", false);
+        m_modify_case = m_args.GetBoolArg("-modifycase", true);
         m_test_num_derives = m_args.GetIntArg("-testnumderives", 50);
         m_max_inserts = m_args.GetIntArg("-maxinsertchars", 2);
+        m_num_drop_chars = m_args.GetIntArg("-dropchars", 0);
         m_bip44_id = (uint32_t)Params().BIP44ID();
     };
     ArgsManager &m_args;
     std::string m_mnemonic;
     std::string m_insert_chars;
     size_t m_num_tests{0};
+    size_t m_num_drop_chars{0};
     bool m_found_password{false};
     bool m_print_to_console{false};
+    bool m_modify_case{true};
     size_t m_test_num_derives{10};
     CKeyID m_id_find;
     size_t m_max_inserts{2};
     uint32_t m_bip44_id;
-    bool m_eth_mode{false};
-};
+    bool m_eth_mode{false};};
 
 bool test_password(PasswordFinderState &pfs, const std::string &password_iteration)
 {
@@ -367,8 +372,11 @@ int mpbf(ArgsManager& args)
     if (gArgs.IsArgSet("-insertchars")) {
         pfs.m_insert_chars = gArgs.GetArg("-insertchars", "");
     } else {
-        tfm::format(std::cout, "Enter insert chars:\n");
+        tfm::format(std::cout, "Enter insert chars, leave blank to default to all ascii chars:\n");
         std::getline(std::cin, pfs.m_insert_chars);
+    }
+    if (pfs.m_insert_chars.size() == 0) {
+        pfs.m_insert_chars = "p !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
     }
     tfm::format(std::cout, "insert_chars: %s\n", pfs.m_insert_chars);
 
@@ -414,46 +422,79 @@ int mpbf(ArgsManager& args)
         password_try += ct.m_value;
     }
 
-    if (pfs.m_max_inserts > password_try.size()) {
-        pfs.m_max_inserts = password_try.size();
-        tfm::format(std::cout, "Reduced max inputs to %d.\n", pfs.m_max_inserts);
-    }
-
-    std::vector<size_t> case_changeable_chars;
-    for (size_t ic = 0; ic < password_try.size(); ic++) {
-        char c = password_try[ic];
-        if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
-            case_changeable_chars.push_back(ic);
-        }
-    }
-
     auto start = std::chrono::high_resolution_clock::now();
 
+    std::set<std::string> try_passwords;
+    try_passwords.insert(password_try);
+
+    std::function<void(std::string, size_t, size_t)> drop_chars = [&](std::string string_work, size_t c_depth, size_t max_depth) -> void {
+        if (string_work.size() <= 1) {
+            return;
+        }
+        for (size_t i = 0; i < string_work.size(); i++) {
+            std::string string_next = string_work;
+            string_next.erase(i, 1);
+            try_passwords.insert(string_next);
+            if (c_depth < max_depth) {
+                drop_chars(string_next, c_depth + 1, max_depth);
+            }
+        }
+    };
+    if (pfs.m_num_drop_chars) {
+        std::string lc_password;
+        for (auto c : password_try) {
+            lc_password += ToLower(c);
+        }
+        drop_chars(lc_password, 1, 2);
+    }
+
+    // Try password as entered first
     std::string empty_pwd;
     if (!test_password(pfs, empty_pwd) && !test_password(pfs, password_try)) {
         try_inserts(pfs, password_try, 1, pfs.m_max_inserts);
     }
 
-    if (!pfs.m_found_password && case_changeable_chars.size()) {
-        size_t nc = case_changeable_chars.size();
-        size_t max_case_combinations = ipow(2, nc);
-        tfm::format(std::cout, "Trying %d case combinations.\n", max_case_combinations);
-        for (size_t icc = 0; icc < max_case_combinations; icc++) {
-            std::string password_current = password_try;
-            for (size_t ic = 0; ic < case_changeable_chars.size(); ic++) {
-                bool upper_case = (icc & (1 << ic)) != 0;
-                char c = password_current[case_changeable_chars[ic]];
-                password_current[case_changeable_chars[ic]] = upper_case ? ToUpper(c) : ToLower(c);
+    for (const auto &c_pwd_try : try_passwords) {
+        if (pfs.m_found_password) {
+            break;
+        }
+        std::vector<size_t> case_changeable_chars;
+        if (pfs.m_modify_case)
+        for (size_t ic = 0; ic < c_pwd_try.size(); ic++) {
+            char c = c_pwd_try[ic];
+            if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
+                case_changeable_chars.push_back(ic);
             }
-            if (password_current == password_try) {
-                continue;
-            }
+        }
 
-            tfm::format(std::cout, "password_current %s\n", password_current);
-            if (test_password(pfs, password_current)) {
+        if (case_changeable_chars.size()) {
+            size_t nc = case_changeable_chars.size();
+            size_t max_case_combinations = ipow(2, nc);
+            tfm::format(std::cout, "Trying %d case combinations.\n", max_case_combinations);
+            for (size_t icc = 0; icc < max_case_combinations; icc++) {
+                std::string password_current = c_pwd_try;
+                for (size_t ic = 0; ic < case_changeable_chars.size(); ic++) {
+                    bool upper_case = (icc & (1 << ic)) != 0;
+                    char c = password_current[case_changeable_chars[ic]];
+                    password_current[case_changeable_chars[ic]] = upper_case ? ToUpper(c) : ToLower(c);
+                }
+                if (password_current == password_try) {
+                    continue;
+                }
+
+                tfm::format(std::cout, "password_current %s\n", password_current);
+                if (test_password(pfs, password_current)) {
+                    break;
+                }
+                if (try_inserts(pfs, password_current, 1, pfs.m_max_inserts)) {
+                    break;
+                }
+            }
+        } else {
+            if (test_password(pfs, c_pwd_try)) {
                 break;
             }
-            if (try_inserts(pfs, password_current, 1, pfs.m_max_inserts)) {
+            if (try_inserts(pfs, c_pwd_try, 1, pfs.m_max_inserts)) {
                 break;
             }
         }
