@@ -31,11 +31,19 @@
 #include <string>
 #include <tuple>
 
+#include <condition_variable>
+#include <mutex>
+#include <atomic>
+#include <queue>
+#include <thread>
+
 // Particl includes
 #include <key/mnemonic.h>
 
 const std::function<std::string(const char*)> G_TRANSLATION_FUN = nullptr;
 UrlDecodeFn* const URL_DECODE = nullptr;
+
+
 
 static void SetupWalletToolArgs(ArgsManager& argsman)
 {
@@ -67,8 +75,10 @@ static void SetupWalletToolArgs(ArgsManager& argsman)
     argsman.AddArg("-insertchars=<str>", "Characters to insert into the password", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
     argsman.AddArg("-passwordistemplate", "Password is in template format (default: false).", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
     argsman.AddArg("-modifycase", "Test all case variations (default: true).", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
+    argsman.AddArg("-mininsertchars=<n>", "Minimum number of charcters to insert into password (default: 1).", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
     argsman.AddArg("-maxinsertchars=<n>", "Maximum number of charcters to insert into password (default: 2).", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
     argsman.AddArg("-dropchars=<n>", "Maximum number of charcters to drop from password (default: 0).", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
+    argsman.AddArg("-replacechars=<bool>", "Replae chars in the input password with insertchars (default: true).", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
 }
 
 static std::optional<int> WalletAppInit(ArgsManager& args, int argc, char* argv[])
@@ -142,7 +152,9 @@ public:
     PasswordFinderState(ArgsManager &args): m_args(args) {
         m_print_to_console = m_args.GetBoolArg("-printtoconsole", false);
         m_modify_case = m_args.GetBoolArg("-modifycase", true);
+        m_replace_chars = m_args.GetBoolArg("-replacechars", true);
         m_test_num_derives = m_args.GetIntArg("-testnumderives", 50);
+        m_min_inserts = m_args.GetIntArg("-mininsertchars", 1);
         m_max_inserts = m_args.GetIntArg("-maxinsertchars", 2);
         m_num_drop_chars = m_args.GetIntArg("-dropchars", 0);
         m_bip44_id = (uint32_t)Params().BIP44ID();
@@ -152,14 +164,17 @@ public:
     std::string m_insert_chars;
     size_t m_num_tests{0};
     size_t m_num_drop_chars{0};
-    bool m_found_password{false};
+    std::atomic<bool> m_found_password{false};
     bool m_print_to_console{false};
     bool m_modify_case{true};
     size_t m_test_num_derives{10};
     CKeyID m_id_find;
+    size_t m_min_inserts{1};
     size_t m_max_inserts{2};
     uint32_t m_bip44_id;
-    bool m_eth_mode{false};};
+    bool m_eth_mode{false};
+    bool m_replace_chars{false};
+};
 
 bool test_password(PasswordFinderState &pfs, const std::string &password_iteration)
 {
@@ -170,7 +185,8 @@ bool test_password(PasswordFinderState &pfs, const std::string &password_iterati
     }
 
     if (pfs.m_print_to_console) {
-        tfm::format(std::cout, "%s\n", password_iteration);
+        tfm::format(std::cout, "\"%s\"\n", password_iteration);
+        //tfm::format(std::cout, "t: %d - \"%s\"\n", std::this_thread::get_id(), password_iteration);
     }
     std::vector<uint8_t> seed;
     // purpose'/coin_type'/account'/chain/nkey
@@ -224,19 +240,102 @@ bool test_password(PasswordFinderState &pfs, const std::string &password_iterati
     return false;
 }
 
-bool try_inserts(PasswordFinderState &pfs, std::string test_string, size_t c_depth, size_t max_depth)
+class ThreadPool {
+public:
+    ThreadPool(PasswordFinderState &pfs, size_t num_threads = std::thread::hardware_concurrency()) : m_pfs(pfs)
+    {
+        for (size_t i = 0; i < num_threads; ++i) {
+            m_threads.emplace_back([this] {
+                while (true) {
+                    std::string task;
+                    {
+                        std::unique_lock<std::mutex> lock(m_queue_mutex);
+
+                        m_cv.wait(lock, [this] {
+                            return !m_tasks.empty() || m_stop;
+                        });
+
+                        if (m_stop && m_tasks.empty()) {
+                            return;
+                        }
+
+                        //if (m_pfs.m_found_password) {
+                            //return;
+                        //}
+
+                        task = std::move(m_tasks.front());
+                        m_tasks.pop();
+                    }
+                    m_cv_not_full.notify_one();
+
+                    if (!m_pfs.m_found_password && test_password(m_pfs, task)) {
+                        m_stop = true;
+                        m_cv.notify_all();
+                    }
+                }
+            });
+        }
+    }
+
+    ~ThreadPool()
+    {
+        m_stop = true;
+
+        m_cv.notify_all();
+
+        for (auto &thread : m_threads) {
+            thread.join();
+        }
+    }
+
+    bool enqueue(std::string task)
+    {
+        if (m_pfs.m_found_password) {
+            return true;
+        }
+
+        {
+            std::unique_lock<std::mutex> lock(m_queue_mutex);
+            m_cv_not_full.wait(lock, [this]{ return m_tasks.size() < m_max_tasks_size; });
+            m_tasks.emplace(std::move(task));
+        }
+        m_cv.notify_one();
+
+        return false;
+    }
+
+public:
+    PasswordFinderState &m_pfs;
+private:
+    std::vector<std::thread> m_threads;
+
+    std::queue<std::string> m_tasks;
+
+    size_t m_max_tasks_size{1000};
+    std::mutex m_queue_mutex;
+
+    std::condition_variable m_cv;
+    std::condition_variable m_cv_not_full;
+
+    std::atomic<bool> m_stop{false};
+};
+
+bool try_inserts(ThreadPool &pool, std::string test_string, size_t c_depth, size_t max_depth)
 {
-    for (char insert_c : pfs.m_insert_chars) {
+    if (pool.m_pfs.m_found_password) {
+        return true;
+    }
+    for (char insert_c : pool.m_pfs.m_insert_chars) {
         // Replace
-        for (size_t replace_i = 0; replace_i < test_string.size(); replace_i++) {
-            std::string password_iteration = test_string;
-            password_iteration[replace_i] = insert_c;
-            if (test_password(pfs, password_iteration)) {
-                return true;
-            }
-            if (c_depth < max_depth) {
-                if (try_inserts(pfs, password_iteration, c_depth + 1, max_depth)) {
-                    return true;
+        if (pool.m_pfs.m_replace_chars) {
+            for (size_t replace_i = 0; replace_i < test_string.size(); replace_i++) {
+                std::string password_iteration = test_string;
+                password_iteration[replace_i] = insert_c;
+                pool.enqueue(password_iteration);
+                if (c_depth < max_depth) {
+                    if (try_inserts(pool, password_iteration, c_depth + 1, max_depth)) {
+                        return true;
+                    }
                 }
             }
         }
@@ -245,11 +344,11 @@ bool try_inserts(PasswordFinderState &pfs, std::string test_string, size_t c_dep
         for (size_t insert_i = 0; insert_i <= test_string.size(); insert_i++) {
             std::string password_iteration = test_string;
             password_iteration.insert(insert_i, 1, insert_c);
-            if (test_password(pfs, password_iteration)) {
-                return true;
+            if (c_depth >= pool.m_pfs.m_min_inserts) {
+                pool.enqueue(password_iteration);
             }
             if (c_depth < max_depth) {
-                if (try_inserts(pfs, password_iteration, c_depth + 1, max_depth)) {
+                if (try_inserts(pool, password_iteration, c_depth + 1, max_depth)) {
                     return true;
                 }
             }
@@ -424,6 +523,9 @@ int mpbf(ArgsManager& args)
 
     auto start = std::chrono::high_resolution_clock::now();
 
+
+    ThreadPool pool(pfs);
+
     std::set<std::string> try_passwords;
     try_passwords.insert(password_try);
 
@@ -451,7 +553,7 @@ int mpbf(ArgsManager& args)
     // Try password as entered first
     std::string empty_pwd;
     if (!test_password(pfs, empty_pwd) && !test_password(pfs, password_try)) {
-        try_inserts(pfs, password_try, 1, pfs.m_max_inserts);
+        try_inserts(pool, password_try, 1, pfs.m_max_inserts);
     }
 
     for (const auto &c_pwd_try : try_passwords) {
@@ -483,18 +585,18 @@ int mpbf(ArgsManager& args)
                 }
 
                 tfm::format(std::cout, "password_current %s\n", password_current);
-                if (test_password(pfs, password_current)) {
+                if (pool.enqueue(password_current)) {
                     break;
                 }
-                if (try_inserts(pfs, password_current, 1, pfs.m_max_inserts)) {
+                if (try_inserts(pool, password_current, 1, pfs.m_max_inserts)) {
                     break;
                 }
             }
         } else {
-            if (test_password(pfs, c_pwd_try)) {
+            if (pool.enqueue(c_pwd_try)) {
                 break;
             }
-            if (try_inserts(pfs, c_pwd_try, 1, pfs.m_max_inserts)) {
+            if (try_inserts(pool, c_pwd_try, 1, pfs.m_max_inserts)) {
                 break;
             }
         }
