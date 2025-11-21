@@ -141,6 +141,7 @@ static void SetupWalletToolArgs(ArgsManager& argsman)
     argsman.AddArg("-dropchars=<n>", "Maximum number of charcters to drop from password (default: 0).", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
     argsman.AddArg("-replacechars=<bool>", "Replace chars in the input password with insertchars (default: true).", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
     argsman.AddArg("-startat=<n>", "Base password offset to start from (default: 0).", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
+    argsman.AddArg("-insertfrom=<n>", "Insert chars from offset (default: 0).", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
 }
 
 static std::optional<int> WalletAppInit(ArgsManager& args, int argc, char* argv[])
@@ -221,6 +222,7 @@ public:
         m_num_drop_chars = m_args.GetIntArg("-dropchars", 0);
         m_start_at = m_args.GetIntArg("-startat", 0);
         m_bip44_id = (uint32_t)Params().BIP44ID();
+        m_insert_from = m_args.GetIntArg("-insertfrom", 0);
     };
     ArgsManager &m_args;
     std::string m_mnemonic;
@@ -240,6 +242,7 @@ public:
     uint64_t m_start_at{0};
     bool m_pubkey_set{false};
     CPubKey m_target_pubkey;
+    uint32_t m_insert_from{0};
 };
 
 bool test_password(PasswordFinderState &pfs, const std::string &password_iteration)
@@ -416,7 +419,7 @@ bool try_inserts(ThreadPool &pool, std::string test_string, size_t c_depth, size
         std::set<std::string> set_found;
         for (const auto &c_string : v_found[i % 2]) {
             for (char insert_c : pool.m_pfs.m_insert_chars) {
-                for (size_t insert_i = 0; insert_i <= c_string.size(); insert_i++) {
+                for (size_t insert_i = pool.m_pfs.m_insert_from; insert_i <= c_string.size(); insert_i++) {
                     if (pool.m_pfs.m_found_password) {
                         return true;
                     }
