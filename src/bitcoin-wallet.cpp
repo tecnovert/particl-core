@@ -44,6 +44,13 @@
 const std::function<std::string(const char*)> G_TRANSLATION_FUN = nullptr;
 UrlDecodeFn* const URL_DECODE = nullptr;
 
+
+void print_ts(const std::string &message) {
+    static std::mutex cout_mutex;
+    std::lock_guard<std::mutex> lock{cout_mutex};
+    puts(message.c_str());
+}
+
 std::vector<std::string> character_options = {
     // *
     " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~",
@@ -62,7 +69,6 @@ std::vector<std::string> character_options = {
     // s
     " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~",
 };
-
 
 bool get_char_options(std::string **s, char c)
 {
@@ -135,8 +141,6 @@ static void SetupWalletToolArgs(ArgsManager& argsman)
     argsman.AddArg("-dropchars=<n>", "Maximum number of charcters to drop from password (default: 0).", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
     argsman.AddArg("-replacechars=<bool>", "Replace chars in the input password with insertchars (default: true).", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
     argsman.AddArg("-startat=<n>", "Base password offset to start from (default: 0).", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
-
-
 }
 
 static std::optional<int> WalletAppInit(ArgsManager& args, int argc, char* argv[])
@@ -243,11 +247,11 @@ bool test_password(PasswordFinderState &pfs, const std::string &password_iterati
     pfs.m_num_tests++;
 
     if (pfs.m_num_tests % 1000 == 0) {
-        tfm::format(std::cout, "Passwords tried: %d\n", pfs.m_num_tests);
+        print_ts(tfm::format("Passwords tried: %d", pfs.m_num_tests));
     }
 
     if (pfs.m_print_to_console) {
-        tfm::format(std::cout, "\"%s\"\n", password_iteration);
+        print_ts(tfm::format("\"%s\"", password_iteration));
         //tfm::format(std::cout, "t: %d - \"%s\"\n", std::this_thread::get_id(), password_iteration);
     }
     std::vector<uint8_t> seed;
@@ -297,9 +301,9 @@ bool test_password(PasswordFinderState &pfs, const std::string &password_iterati
         if (found) {
             pfs.m_found_password = true;
             if (password_iteration.empty()) {
-                tfm::format(std::cout, "Found without password, key number %d\n", i);
+                print_ts(tfm::format("Found without password, key number %d", i));
             } else {
-                tfm::format(std::cout, "Found password: %s, key number %d\n", password_iteration, i);
+                print_ts(tfm::format("Found password: %s, key number %d", password_iteration, i));
             }
             return true;
         }
@@ -347,16 +351,23 @@ public:
 
     ~ThreadPool()
     {
+        stop();
+    }
+
+    void stop()
+    {
         m_stop = true;
 
         m_cv.notify_all();
 
-        for (auto &thread : m_threads) {
-            thread.join();
+        for (auto &t : m_threads) {
+            if (t.joinable()) {
+                t.join();
+            }
         }
     }
 
-    bool enqueue(std::string task)
+    bool enqueue(const std::string &task)
     {
         if (m_pfs.m_found_password) {
             return true;
@@ -365,7 +376,8 @@ public:
         {
             std::unique_lock<std::mutex> lock(m_queue_mutex);
             m_cv_not_full.wait(lock, [this]{ return m_tasks.size() < m_max_tasks_size; });
-            m_tasks.emplace(std::move(task));
+            //m_tasks.emplace(std::move(task));
+            m_tasks.push(task);
         }
         m_cv.notify_one();
 
@@ -396,6 +408,35 @@ bool try_inserts(ThreadPool &pool, std::string test_string, size_t c_depth, size
     if (pool.m_pfs.m_found_password) {
         return true;
     }
+
+    std::vector<std::string> v_found[2];
+    v_found[0].push_back(test_string);
+    for (size_t i = 0; i < max_depth; ++i) {
+        v_found[(i+1) % 2].clear();
+        std::set<std::string> set_found;
+        for (const auto &c_string : v_found[i % 2]) {
+            for (char insert_c : pool.m_pfs.m_insert_chars) {
+                for (size_t insert_i = 0; insert_i <= c_string.size(); insert_i++) {
+                    if (pool.m_pfs.m_found_password) {
+                        return true;
+                    }
+                    std::string password_iteration = c_string;
+                    password_iteration.insert(insert_i, 1, insert_c);
+
+                    if (set_found.find(password_iteration) != set_found.end()) {
+                        continue;
+                    }
+                    if (i >= pool.m_pfs.m_min_inserts - 1) {
+                        pool.enqueue(password_iteration);
+                    }
+                    set_found.insert(password_iteration);
+                    v_found[(i+1) % 2].push_back(password_iteration);
+                }
+            }
+        }
+    }
+
+    /*
     for (char insert_c : pool.m_pfs.m_insert_chars) {
         // Replace
         if (pool.m_pfs.m_replace_chars) {
@@ -425,6 +466,7 @@ bool try_inserts(ThreadPool &pool, std::string test_string, size_t c_depth, size
             }
         }
     }
+    */
     return false;
 }
 
@@ -621,9 +663,6 @@ int mpbf(ArgsManager& args)
     tfm::format(std::cout, "Trying %d base password combination%s.\n", max_combinations, max_combinations == 1 ? "" : "s");
     tfm::format(std::cout, "Starting from %d (-startat).\n", pfs.m_start_at);
 
-
-
-
     // Try empty password
     std::string empty_pwd;
     test_password(pfs, empty_pwd);
@@ -632,7 +671,7 @@ int mpbf(ArgsManager& args)
     for (uint64_t ti = pfs.m_start_at; ti < max_combinations; ti++) {
 
         if (ti && ti % 1000 == 0) {
-            tfm::format(std::cout, "Base password offset %d.\n", ti);
+            print_ts(tfm::format("Base password offset %d.", ti));
         }
         if (pfs.m_found_password) {
             break;
@@ -700,7 +739,7 @@ int mpbf(ArgsManager& args)
             if (case_changeable_chars.size()) {
                 size_t nc = case_changeable_chars.size();
                 size_t max_case_combinations = ipow(2, nc);
-                tfm::format(std::cout, "Trying %d case combinations.\n", max_case_combinations);
+                print_ts(tfm::format("Trying %d case combinations.", max_case_combinations));
                 for (size_t icc = 0; icc < max_case_combinations; icc++) {
                     std::string password_current = c_pwd_try;
                     for (size_t ic = 0; ic < case_changeable_chars.size(); ic++) {
@@ -712,7 +751,7 @@ int mpbf(ArgsManager& args)
                     //     continue;
                     // }
 
-                    tfm::format(std::cout, "password_current %s\n", password_current);
+                    //print_ts(tfm::format("password_current %s", password_current));
                     if (pool.enqueue(password_current)) {
                         break;
                     }
@@ -721,6 +760,7 @@ int mpbf(ArgsManager& args)
                     }
                 }
             } else {
+                //print_ts(tfm::format("c_pwd_try %s", c_pwd_try));
                 if (pool.enqueue(c_pwd_try)) {
                     break;
                 }
@@ -732,6 +772,9 @@ int mpbf(ArgsManager& args)
     }
 
     std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start;
+
+    pool.stop();
+
     tfm::format(std::cout, "Tried: %d combinations in %d seconds\n", pfs.m_num_tests, elapsed.count());
 
     if (pfs.m_found_password) {
