@@ -125,6 +125,7 @@ static void SetupWalletToolArgs(ArgsManager& argsman)
     argsman.AddCommand("mpbf", "Mnemonic password brute forcer");
     argsman.AddArg("-btcmode", "", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
     argsman.AddArg("-targetaddress=<address>", "Target address for mpbf", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
+    argsman.AddArg("-targetpubkey=<pubkey>", "Target pubkey for mpbf", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
     argsman.AddArg("-testnumderives=<n>", "Number of addresses to derive for each test (default: 50)", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
     argsman.AddArg("-insertchars=<str>", "Characters to insert into the password", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
     argsman.AddArg("-passwordistemplate", "Password is in template format (default: false).", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
@@ -233,6 +234,8 @@ public:
     bool m_eth_mode{false};
     bool m_replace_chars{false};
     uint64_t m_start_at{0};
+    bool m_pubkey_set{false};
+    CPubKey m_target_pubkey;
 };
 
 bool test_password(PasswordFinderState &pfs, const std::string &password_iteration)
@@ -272,20 +275,26 @@ bool test_password(PasswordFinderState &pfs, const std::string &password_iterati
             tfm::format(std::cerr, "Error: epk_chain.Derive failed: %d.\n", i);
             return false;
         }
-        CKeyID id_test;
-        if (pfs.m_eth_mode) {
-            SHA3_256 sha;
-            unsigned char out[SHA3_256::OUTPUT_SIZE];
-            CPubKey pk = epk_test.pubkey;
-            pk.Decompress();
-            std::vector<uint8_t> data64(pk.begin() + 1, pk.end());
-            sha.Write(data64).Finalize_keccak256(out);
-            memcpy(id_test.data(), out + 12, 20);
+        bool found{false};
+        if (pfs.m_pubkey_set){
+            found = epk_test.pubkey == pfs.m_target_pubkey;
         } else {
-            id_test = epk_test.pubkey.GetID();
+            CKeyID id_test;
+            if (pfs.m_eth_mode) {
+                SHA3_256 sha;
+                unsigned char out[SHA3_256::OUTPUT_SIZE];
+                CPubKey pk = epk_test.pubkey;
+                pk.Decompress();
+                std::vector<uint8_t> data64(pk.begin() + 1, pk.end());
+                sha.Write(data64).Finalize_keccak256(out);
+                memcpy(id_test.data(), out + 12, 20);
+            } else {
+                id_test = epk_test.pubkey.GetID();
+            }
+            found = id_test == pfs.m_id_find;
         }
 
-        if (id_test == pfs.m_id_find) {
+        if (found) {
             pfs.m_found_password = true;
             if (password_iteration.empty()) {
                 tfm::format(std::cout, "Found without password, key number %d\n", i);
@@ -381,6 +390,9 @@ private:
 
 bool try_inserts(ThreadPool &pool, std::string test_string, size_t c_depth, size_t max_depth)
 {
+    if (c_depth > max_depth) {
+        return false;
+    }
     if (pool.m_pfs.m_found_password) {
         return true;
     }
@@ -538,39 +550,57 @@ int mpbf(ArgsManager& args)
     }
     tfm::format(std::cout, "insert_chars: %s\n", pfs.m_insert_chars);
 
+
+    if (gArgs.IsArgSet("-targetpubkey")) {
+        if (gArgs.IsArgSet("-targetaddress")) {
+            tfm::format(std::cerr, "Error: targetaddress and targetpubkey both set.\n");
+            return EXIT_FAILURE;
+        }
+        std::string target_pubkey = gArgs.GetArg("-targetpubkey", "");
+        pfs.m_pubkey_set = true;
+        std::vector<uint8_t> v = ParseHex(target_pubkey);
+        if (v.size() != 33) {
+            tfm::format(std::cerr, "Error: Invalid pubkey size.\n");
+            return EXIT_FAILURE;
+        }
+        pfs.m_target_pubkey = CPubKey(v.begin(), v.end());
+    } else
     if (gArgs.IsArgSet("-targetaddress")) {
         target_address = gArgs.GetArg("-targetaddress", "");
     } else {
         tfm::format(std::cout, "Enter target address:\n");
         std::getline(std::cin, target_address);
     }
-    tfm::format(std::cout, "target_address: %s\n", target_address);
 
-    if (target_address.size() == 42 && target_address.starts_with("0x")) {
-        // eth address
-        std::vector<uint8_t> id_data = ParseHex(target_address.substr(2));
-        if (id_data.size() != 20) {
-            tfm::format(std::cerr, "Error: Invalid target eth address.\n");
-            return EXIT_FAILURE;
-        }
-
-        std::string str_data = target_address.substr(2);
-        memcpy(pfs.m_id_find.data(), id_data.data(), id_data.size());
-        pfs.m_bip44_id = WithHardenedBit(60);
-        pfs.m_eth_mode = true;
+    if (pfs.m_pubkey_set) {
+        tfm::format(std::cout, "target_pubkey: %s\n", HexStr(pfs.m_target_pubkey));
     } else {
-        CTxDestination dest = DecodeDestination(target_address);
-        if (!IsValidDestination(dest)) {
-            tfm::format(std::cerr, "Error: Invalid target address.\n");
-            return EXIT_FAILURE;
-        }
-        if (!std::holds_alternative<PKHash>(dest)) {
-            tfm::format(std::cerr, "Error: target address must be a legacy address.\n");
-            return EXIT_FAILURE;
-        }
-        pfs.m_id_find = ToKeyID(std::get<PKHash>(dest));
-    }
+        tfm::format(std::cout, "target_address: %s\n", target_address);
+        if (target_address.size() == 42 && target_address.starts_with("0x")) {
+            // eth address
+            std::vector<uint8_t> id_data = ParseHex(target_address.substr(2));
+            if (id_data.size() != 20) {
+                tfm::format(std::cerr, "Error: Invalid target eth address.\n");
+                return EXIT_FAILURE;
+            }
 
+            std::string str_data = target_address.substr(2);
+            memcpy(pfs.m_id_find.data(), id_data.data(), id_data.size());
+            pfs.m_bip44_id = WithHardenedBit(60);
+            pfs.m_eth_mode = true;
+        } else {
+            CTxDestination dest = DecodeDestination(target_address);
+            if (!IsValidDestination(dest)) {
+                tfm::format(std::cerr, "Error: Invalid target address.\n");
+                return EXIT_FAILURE;
+            }
+            if (!std::holds_alternative<PKHash>(dest)) {
+                tfm::format(std::cerr, "Error: target address must be a legacy address.\n");
+                return EXIT_FAILURE;
+            }
+            pfs.m_id_find = ToKeyID(std::get<PKHash>(dest));
+        }
+    }
 
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -590,6 +620,13 @@ int mpbf(ArgsManager& args)
 
     tfm::format(std::cout, "Trying %d base password combination%s.\n", max_combinations, max_combinations == 1 ? "" : "s");
     tfm::format(std::cout, "Starting from %d (-startat).\n", pfs.m_start_at);
+
+
+
+
+    // Try empty password
+    std::string empty_pwd;
+    test_password(pfs, empty_pwd);
 
     ThreadPool pool(pfs);
     for (uint64_t ti = pfs.m_start_at; ti < max_combinations; ti++) {
@@ -640,12 +677,12 @@ int mpbf(ArgsManager& args)
             }
             drop_chars(lc_password, 1, 2);
         }
-
+        /*
         // Try password as entered first
-        std::string empty_pwd;
-        if (!test_password(pfs, empty_pwd) && !test_password(pfs, password_try)) {
+        if (!test_password(pfs, password_try)) {
             try_inserts(pool, password_try, 1, pfs.m_max_inserts);
         }
+        */
 
         for (const auto &c_pwd_try : try_passwords) {
             if (pfs.m_found_password) {
@@ -671,9 +708,9 @@ int mpbf(ArgsManager& args)
                         char c = password_current[case_changeable_chars[ic]];
                         password_current[case_changeable_chars[ic]] = upper_case ? ToUpper(c) : ToLower(c);
                     }
-                    if (password_current == password_try) {
-                        continue;
-                    }
+                    // if (password_current == password_try) {
+                    //     continue;
+                    // }
 
                     tfm::format(std::cout, "password_current %s\n", password_current);
                     if (pool.enqueue(password_current)) {
