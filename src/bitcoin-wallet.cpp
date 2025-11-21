@@ -223,6 +223,7 @@ public:
         m_start_at = m_args.GetIntArg("-startat", 0);
         m_bip44_id = (uint32_t)Params().BIP44ID();
         m_insert_from = m_args.GetIntArg("-insertfrom", 0);
+        m_bip44_account_chain_path = {WithHardenedBit(44) /* purpose */, m_bip44_id /* coin */, WithHardenedBit(0) /* account */, 0 /* chain */};
     };
     ArgsManager &m_args;
     std::string m_mnemonic;
@@ -243,6 +244,7 @@ public:
     bool m_pubkey_set{false};
     CPubKey m_target_pubkey;
     uint32_t m_insert_from{0};
+    std::vector<uint32_t> m_bip44_account_chain_path;
 };
 
 bool test_password(PasswordFinderState &pfs, const std::string &password_iteration)
@@ -259,7 +261,6 @@ bool test_password(PasswordFinderState &pfs, const std::string &password_iterati
     }
     std::vector<uint8_t> seed;
     // purpose'/coin_type'/account'/chain/nkey
-    std::vector<uint32_t> bip44_account_chain_path {WithHardenedBit(44), pfs.m_bip44_id, WithHardenedBit(0), 0};
     if (0 != mnemonic::ToSeed(pfs.m_mnemonic, password_iteration, seed)) {
         tfm::format(std::cerr, "Error: mnemonic::ToSeed failed.\n");
         return false;
@@ -268,7 +269,7 @@ bool test_password(PasswordFinderState &pfs, const std::string &password_iterati
     ekp.SetSeed(seed.data(), seed.size());
 
     CExtKey vkOut, vkWork = ekp.GetExtKey();
-    for (auto chain_node : bip44_account_chain_path) {
+    for (auto chain_node : pfs.m_bip44_account_chain_path) {
         if (!vkWork.Derive(vkOut, chain_node)) {
             tfm::format(std::cerr, "Error: CExtKey Derive failed.\n");
             return false;
@@ -717,7 +718,7 @@ int mpbf(ArgsManager& args)
             for (auto c : password_try) {
                 lc_password += ToLower(c);
             }
-            drop_chars(lc_password, 1, 2);
+            drop_chars(lc_password, 1, pfs.m_num_drop_chars);
         }
         /*
         // Try password as entered first
