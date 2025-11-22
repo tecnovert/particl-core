@@ -223,6 +223,7 @@ public:
         m_start_at = m_args.GetIntArg("-startat", 0);
         m_bip44_id = (uint32_t)Params().BIP44ID();
         m_insert_from = m_args.GetIntArg("-insertfrom", 0);
+        m_bip44_account_path = {WithHardenedBit(44) /* purpose */, m_bip44_id /* coin */, WithHardenedBit(0) /* account */};
         m_bip44_account_chain_path = {WithHardenedBit(44) /* purpose */, m_bip44_id /* coin */, WithHardenedBit(0) /* account */, 0 /* chain */};
     };
     ArgsManager &m_args;
@@ -242,9 +243,11 @@ public:
     bool m_replace_chars{false};
     uint64_t m_start_at{0};
     bool m_pubkey_set{false};
+    bool m_find_account_hash{false};
     CPubKey m_target_pubkey;
     uint32_t m_insert_from{0};
     std::vector<uint32_t> m_bip44_account_chain_path;
+    std::vector<uint32_t> m_bip44_account_path;
 };
 
 bool test_password(PasswordFinderState &pfs, const std::string &password_iteration)
@@ -269,12 +272,26 @@ bool test_password(PasswordFinderState &pfs, const std::string &password_iterati
     ekp.SetSeed(seed.data(), seed.size());
 
     CExtKey vkOut, vkWork = ekp.GetExtKey();
-    for (auto chain_node : pfs.m_bip44_account_chain_path) {
+
+    const auto &path = pfs.m_find_account_hash ? pfs.m_bip44_account_path : pfs.m_bip44_account_chain_path;
+    for (auto chain_node : path) {
         if (!vkWork.Derive(vkOut, chain_node)) {
             tfm::format(std::cerr, "Error: CExtKey Derive failed.\n");
             return false;
         }
         vkWork = vkOut;
+    }
+    if (pfs.m_find_account_hash) {
+        CKeyID id_test = vkWork.key.GetPubKey().GetID();
+        if (id_test == pfs.m_id_find) {
+            pfs.m_found_password = true;
+            if (password_iteration.empty()) {
+                print_ts(tfm::format("Found without password, acc hash"));
+            } else {
+                print_ts(tfm::format("Found password: %s, acc hash", password_iteration));
+            }
+            return true;
+        }
     }
 
     CExtPubKey epk_test, epk_chain = vkWork.Neutered();
@@ -622,6 +639,13 @@ int mpbf(ArgsManager& args)
         tfm::format(std::cout, "target_pubkey: %s\n", HexStr(pfs.m_target_pubkey));
     } else {
         tfm::format(std::cout, "target_address: %s\n", target_address);
+
+        CBitcoinAddress addr;
+        if (addr.SetString(target_address)
+            && addr.IsValid(CChainParams::EXT_ACC_HASH)) {
+            addr.GetKeyID(pfs.m_id_find, CChainParams::EXT_ACC_HASH);
+            pfs.m_find_account_hash = true;
+        } else
         if (target_address.size() == 42 && target_address.starts_with("0x")) {
             // eth address
             std::vector<uint8_t> id_data = ParseHex(target_address.substr(2));
