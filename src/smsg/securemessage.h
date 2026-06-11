@@ -44,6 +44,11 @@ public:
         return version[0] == 3;
     }
 
+    bool IsPurged() const
+    {
+        return version[0] == 0 && version[1] == 0;
+    }
+
     void set(const uint8_t *data)
     {
         size_t ofs = 0;
