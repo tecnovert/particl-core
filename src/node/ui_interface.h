@@ -10,6 +10,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <vector>
 
 class CBlockIndex;
 enum class SynchronizationState;

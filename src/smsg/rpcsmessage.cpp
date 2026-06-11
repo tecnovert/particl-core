@@ -2587,8 +2587,21 @@ static RPCHelpMan smsgimport()
     }
 
     std::vector<uint8_t> vsmsg = ParseHex(str_msg.c_str());
+    if (vsmsg.size() < smsg::SMSG_HDR_LEN) {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "msg too short");
+    }
+
     smsg::SecureMessage smsg(vsmsg.data());
     smsg.pPayload = vsmsg.data() + smsg::SMSG_HDR_LEN;
+    if (smsg.nPayload < smsg::SMSG_MIN_CIPERTEXT_SIZE) {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Smsg payload size too low");
+    }
+    if (smsg.nPayload > smsg::SMSG_MAX_MSG_WORST_PAID) {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Smsg payload size too high");
+    }
+    if (smsg.nPayload != vsmsg.size() - smsg::SMSG_HDR_LEN) {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Mismatched smsg payload size");
+    }
 
     UniValue result(UniValue::VOBJ);
     std::string str_error;
