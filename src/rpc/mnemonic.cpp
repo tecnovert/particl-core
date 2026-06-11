@@ -43,7 +43,7 @@ UniValue mnemonicrpc(const JSONRPCRequest &request)
         "\nExamples:\n"
         + HelpExampleCli("mnemonic", "\"new\" \"my pass phrase\" french 64 true") +
         "\nAs a JSON-RPC call\n"
-        + HelpExampleRpc("smsgpurge", "\"new\", \"my pass phrase\", french, 64, true");
+        + HelpExampleRpc("mnemonic", "\"new\", \"my pass phrase\", french, 64, true");
 
     if (request.fHelp || request.params.size() > 5) { // defaults to info, will always take at least 1 parameter
         throw std::runtime_error(help);

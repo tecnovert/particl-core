@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <string>
+#include <cstdint>
 
 /**
  * CBaseChainParams defines the base parameters (shared between bitcoin-cli and bitcoind)

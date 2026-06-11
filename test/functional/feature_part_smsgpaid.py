@@ -429,8 +429,11 @@ class SmsgPaidTest(ParticlTestFramework):
 
         self.sync_mempools([nodes[0], nodes[1]])
         self.stakeBlocks(1, nStakeNode=1)
+        self.waitForSmsgExchange(20, 1, 0, count_purged=True)
+        ro = nodes[0].smsgbuckets()
+        assert (ro['total']['messages'] == 19)
+        assert (ro['total']['numpurged'] == 1)
 
-        self.waitForSmsgExchange(20, 1, 0)
         inb = nodes[1].smsginbox()
         assert(len(inb['messages']) == 13)
 

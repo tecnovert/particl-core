@@ -39,7 +39,7 @@ public:
         fKeySet = false;
     }
 
-    bool SetKey(const std::vector<uint8_t> &vchNewKey, const uint8_t *chNewIV);
+    bool SetKey(const std::vector<uint8_t, secure_allocator<unsigned char>> &vchNewKey, const uint8_t *chNewIV);
     bool SetKey(const uint8_t *chNewKey, const uint8_t *chNewIV);
     bool Encrypt(const uint8_t *chPlaintext,  uint32_t nPlain,  std::vector<uint8_t> &vchCiphertext);
     bool Decrypt(const uint8_t *chCiphertext, uint32_t nCipher, std::vector<uint8_t> &vchPlaintext);

@@ -13,7 +13,7 @@
 #include <stdint.h>
 
 
-bool SecMsgCrypter::SetKey(const std::vector<uint8_t> &vchNewKey, const uint8_t *chNewIV)
+bool SecMsgCrypter::SetKey(const std::vector<uint8_t, secure_allocator<unsigned char>> &vchNewKey, const uint8_t *chNewIV)
 {
     if (vchNewKey.size() != SMSG_CRYPTO_KEY_SIZE)
         return false;
