@@ -50,7 +50,7 @@ static RPCHelpMan mnemonicrpc()
     RPCResult{RPCResult::Type::ANY, "", ""},
     RPCExamples{
         HelpExampleCli("mnemonic", "\"new\" \"my pass phrase\" french 64 true") +
-        HelpExampleRpc("smsgpurge", "\"new\", \"my pass phrase\", french, 64, true")
+        HelpExampleRpc("mnemonic", "\"new\", \"my pass phrase\", french, 64, true")
         },
     [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {

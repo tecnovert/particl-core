@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2025 The Particl Core developers
+// Copyright (c) 2017-2026 The Particl Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -9,6 +9,7 @@
 
 #include <net.h>
 #include <smsg/smessage.h>
+#include <smsg/crypter.h>
 #ifdef ENABLE_WALLET
 #include <wallet/hdwallet.h>
 #include <wallet/test/util.h>
@@ -41,6 +42,26 @@ BOOST_AUTO_TEST_CASE(smsg_test_ckeyId_inits_null)
 {
     CKeyID k;
     BOOST_CHECK(k.IsNull());
+}
+
+BOOST_AUTO_TEST_CASE(smsg_test_encryption)
+{
+    CKey key_e;
+    uint8_t iv[16];
+    std::vector<unsigned char, secure_allocator<unsigned char>> key_data(32);
+    std::vector<unsigned char> plaintext, ciphertext;
+    SecMsgCrypter crypter;
+    InsecureNewKey(key_e, true);
+    InsecureRandBytes(iv, sizeof(iv));
+    memcpy(key_data.data(), key_e.data(), 32);
+    crypter.SetKey(key_data, iv);
+    plaintext.resize(1);
+    plaintext[0] = 'a';
+
+    crypter.Encrypt(plaintext.data(), plaintext.size(), ciphertext);
+    BOOST_CHECK(ciphertext.size() == smsg::SMSG_MIN_CIPERTEXT_SIZE);
+    crypter.Decrypt(ciphertext.data(), ciphertext.size(), plaintext);
+    BOOST_CHECK(plaintext.size() == 1);
 }
 
 #ifdef ENABLE_WALLET

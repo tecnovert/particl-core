@@ -9,6 +9,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <cstdint>
 
 class CBlockIndex;
 enum class SynchronizationState;

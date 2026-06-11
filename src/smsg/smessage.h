@@ -1,5 +1,5 @@
 // Copyright (c) 2014-2016 The ShadowCoin developers
-// Copyright (c) 2017-2025 The Particl Core developers
+// Copyright (c) 2017-2026 The Particl Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -80,6 +80,7 @@ enum SecureMessageCodes {
 
 const uint32_t SMSG_HDR_LEN        = 108;               // length of unencrypted header, 4 + 4 + 2 + 1 + 8 + 4 + 16 + 33 + 32 + 4
 const uint32_t SMSG_PL_HDR_LEN     = 1+20+65+4;         // length of encrypted header in payload
+const uint32_t SMSG_MIN_CIPERTEXT_SIZE = 16;
 
 extern uint32_t SMSG_BUCKET_LEN;                        // seconds
 extern uint32_t SMSG_SECONDS_IN_DAY;
@@ -104,7 +105,8 @@ const uint32_t SMSG_MAX_MSG_BYTES_PAID = 512 * 1024;    // the user input part (
 
 // Max size of payload worst case compression
 const uint32_t SMSG_MAX_MSG_WORST = LZ4_COMPRESSBOUND(SMSG_MAX_MSG_BYTES+SMSG_PL_HDR_LEN);
-const uint32_t SMSG_MAX_MSG_WORST_PAID = LZ4_COMPRESSBOUND(SMSG_MAX_MSG_BYTES_PAID+SMSG_PL_HDR_LEN);
+const uint32_t SMSG_MAX_MSG_WORST_PAID = LZ4_COMPRESSBOUND(SMSG_MAX_MSG_BYTES_PAID+SMSG_PL_HDR_LEN) + 32;  // +32 for funding txid
+static_assert(SMSG_MAX_MSG_WORST_PAID >= SMSG_MAX_MSG_BYTES_PAID+SMSG_PL_HDR_LEN, "Bad SMSG_MAX_MSG_WORST_PAID size");
 
 extern const std::string STORE_DIR;
 
@@ -492,7 +494,12 @@ public:
     int64_t m_last_changed = 0;  // Updated whenever a message is stored
     int64_t nLastProcessedPurged = 0;
     CAmount m_absurd_smsg_fee = 500 * COIN;
-    uint16_t m_smsg_max_receive_count = SMSG_DEFAULT_MAXRCV;
+
+    uint16_t m_smsg_max_receive_count{SMSG_DEFAULT_MAXRCV};
+    int64_t m_bantime{SMSG_DEFAULT_BANTIME};
+    bool m_addnewkeys{false};
+    std::string m_notify_cmd;
+    fs::path m_smsg_storedir;
 
     std::map<int64_t, int64_t> m_show_requests;
 

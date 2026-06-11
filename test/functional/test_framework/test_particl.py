@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2017-2023 The Particl Core developers
+# Copyright (c) 2017-2026 The Particl Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -131,14 +131,17 @@ class ParticlTestFramework(BitcoinTestFramework):
                 continue
         return False
 
-    def waitForSmsgExchange(self, nMessages, nodeA, nodeB):
+    def waitForSmsgExchange(self, nMessages, nodeA, nodeB, count_purged=False):
         nodes = self.nodes
 
         fPass = False
         for i in range(30):
             time.sleep(0.5)
             ro = nodes[nodeA].smsgbuckets()
-            if ro['total']['messages'] == nMessages:
+            total_messages = ro['total']['messages']
+            if count_purged:
+                total_messages += ro['total'].get("numpurged", 0)
+            if total_messages == nMessages:
                 fPass = True
                 break
         assert (fPass)
@@ -147,7 +150,10 @@ class ParticlTestFramework(BitcoinTestFramework):
         for i in range(30):
             time.sleep(0.5)
             ro = nodes[nodeB].smsgbuckets()
-            if ro['total']['messages'] == nMessages:
+            total_messages = ro['total']['messages']
+            if count_purged:
+                total_messages += ro['total'].get("numpurged", 0)
+            if total_messages == nMessages:
                 fPass = True
                 break
         assert (fPass)
