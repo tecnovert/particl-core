@@ -56,6 +56,7 @@ struct secure_allocator {
 // This is exactly like std::string, but with a custom allocator.
 // TODO: Consider finding a way to make incoming RPC request.params[i] mlock()ed as well
 typedef std::basic_string<char, std::char_traits<char>, secure_allocator<char> > SecureString;
+typedef std::basic_string<char32_t, std::char_traits<char32_t>, secure_allocator<char32_t> > SecureU32String;
 
 template<typename T>
 struct SecureUniqueDeleter {

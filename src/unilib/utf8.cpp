@@ -51,21 +51,21 @@ bool utf8::valid(const char* str, size_t len) {
   return true;
 }
 
-void utf8::decode(const char* str, std::u32string& decoded) {
+void utf8::decode(const char* str, U32String& decoded) {
   decoded.clear();
 
   for (char32_t chr; (chr = decode(str)); )
     decoded.push_back(chr);
 }
 
-void utf8::decode(const char* str, size_t len, std::u32string& decoded) {
+void utf8::decode(const char* str, size_t len, U32String& decoded) {
   decoded.clear();
 
   while (len)
     decoded.push_back(decode(str, len));
 }
 
-void utf8::encode(const std::u32string& str, std::string& encoded) {
+void utf8::encode(const U32String& str, String& encoded) {
   encoded.clear();
 
   for (auto&& chr : str)

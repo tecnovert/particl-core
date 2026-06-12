@@ -15,25 +15,25 @@
 namespace ufal {
 namespace unilib {
 
-void uninorms::nfc(std::u32string& str) {
+void uninorms::nfc(U32String& str) {
   decompose(str, false);
   compose(str);
 }
 
-void uninorms::nfd(std::u32string& str) {
+void uninorms::nfd(U32String& str) {
   decompose(str, false);
 }
 
-void uninorms::nfkc(std::u32string& str) {
+void uninorms::nfkc(U32String& str) {
   decompose(str, true);
   compose(str);
 }
 
-void uninorms::nfkd(std::u32string& str) {
+void uninorms::nfkd(U32String& str) {
   decompose(str, true);
 }
 
-void uninorms::compose(std::u32string& str) {
+void uninorms::compose(U32String& str) {
   size_t old, com;
   for (old = 0, com = 0; old < str.size(); old++, com++) {
     str[com] = str[old];
@@ -81,7 +81,7 @@ void uninorms::compose(std::u32string& str) {
   if (com < old) str.resize(com);
 }
 
-void uninorms::decompose(std::u32string& str, bool kompatibility) {
+void uninorms::decompose(U32String& str, bool kompatibility) {
   // Count how much additional space do we need.
   bool any_decomposition = false;
   size_t additional = 0;

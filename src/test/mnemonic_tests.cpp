@@ -28,13 +28,15 @@ const char *mnemonic_2 = "zoologie ficeler xénon voyelle village viande vignet
 
 BOOST_AUTO_TEST_CASE(mnemonic_test)
 {
-    std::string words = mnemonic_1;
+    SecureString words = mnemonic_1;
     std::string expect_seed = "1da563986981b82c17a76160934f4b532eac77e14b632c6adcf31ba4166913e063ce158164c512cdce0672cbc9256dd81e7be23a8d8eb331de1a497493c382b1";
 
-    std::vector<uint8_t> vSeed;
-    std::string password;
+    std::vector<uint8_t, secure_allocator<unsigned char>> vSeed;
+    SecureString password;
     BOOST_CHECK(0 == mnemonic::ToSeed(words, password, vSeed));
-    BOOST_CHECK(HexStr(vSeed) == expect_seed);
+
+    std::vector<uint8_t> hex_seed(vSeed.begin(), vSeed.end());
+    BOOST_CHECK(HexStr(hex_seed) == expect_seed);
 }
 
 BOOST_AUTO_TEST_CASE(mnemonic_test_fails)
@@ -43,8 +45,8 @@ BOOST_AUTO_TEST_CASE(mnemonic_test_fails)
 
     int nLanguage = -1;
     std::string sError;
-    std::vector<uint8_t> vEntropy;
-    std::string sWords = "legals winner thank year wave sausage worth useful legal winner thank yellow";
+    std::vector<uint8_t, secure_allocator<unsigned char>> vEntropy;
+    SecureString sWords = "legals winner thank year wave sausage worth useful legal winner thank yellow";
     BOOST_CHECK_MESSAGE(3 == mnemonic::Decode(nLanguage, sWords, vEntropy, sError), "MnemonicDecode: " << sError);
 
     sWords = "winner legal thank year wave sausage worth useful legal winner thank yellow";
@@ -54,19 +56,19 @@ BOOST_AUTO_TEST_CASE(mnemonic_test_fails)
 BOOST_AUTO_TEST_CASE(mnemonic_addchecksum)
 {
     std::string sError;
-    std::string sWordsIn = "abandon baby cabbage dad eager fabric gadget habit ice kangaroo lab";
-    std::string sWordsOut;
+    SecureString sWordsIn = "abandon baby cabbage dad eager fabric gadget habit ice kangaroo lab";
+    SecureString sWordsOut;
 
     BOOST_CHECK_MESSAGE(0 == mnemonic::AddChecksum(-1, sWordsIn, sWordsOut, sError), "MnemonicAddChecksum: " << sError);
 
     BOOST_CHECK_MESSAGE(sWordsOut == "abandon baby cabbage dad eager fabric gadget habit ice kangaroo lab absorb", "sWordsOut: " << sWordsOut);
 
     // Must fail, len % 3 != 0
-    std::string sWordsInFail = "abandon baby cabbage dad eager fabric gadget habit ice kangaroo";
+    SecureString sWordsInFail = "abandon baby cabbage dad eager fabric gadget habit ice kangaroo";
     BOOST_CHECK_MESSAGE(4 == mnemonic::AddChecksum(-1, sWordsInFail, sWordsOut, sError), "MnemonicAddChecksum: " << sError);
 
 
-    std::string sWordsInFrench = "zoologie ficeler xénon voyelle village viande vignette sécréter séduire torpille remède";
+    SecureString sWordsInFrench = "zoologie ficeler xénon voyelle village viande vignette sécréter séduire torpille remède";
 
     BOOST_CHECK(0 == mnemonic::AddChecksum(-1, sWordsInFrench, sWordsOut, sError));
     BOOST_CHECK(sWordsOut == mnemonic_2);
@@ -80,22 +82,22 @@ static void runTests(int nLanguage, UniValue &tests)
 
         assert(test.size() > 2);
 
-        std::string sEntropy = test[0].get_str();
-        std::string sWords = test[1].get_str();
+        SecureString sEntropy = test[0].get_str().c_str();
+        SecureString sWords = test[1].get_str().c_str();
         std::string sSeed;
-        std::string sPassphrase;
+        SecureString sPassphrase;
         if (test.size() > 3) {
-            sPassphrase = test[2].get_str();
-            sSeed = test[3].get_str();
+            sPassphrase = test[2].get_str().c_str();
+            sSeed = test[3].get_str().c_str();
         } else {
             sPassphrase = "TREZOR";
             sSeed = test[2].get_str();
         }
+        std::vector<uint8_t> entropy_in = ParseHex(sEntropy);
+        std::vector<uint8_t, secure_allocator<unsigned char>> vEntropy(entropy_in.begin(), entropy_in.end());
+        std::vector<uint8_t, secure_allocator<unsigned char>> vEntropyTest;
 
-        std::vector<uint8_t> vEntropy = ParseHex(sEntropy);
-        std::vector<uint8_t> vEntropyTest;
-
-        std::string sWordsTest;
+        SecureString sWordsTest;
         BOOST_CHECK_MESSAGE(0 == mnemonic::Encode(nLanguage, vEntropy, sWordsTest, sError), "MnemonicEncode: " << sError);
 
         BOOST_CHECK(sWords == sWordsTest);
@@ -105,10 +107,11 @@ static void runTests(int nLanguage, UniValue &tests)
         BOOST_CHECK(vEntropy == vEntropyTest);
 
         std::vector<uint8_t> vSeed = ParseHex(sSeed);
-        std::vector<uint8_t> vSeedTest;
+        std::vector<uint8_t, secure_allocator<unsigned char>> seed_check(vSeed.begin(), vSeed.end());
+        std::vector<uint8_t, secure_allocator<unsigned char>> vSeedTest;
 
         BOOST_CHECK(0 == mnemonic::ToSeed(sWords, sPassphrase, vSeedTest));
-        BOOST_CHECK(vSeed == vSeedTest);
+        BOOST_CHECK(seed_check == vSeedTest);
 
         if (test.size() > 4) {
             CExtKey58 eKey58;
@@ -187,9 +190,10 @@ BOOST_AUTO_TEST_CASE(random_issuer_test)
 
 BOOST_AUTO_TEST_CASE(shamir39_test)
 {
-    std::string error_str, words = mnemonic_1;
-    std::string words_recovered;
-    std::vector<std::string> shares_out;
+    std::string error_str;
+    SecureString words = mnemonic_1;
+    SecureString words_recovered;
+    std::vector<SecureString> shares_out;
 
     BOOST_CHECK(2 == shamir39::splitmnemonic(words, 100, 2, 2, shares_out, error_str));
     BOOST_CHECK(error_str == "Unknown language");

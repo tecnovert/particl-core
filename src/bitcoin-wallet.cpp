@@ -165,16 +165,17 @@ MAIN_FUNCTION
                     return EXIT_FAILURE;
                 }
             }
-            std::string sMnemonic, sError;
-            std::vector<uint8_t> vEntropy(nBytesEntropy);
+            SecureString sMnemonic;
+            std::string sError;
+            std::vector<uint8_t, secure_allocator<unsigned char>> vEntropy(nBytesEntropy);
 
-            GetStrongRandBytes2(&vEntropy[0], nBytesEntropy);
+            GetStrongRandBytes2(vEntropy.data(), vEntropy.size());
             if (0 != mnemonic::Encode(nLanguage, vEntropy, sMnemonic, sError)) {
                 tfm::format(std::cerr, "Error: MnemonicEncode failed %s.\n", sError);
                 return EXIT_FAILURE;
             }
 
-            tfm::format(std::cout, "%s\n", sMnemonic);
+            tfm::format(std::cout, "%s\n", std::string(sMnemonic));
             return EXIT_SUCCESS;
         }
     }
