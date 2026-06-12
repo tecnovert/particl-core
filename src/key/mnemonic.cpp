@@ -1,5 +1,5 @@
 // Copyright (c) 2014-2015 The ShadowCoin developers
-// Copyright (c) 2017-2023 The Particl Core developers
+// Copyright (c) 2017-2026 The Particl Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -143,24 +143,68 @@ const char *mnLanguagesTag[WLL_MAX] =
     "czech",
 };
 
-static void NormaliseUnicode(std::string &str)
+static SecureString &LTrimWhitespace(SecureString &s)
+{
+    SecureString::iterator i;
+    for (i = s.begin(); i != s.end(); ++i) {
+        if (!IsSpace(*i)) {
+            break;
+        }
+    }
+    if (i != s.begin()) {
+        s.erase(s.begin(), i);
+    }
+    return s;
+}
+
+static SecureString &RTrimWhitespace(SecureString &s)
+{
+    SecureString::reverse_iterator i;
+    for (i = s.rbegin(); i != s.rend(); ++i) {
+        if (!IsSpace(*i)) {
+            break;
+        }
+    }
+    if (i != s.rbegin()) {
+        s.erase(i.base(), s.end());
+    }
+    return s;
+}
+
+SecureString &TrimWhitespace(SecureString &s)
+{
+    LTrimWhitespace(s);
+    RTrimWhitespace(s);
+    return s;
+}
+
+static void NormaliseUnicode(SecureString &str)
 {
     if (str.size() < 1) {
         return;
     }
-    std::u32string u32;
+    SecureU32String u32;
     ufal::unilib::utf8::decode(str, u32);
     ufal::unilib::uninorms::nfkd(u32);
     ufal::unilib::utf8::encode(u32, str);
 }
 
-static void NormaliseInput(std::string &str)
+static void NormaliseInput(SecureString &str)
 {
-    part::TrimWhitespace(str);
+    TrimWhitespace(str);
     NormaliseUnicode(str);
 }
 
-int GetWord(int o, const char *pwl, int max, std::string &sWord)
+static void ReplaceStrInPlace(SecureString &subject, const std::string search, const std::string replace)
+{
+    size_t pos = 0;
+    while ((pos = subject.find(search, pos)) != SecureString::npos) {
+         subject.replace(pos, search.length(), replace);
+         pos += replace.length();
+    }
+}
+
+int GetWord(int o, const char *pwl, int max, SecureString &sWord)
 {
     sWord = "";
     char *pt = (char*)pwl;
@@ -216,7 +260,7 @@ int GetWordOffset(const char *p, const char *pwl, int max, int &o)
     return 1;
 }
 
-int GetWordOffsets(int nLanguage, const std::string &sWordList, std::vector<int> &vWordInts, std::string &sError)
+int GetWordOffsets(int nLanguage, const SecureString &sWordList, std::vector<int, secure_allocator<int>> &vWordInts, std::string &sError)
 {
     if (nLanguage < 1 || nLanguage >= WLL_MAX || !HaveLanguage(nLanguage)) {
         return errorN(1, sError, __func__, "Unknown language");
@@ -236,12 +280,14 @@ int GetWordOffsets(int nLanguage, const std::string &sWordList, std::vector<int>
         int ofs;
         if (0 != GetWordOffset(p, pwl, m, ofs)) {
             sError = strprintf("Unknown word: %s", p);
+            memory_cleanse(tmp, sizeof(tmp));
             return errorN(3, "%s: %s", __func__, sError.c_str());
         }
 
         vWordInts.push_back(ofs);
         p = strtok_r(nullptr, " ", &token);
     }
+    memory_cleanse(tmp, sizeof(tmp));
     return 0;
 }
 
@@ -278,7 +324,7 @@ int GetLanguageOffset(std::string sIn)
     return nLanguage;
 }
 
-int DetectLanguage(const std::string &sWordList)
+int DetectLanguage(const SecureString &sWordList)
 {
     // Try detect the language
     // Tolerate spelling mistakes, will be reported in other functions
@@ -324,14 +370,16 @@ int DetectLanguage(const std::string &sWordList)
         }
 
         if (nHit > nMiss && nMiss < 2) { // tolerate max 2 failures
+            memory_cleanse(tmp, sizeof(tmp));
             return l;
         }
     }
 
+    memory_cleanse(tmp, sizeof(tmp));
     return 0;
 }
 
-int Encode(int nLanguage, const std::vector<uint8_t> &vEntropy, std::string &sWordList, std::string &sError)
+int Encode(int nLanguage, const std::vector<uint8_t, secure_allocator<uint8_t>> &vEntropy, SecureString &sWordList, std::string &sError)
 {
     LogPrint(BCLog::HDWALLET, "%s: language %d.\n", __func__, nLanguage);
 
@@ -344,7 +392,7 @@ int Encode(int nLanguage, const std::vector<uint8_t> &vEntropy, std::string &sWo
 
     // Checksum is 1st n bytes of the sha256 hash
     uint8_t hash[32];
-    CSHA256().Write(&vEntropy[0], vEntropy.size()).Finalize((uint8_t*)hash);
+    CSHA256().Write(vEntropy.data(), vEntropy.size()).Finalize((uint8_t*)hash);
 
     int nCsSize = vEntropy.size() / 4; // 32 / 8
     if (nCsSize < 1 || nCsSize > 256) {
@@ -352,20 +400,21 @@ int Encode(int nLanguage, const std::vector<uint8_t> &vEntropy, std::string &sWo
         return errorN(2, "%s: %s", __func__, sError.c_str());
     }
 
-    std::vector<uint8_t> vIn = vEntropy;
+    std::vector<uint8_t, secure_allocator<uint8_t>> vIn = vEntropy;
 
     int ncb = nCsSize/8;
     int r = nCsSize % 8;
     if (r != 0) {
         ncb++;
     }
-    std::vector<uint8_t> vTmp(32);
+    std::vector<uint8_t, secure_allocator<uint8_t>> vTmp(32);
     memcpy(&vTmp[0], &hash, ncb);
     memset(&vTmp[ncb], 0, 32-ncb);
+    memory_cleanse(hash, sizeof(hash));
 
     vIn.insert(vIn.end(), vTmp.begin(), vTmp.end());
 
-    std::vector<int> vWord;
+    std::vector<int, secure_allocator<int>> vWord;
 
     int nBits = vEntropy.size() * 8 + nCsSize;
 
@@ -401,7 +450,7 @@ int Encode(int nLanguage, const std::vector<uint8_t> &vEntropy, std::string &sWo
     for (size_t k = 0; k < vWord.size(); ++k) {
         int o = vWord[k];
 
-        std::string sWord;
+        SecureString sWord;
         if (0 != GetWord(o, pwl, m, sWord)) {
             sError = strprintf("Word extract failed %d, language %d.", o, nLanguage);
             return errorN(3, "%s: %s", __func__, sError.c_str());
@@ -414,17 +463,17 @@ int Encode(int nLanguage, const std::vector<uint8_t> &vEntropy, std::string &sWo
     }
 
     if (nLanguage == WLL_JAPANESE) {
-        part::ReplaceStrInPlace(sWordList, " ", "\u3000");
+        ReplaceStrInPlace(sWordList, " ", "\u3000");
     }
 
     return 0;
 }
 
-int Decode(int &nLanguage, const std::string &sWordListIn, std::vector<uint8_t> &vEntropy, std::string &sError, bool fIgnoreChecksum)
+int Decode(int &nLanguage, const SecureString &sWordListIn, std::vector<uint8_t, secure_allocator<uint8_t>> &vEntropy, std::string &sError, bool fIgnoreChecksum)
 {
     LogPrint(BCLog::HDWALLET, "%s: Language %d.\n", __func__, nLanguage);
 
-    std::string sWordList = sWordListIn;
+    SecureString sWordList = sWordListIn;
     NormaliseInput(sWordList);
 
     if (nLanguage == -1) {
@@ -448,7 +497,7 @@ int Decode(int &nLanguage, const std::string &sWordListIn, std::vector<uint8_t> 
         return errorN(4, "%s: %s", __func__, sError.c_str());
     }
 
-    std::vector<int> vWordInts;
+    std::vector<int, secure_allocator<int>> vWordInts;
     int rv = GetWordOffsets(nLanguage, sWordList, vWordInts, sError);
     if (0 != rv) {
         return rv;
@@ -464,7 +513,7 @@ int Decode(int &nLanguage, const std::string &sWordListIn, std::vector<uint8_t> 
     int nBytes = nBits/8 + (nBits % 8 == 0 ? 0 : 1);
     vEntropy.resize(nBytes);
 
-    memset(&vEntropy[0], 0, nBytes);
+    memset(vEntropy.data(), 0, nBytes);
 
     int i = 0;
     size_t wl = vWordInts.size();
@@ -501,23 +550,21 @@ int Decode(int &nLanguage, const std::string &sWordListIn, std::vector<uint8_t> 
     int nBytesEntropy = nLenEntropy / 8;
     int nBytesChecksum = nLenChecksum / 8 + (nLenChecksum % 8 == 0 ? 0 : 1);
 
-    std::vector<uint8_t> vCS;
+    std::vector<uint8_t, secure_allocator<uint8_t>> vCS, vCSTest;
 
     vCS.resize(nBytesChecksum);
-    memcpy(&vCS[0], &vEntropy[nBytesEntropy], nBytesChecksum);
+    memcpy(vCS.data(), &vEntropy[nBytesEntropy], nBytesChecksum);
 
     vEntropy.resize(nBytesEntropy);
 
     uint8_t hash[32];
-    CSHA256().Write(&vEntropy[0], vEntropy.size()).Finalize((uint8_t*)hash);
-
-    std::vector<uint8_t> vCSTest;
+    CSHA256().Write(vEntropy.data(), vEntropy.size()).Finalize((uint8_t*)hash);
 
     vCSTest.resize(nBytesChecksum);
-    memcpy(&vCSTest[0], &hash, nBytesChecksum);
+    memcpy(vCSTest.data(), &hash, nBytesChecksum);
+    memory_cleanse(hash, sizeof(hash));
 
     int r = nLenChecksum % 8;
-
     if (r > 0) {
         vCSTest[nBytesChecksum-1] &= (((1<<r)-1) << (8-r));
     }
@@ -569,17 +616,18 @@ static int mnemonicKdf(const uint8_t *password, size_t lenPassword,
             out[i] ^= r[i];
         }
     }
+    memory_cleanse(r, sizeof(r));
 
     return 0;
 };
 
-int ToSeed(const std::string &sMnemonic, const std::string &sPasswordIn, std::vector<uint8_t> &vSeed)
+int ToSeed(const SecureString &sMnemonic, const SecureString &sPasswordIn, std::vector<uint8_t, secure_allocator<uint8_t>> &vSeed)
 {
     LogPrint(BCLog::HDWALLET, "%s\n", __func__);
 
     vSeed.resize(64);
 
-    std::string sWordList = sMnemonic, sPassword = sPasswordIn;
+    SecureString sWordList = sMnemonic, sPassword = sPasswordIn;
     NormaliseInput(sWordList);
     NormaliseInput(sPassword);
 
@@ -589,7 +637,7 @@ int ToSeed(const std::string &sMnemonic, const std::string &sPasswordIn, std::ve
 
     int nIterations = 2048;
 
-    std::string sSalt = std::string("mnemonic") + sPassword;
+    SecureString sSalt = SecureString("mnemonic") + sPassword;
 
     if (0 != mnemonicKdf((uint8_t*)sWordList.data(), sWordList.size(),
         (uint8_t*)sSalt.data(), sSalt.size(), nIterations, &vSeed[0])) {
@@ -599,9 +647,9 @@ int ToSeed(const std::string &sMnemonic, const std::string &sPasswordIn, std::ve
     return 0;
 };
 
-int AddChecksum(int nLanguage, const std::string &sWordListIn, std::string &sWordListOut, std::string &sError)
+int AddChecksum(int nLanguage, const SecureString &sWordListIn, SecureString &sWordListOut, std::string &sError)
 {
-    std::string sWordList = sWordListIn;
+    SecureString sWordList = sWordListIn;
     NormaliseInput(sWordList);
 
     sWordListOut = "";
@@ -610,7 +658,7 @@ int AddChecksum(int nLanguage, const std::string &sWordListIn, std::string &sWor
     }
 
     int rv;
-    std::vector<uint8_t> vEntropy;
+    std::vector<uint8_t, secure_allocator<uint8_t>> vEntropy;
     if (0 != (rv = Decode(nLanguage, sWordList, vEntropy, sError, true))) {
         return rv;
     }
@@ -624,7 +672,7 @@ int AddChecksum(int nLanguage, const std::string &sWordListIn, std::string &sWor
     return 0;
 };
 
-int GetWord(int nLanguage, int nWord, std::string &sWord, std::string &sError)
+int GetWord(int nLanguage, int nWord, SecureString &sWord, std::string &sError)
 {
     if (nLanguage < 1 || nLanguage >= WLL_MAX || !mnLanguages[nLanguage]) {
         sError = "Unknown language.";
@@ -739,6 +787,7 @@ static int build_tables()
     int size = 1 << num_bits;
     int x = 1;
     int primitive = 5;
+    log_table[0] = 0;
     for (int i = 0; i < size; ++i) {
         exp_table[i] = x;
         log_table[x] = i;
@@ -753,7 +802,7 @@ static int build_tables()
     return 0;
 }
 
-static int horner(int x, std::vector<int> &coeffs)
+static int horner(int x, std::vector<int, secure_allocator<int>> &coeffs)
 {
     // https://github.com/iancoleman/shamir39/blob/cfc89c4fd24d360ee57e2158e6572d7042de580c/src/js/shamir39.js#L521
     // Polynomial evaluation at `x` using Horner's Method
@@ -774,7 +823,7 @@ static int horner(int x, std::vector<int> &coeffs)
     return fx;
 }
 
-int splitmnemonic(const std::string mnemonic_in, int language_ind, size_t num_shares, size_t threshold, std::vector<std::string> &output, std::string &sError)
+int splitmnemonic(const SecureString &mnemonic_in, int language_ind, size_t num_shares, size_t threshold, std::vector<SecureString> &output, std::string &sError)
 {
     output.clear();
     if (num_shares < 2 || num_shares > max_bits_value) {
@@ -784,7 +833,7 @@ int splitmnemonic(const std::string mnemonic_in, int language_ind, size_t num_sh
         return errorN(1, sError, __func__, "Required shares must be at least 2 and at most num_shares");
     }
 
-    std::string word_list = mnemonic_in;
+    SecureString word_list = mnemonic_in;
     mnemonic::NormaliseInput(word_list);
 
     // Detect language if not specified
@@ -807,7 +856,7 @@ int splitmnemonic(const std::string mnemonic_in, int language_ind, size_t num_sh
         return errorN(2, sError, __func__, "Wordlist must have exactly 2048 words");
     }
 
-    std::vector<int> word_offsets;
+    std::vector<int, secure_allocator<int>> word_offsets;
     if (0 != mnemonic::GetWordOffsets(language_ind, word_list, word_offsets, sError)) {
         return 1;
     }
@@ -825,9 +874,9 @@ int splitmnemonic(const std::string mnemonic_in, int language_ind, size_t num_sh
     word_offsets.insert(word_offsets.begin(), pad_word);
 
     StrongRandomIssuer random_issuer;
-    std::vector<std::vector<int> > shares(num_shares);
+    std::vector<std::vector<int, secure_allocator<int>> > shares(num_shares);
     for (int i = word_offsets.size() - 1; i >= 0; i--) {
-        std::vector<int> coeffs(threshold + 1);
+        std::vector<int, secure_allocator<int>> coeffs(threshold + 1);
         coeffs[0] = word_offsets[i];
         for (int k = 1; k < int(threshold); ++k) {
             if (0 != random_issuer.GetBits(11, coeffs[k])) {
@@ -842,7 +891,7 @@ int splitmnemonic(const std::string mnemonic_in, int language_ind, size_t num_sh
     }
 
     for (int i = 0; i < int(num_shares); i++) {
-        std::string sWord, sWordList = "shamir39-p1";
+        SecureString sWord, sWordList = "shamir39-p1";
 
         // Pack parameters in prefix words, 5 bytes each in each word + run-on indicator bit
         int params_words = std::ceil((float)std::max(CountBits(threshold), CountBits(i)) / 5.0);
@@ -868,7 +917,7 @@ int splitmnemonic(const std::string mnemonic_in, int language_ind, size_t num_sh
             sWordList += sWord;
         }
         if (language_ind == mnemonic::WLL_JAPANESE) {
-            part::ReplaceStrInPlace(sWordList, " ", "\u3000");
+            mnemonic::ReplaceStrInPlace(sWordList, " ", "\u3000");
         }
         output.push_back(sWordList);
     }
@@ -876,7 +925,7 @@ int splitmnemonic(const std::string mnemonic_in, int language_ind, size_t num_sh
     return 0;
 }
 
-int lagrange(int word_index, const std::vector<int> &share_indices, const std::map<int, std::vector<int> > &shamir_shares)
+int lagrange(int word_index, const std::vector<int, secure_allocator<int>> &share_indices, const std::map<int, std::vector<int, secure_allocator<int>> > &shamir_shares)
 {
     int at = 0; // always 0?
     int sum = 0;
@@ -904,7 +953,7 @@ int lagrange(int word_index, const std::vector<int> &share_indices, const std::m
     return sum;
 }
 
-int combinemnemonic(const std::vector<std::string> &mnemonics_in, int language_ind, std::string &mnemonic_out, std::string &sError)
+int combinemnemonic(const std::vector<SecureString> &mnemonics_in, int language_ind, SecureString &mnemonic_out, std::string &sError)
 {
     mnemonic_out.clear();
     if (mnemonics_in.size() < 2) {
@@ -915,10 +964,10 @@ int combinemnemonic(const std::vector<std::string> &mnemonics_in, int language_i
         return errorN(4, sError, __func__, "build_tables failed");
     }
 
-    std::map<int, std::vector<int> > shamir_shares;
+    std::map<int, std::vector<int, secure_allocator<int>> > shamir_shares;
     int group_threshold = 0;
     for (size_t i = 0; i < mnemonics_in.size(); i++) {
-        std::string words = mnemonics_in[i];
+        SecureString words = mnemonics_in[i];
 
         const char *version_word = "shamir39-p1";
         if (words.size() < strlen(version_word) ||
@@ -938,7 +987,7 @@ int combinemnemonic(const std::vector<std::string> &mnemonics_in, int language_i
             return errorN(2, sError, __func__, "Unknown language");
         }
 
-        std::vector<int> word_offsets;
+        std::vector<int, secure_allocator<int>> word_offsets;
         if (0 != mnemonic::GetWordOffsets(language_ind, words, word_offsets, sError)) {
             return 1;
         }
@@ -962,7 +1011,7 @@ int combinemnemonic(const std::vector<std::string> &mnemonics_in, int language_i
         if (threshold < 2 || threshold > max_bits_value) {
             return errorN(2, sError, __func__, "Threshold out of valid range");
         }
-        if (mnemonic_index < 0 || mnemonic_index > max_bits_value) {
+        if (mnemonic_index < 0 || mnemonic_index >= max_bits_value) {
             return errorN(2, sError, __func__, "Mnemonic index out of valid range");
         }
         if (group_threshold == 0) {
@@ -970,6 +1019,10 @@ int combinemnemonic(const std::vector<std::string> &mnemonics_in, int language_i
         }
         if (group_threshold != threshold) {
             return errorN(2, sError, __func__, "Mixed thresholds in mnemonic group");
+        }
+
+        if (word_offsets.size() < size_t(last_param_word + 2)) {
+            return errorN(2, sError, __func__, "word_offsets too short");
         }
 
         // Strip parameter word/s and padding word
@@ -983,10 +1036,10 @@ int combinemnemonic(const std::vector<std::string> &mnemonics_in, int language_i
 
     int num_share_words = 0;
 
-    std::vector<int> share_indices;
+    std::vector<int, secure_allocator<int>> share_indices;
     for (auto const &share : shamir_shares) {
         int share_index = share.first;
-        const std::vector<int> &word_offsets = share.second;
+        const std::vector<int, secure_allocator<int>> &word_offsets = share.second;
         if (num_share_words == 0) {
             num_share_words = word_offsets.size();
         }
@@ -999,7 +1052,7 @@ int combinemnemonic(const std::vector<std::string> &mnemonics_in, int language_i
     const char *pwl = (const char*) mnemonic::mnLanguages[language_ind];
     int language_data_length = mnemonic::mnLanguageLens[language_ind];
 
-    std::string sWord;
+    SecureString sWord;
     for (int i = 0; i < num_share_words; i++) {
         int word_offset = lagrange(i, share_indices, shamir_shares);
         if (0 != mnemonic::GetWord(word_offset, pwl, language_data_length, sWord)) {
@@ -1012,7 +1065,7 @@ int combinemnemonic(const std::vector<std::string> &mnemonics_in, int language_i
     }
 
     if (language_ind == mnemonic::WLL_JAPANESE) {
-        part::ReplaceStrInPlace(mnemonic_out, " ", "\u3000");
+        mnemonic::ReplaceStrInPlace(mnemonic_out, " ", "\u3000");
     }
 
     return 0;

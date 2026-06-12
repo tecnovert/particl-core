@@ -14,20 +14,23 @@
 
 #include <cstdint>
 #include <string>
+#include <support/allocators/secure.h>
+
+typedef SecureU32String U32String;
 
 namespace ufal {
 namespace unilib {
 
 class uninorms {
  public:
-  static void nfc(std::u32string& str);
-  static void nfd(std::u32string& str);
-  static void nfkc(std::u32string& str);
-  static void nfkd(std::u32string& str);
+  static void nfc(U32String& str);
+  static void nfd(U32String& str);
+  static void nfkc(U32String& str);
+  static void nfkd(U32String& str);
 
  private:
-  static void compose(std::u32string& str);
-  static void decompose(std::u32string& str, bool kanonical);
+  static void compose(U32String& str);
+  static void decompose(U32String& str, bool kanonical);
 
   static const char32_t CHARS = 0x110000;
 

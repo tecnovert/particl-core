@@ -74,11 +74,12 @@ static RPCHelpMan mnemonicrpc()
     if (mode == "new") {
         int nLanguage = mnemonic::WLL_ENGLISH;
         int nBytesEntropy = 32;
-        std::string sMnemonic, sPassword, sError;
+        SecureString sMnemonic, sPassword;
+        std::string sError;
         CExtKey ekMaster;
 
         if (request.params.size() > 1) {
-            sPassword = request.params[1].get_str();
+            sPassword = std::string_view{request.params[1].get_str()};
         }
         if (request.params.size() > 2) {
             nLanguage = mnemonic::GetLanguageOffset(request.params[2].get_str());
@@ -102,9 +103,9 @@ static RPCHelpMan mnemonicrpc()
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Too many parameters");
         }
 
-        std::vector<uint8_t> vEntropy(nBytesEntropy), vSeed;
+        std::vector<uint8_t, secure_allocator<unsigned char>> vEntropy(nBytesEntropy), vSeed;
         for (uint32_t i = 0; i < MAX_DERIVE_TRIES; ++i) {
-            GetStrongRandBytes2(&vEntropy[0], nBytesEntropy);
+            GetStrongRandBytes2(vEntropy.data(), vEntropy.size());
 
             if (0 != mnemonic::Encode(nLanguage, vEntropy, sMnemonic, sError)) {
                 throw JSONRPCError(RPC_INTERNAL_ERROR, strprintf("mnemonic::Encode failed %s.", sError.c_str()).c_str());
@@ -113,7 +114,7 @@ static RPCHelpMan mnemonicrpc()
                 throw JSONRPCError(RPC_INTERNAL_ERROR, "mnemonic::ToSeed failed.");
             }
 
-            ekMaster.SetSeed(&vSeed[0], vSeed.size());
+            ekMaster.SetSeed(vSeed.data(), vSeed.size());
             if (!ekMaster.IsValid()) {
                 continue;
             }
@@ -121,7 +122,7 @@ static RPCHelpMan mnemonicrpc()
         }
 
         CExtKey58 eKey58;
-        result.pushKV("mnemonic", sMnemonic);
+        result.pushKV("mnemonic", std::string(sMnemonic));
 
         if (fBip44) {
             eKey58.SetKey(CExtKeyPair(ekMaster), CChainParams::EXT_SECRET_KEY_BTC);
@@ -143,15 +144,16 @@ static RPCHelpMan mnemonicrpc()
         }
     } else
     if (mode == "decode") {
-        std::string sPassword, sMnemonic, sError;
+        SecureString sPassword, sMnemonic;
+        std::string sError;
 
         if (request.params.size() > 1) {
-            sPassword = request.params[1].get_str();
+            sPassword = std::string_view{request.params[1].get_str()};
         } else {
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Must specify password.");
         }
         if (request.params.size() > 2) {
-            sMnemonic = request.params[2].get_str();
+            sMnemonic = std::string_view{request.params[2].get_str()};
         } else {
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Must specify mnemonic.");
         }
@@ -166,7 +168,7 @@ static RPCHelpMan mnemonicrpc()
         }
 
         // Decode to determine validity of mnemonic
-        std::vector<uint8_t> vEntropy, vSeed;
+        std::vector<uint8_t, secure_allocator<unsigned char>> vEntropy, vSeed;
         int nLanguage = -1;
         if (0 != mnemonic::Decode(nLanguage, sMnemonic, vEntropy, sError)) {
             throw JSONRPCError(RPC_INTERNAL_ERROR, strprintf("mnemonic::Decode failed %s.", sError.c_str()).c_str());
@@ -177,7 +179,7 @@ static RPCHelpMan mnemonicrpc()
 
         CExtKey ekMaster;
         CExtKey58 eKey58;
-        ekMaster.SetSeed(&vSeed[0], vSeed.size());
+        ekMaster.SetSeed(vSeed.data(), vSeed.size());
 
         if (!ekMaster.IsValid()) {
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid key.");
@@ -213,17 +215,18 @@ static RPCHelpMan mnemonicrpc()
         }
     } else
     if (mode == "addchecksum") {
-        std::string sMnemonicIn, sMnemonicOut, sError;
+        SecureString sMnemonicIn, sMnemonicOut;
+        std::string sError;
         if (request.params.size() != 2) {
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Must provide input mnemonic.");
         }
 
-        sMnemonicIn = request.params[1].get_str();
+        sMnemonicIn = std::string_view{request.params[1].get_str()};
 
         if (0 != mnemonic::AddChecksum(-1, sMnemonicIn, sMnemonicOut, sError)) {
             throw JSONRPCError(RPC_INTERNAL_ERROR, strprintf("mnemonic::AddChecksum failed %s", sError.c_str()).c_str());
         }
-        result.pushKV("result", sMnemonicOut);
+        result.pushKV("result", std::string(sMnemonicOut));
     } else
     if (mode == "dumpwords") {
         int nLanguage = mnemonic::WLL_ENGLISH;
@@ -235,9 +238,10 @@ static RPCHelpMan mnemonicrpc()
         int nWords = 0;
         UniValue arrayWords(UniValue::VARR);
 
-        std::string sWord, sError;
+        SecureString sWord;
+        std::string sError;
         while (0 == mnemonic::GetWord(nLanguage, nWords, sWord, sError)) {
-            arrayWords.push_back(sWord);
+            arrayWords.push_back(std::string(sWord));
             nWords++;
         }
 
@@ -299,10 +303,11 @@ static RPCHelpMan splitmnemonic()
         {"threshold", UniValueType(UniValue::VNUM)},
     }, /* allow null */ false, /* strict */ false);
 
-    std::string error_str, mnemonic_string = parameters["mnemonic"].get_str();
+    std::string error_str;
+    SecureString mnemonic_string = parameters["mnemonic"].get_str().c_str();
     int num_splits = parameters["numshares"].getInt<int>();
     int actual_threshold = parameters["threshold"].getInt<int>();
-    std::vector<std::string> shares_out;
+    std::vector<SecureString> shares_out;
     int language_ind = -1;
     if (parameters.exists("language")) {
         std::string language_str = parameters["language"].get_str();
@@ -317,7 +322,7 @@ static RPCHelpMan splitmnemonic()
 
     UniValue rv(UniValue::VARR);
     for (const auto &share : shares_out) {
-        rv.push_back(share);
+        rv.push_back(std::string(share));
     }
     return rv;
 },
@@ -356,13 +361,14 @@ static RPCHelpMan combinemnemonic()
         {"shares", UniValueType(UniValue::VARR)},
     }, /* allow null */ false, /* strict */ false);
 
-    std::vector<std::string> shares;
+    std::vector<SecureString> shares;
     const UniValue &uv_shares = parameters["shares"];
     shares.reserve(uv_shares.size());
     for (size_t i = 0; i < uv_shares.size(); ++i) {
-        shares.push_back(uv_shares[i].get_str());
+        shares.push_back(uv_shares[i].get_str().c_str());
     }
-    std::string mnemonic_out, error_str;
+    std::string error_str;
+    SecureString mnemonic_out;
     int language_ind = -1;
     if (parameters.exists("language")) {
         std::string language_str = parameters["language"].get_str();
@@ -375,7 +381,7 @@ static RPCHelpMan combinemnemonic()
         throw JSONRPCError(RPC_INTERNAL_ERROR, strprintf("combinemnemonic failed %s", error_str.c_str()).c_str());
     }
 
-    return mnemonic_out;
+    return std::string(mnemonic_out);
 },
     };
 }
@@ -415,8 +421,9 @@ static RPCHelpMan mnemonictoentropy()
         }
     }
 
-    std::string error_str, mnemonic_string = parameters["mnemonic"].get_str();
-    std::vector<uint8_t> entropy;
+    std::string error_str;
+    SecureString mnemonic_string = parameters["mnemonic"].get_str().c_str();
+    std::vector<uint8_t, secure_allocator<unsigned char>> entropy;
     if (0 != mnemonic::Decode(language_ind, mnemonic_string, entropy, error_str)) {
         throw JSONRPCError(RPC_INTERNAL_ERROR, strprintf("mnemonic::Decode failed %s.", error_str.c_str()).c_str());
     }
@@ -458,14 +465,16 @@ static RPCHelpMan mnemonicfromentropy()
         std::string language_str = parameters["language"].get_str();
         language_ind = mnemonic::GetLanguageOffset(language_str);
     }
-
-    std::vector<uint8_t> entropy = ParseHex(parameters["entropy"].get_str());
-    std::string error_str, mnemonic_string;
+    std::vector<uint8_t> entropy_in = ParseHex(parameters["entropy"].get_str());
+    std::vector<uint8_t, secure_allocator<unsigned char>> entropy(entropy_in.begin(), entropy_in.end());
+    memory_cleanse(entropy_in.data(), entropy_in.size());
+    std::string error_str;
+    SecureString mnemonic_string;
     if (0 != mnemonic::Encode(language_ind, entropy, mnemonic_string, error_str)) {
         throw JSONRPCError(RPC_INTERNAL_ERROR, strprintf("mnemonic::Encode failed %s.", error_str.c_str()).c_str());
     }
 
-    return mnemonic_string;
+    return std::string(mnemonic_string);
 },
     };
 }

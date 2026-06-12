@@ -1,5 +1,5 @@
 // Copyright (c) 2014-2015 The ShadowCoin developers
-// Copyright (c) 2017-2023 The Particl Core developers
+// Copyright (c) 2017-2026 The Particl Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <support/allocators/secure.h>
 
 namespace mnemonic {
 
@@ -30,16 +31,16 @@ enum WordListLanguages
 extern const char *mnLanguagesDesc[WLL_MAX];
 extern const char *mnLanguagesTag[WLL_MAX];
 
-int GetWord(int o, const char *pwl, int max, std::string &sWord);
+int GetWord(int o, const char *pwl, int max, SecureString &sWord);
 int GetWordOffset(const char *p, const char *pwl, int max, int &o);
 
 int GetLanguageOffset(std::string sIn);
-int DetectLanguage(const std::string &sWordList);
-int Encode(int nLanguage, const std::vector<uint8_t> &vEntropy, std::string &sWordList, std::string &sError);
-int Decode(int &nLanguage, const std::string &sWordListIn, std::vector<uint8_t> &vEntropy, std::string &sError, bool fIgnoreChecksum=false);
-int ToSeed(const std::string &sMnemonic, const std::string &sPasswordIn, std::vector<uint8_t> &vSeed);
-int AddChecksum(int nLanguageIn, const std::string &sWordListIn, std::string &sWordListOut, std::string &sError);
-int GetWord(int nLanguage, int nWord, std::string &sWord, std::string &sError);
+int DetectLanguage(const SecureString &sWordList);
+int Encode(int nLanguage, const std::vector<uint8_t, secure_allocator<uint8_t>> &vEntropy, SecureString &sWordList, std::string &sError);
+int Decode(int &nLanguage, const SecureString &sWordListIn, std::vector<uint8_t, secure_allocator<uint8_t>> &vEntropy, std::string &sError, bool fIgnoreChecksum=false);
+int ToSeed(const SecureString &sMnemonic, const SecureString &sPasswordIn, std::vector<uint8_t, secure_allocator<uint8_t>> &vSeed);
+int AddChecksum(int nLanguageIn, const SecureString &sWordListIn, SecureString &sWordListOut, std::string &sError);
+int GetWord(int nLanguage, int nWord, SecureString &sWord, std::string &sError);
 std::string GetLanguage(int nLanguage);
 std::string ListEnabledLanguages(std::string separator);
 bool HaveLanguage(int nLanguage);
@@ -60,8 +61,8 @@ public:
     int GetBits(size_t num_bits, int &output);
 };
 
-int splitmnemonic(const std::string mnemonic_in, int language_ind, size_t num_shares, size_t required_shares, std::vector<std::string> &output, std::string &sError);
-int combinemnemonic(const std::vector<std::string> &mnemonics_in, int language_ind, std::string &mnemonic_out, std::string &sError);
+int splitmnemonic(const SecureString &mnemonic_in, int language_ind, size_t num_shares, size_t required_shares, std::vector<SecureString> &output, std::string &sError);
+int combinemnemonic(const std::vector<SecureString> &mnemonics_in, int language_ind, SecureString &mnemonic_out, std::string &sError);
 }
 
 #endif // PARTICL_KEY_MNEMONIC_H

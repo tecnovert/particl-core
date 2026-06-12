@@ -1647,11 +1647,11 @@ static UniValue extkeyimportinternal(const JSONRPCRequest &request, bool fGenesi
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Please specify a private extkey or mnemonic phrase.");
     }
 
-    std::string sMnemonic = request.params[0].get_str();
+    SecureString sMnemonic, sPassphrase;
+    sMnemonic = std::string_view{request.params[0].get_str()};
 
     std::string sLblMaster = "Master Key";
     std::string sLblAccount = "Default Account";
-    std::string sPassphrase;
     std::string sError;
     int64_t nScanFrom = 1;
     int create_extkeys = 0;
@@ -1659,7 +1659,7 @@ static UniValue extkeyimportinternal(const JSONRPCRequest &request, bool fGenesi
     std::optional<std::string> master_path;
 
     if (request.params.size() > 1) {
-        sPassphrase = request.params[1].get_str();
+        sPassphrase = std::string_view{request.params[1].get_str()};
     }
     bool fSaveBip44Root = request.params.size() > 2 ? GetBool(request.params[2]) : false;
     if (request.params.size() > 3) {
@@ -1753,7 +1753,7 @@ static UniValue extkeyimportinternal(const JSONRPCRequest &request, bool fGenesi
         // Key was provided directly
         ekp = eKey58.GetKey();
     } else {
-        std::vector<uint8_t> vSeed, vEntropy;
+        std::vector<uint8_t, secure_allocator<unsigned char>> vSeed, vEntropy;
 
         // First check the mnemonic is valid
         int nLanguage = -1;
@@ -1764,7 +1764,7 @@ static UniValue extkeyimportinternal(const JSONRPCRequest &request, bool fGenesi
             throw JSONRPCError(RPC_MISC_ERROR, "MnemonicToSeed failed.");
         }
 
-        ekp.SetSeed(&vSeed[0], vSeed.size());
+        ekp.SetSeed(vSeed.data(), vSeed.size());
     }
 
     CStoredExtKey sek;

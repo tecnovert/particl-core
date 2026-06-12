@@ -16,6 +16,13 @@
 #include <cstdint>
 #include <iterator>
 #include <string>
+#include <support/allocators/secure.h>
+
+typedef SecureString String;
+typedef SecureU32String U32String;
+
+//typedef std::string String;
+//typedef std::u32string U32String;
 
 namespace ufal {
 namespace unilib {
@@ -24,17 +31,17 @@ class utf8 {
  public:
   static bool valid(const char* str);
   static bool valid(const char* str, size_t len);
-  static inline bool valid(const std::string& str);
+  static inline bool valid(const String& str);
 
   static inline char32_t decode(const char*& str);
   static inline char32_t decode(const char*& str, size_t& len);
   static inline char32_t first(const char* str);
   static inline char32_t first(const char* str, size_t len);
-  static inline char32_t first(const std::string& str);
+  static inline char32_t first(const String& str);
 
-  static void decode(const char* str, std::u32string& decoded);
-  static void decode(const char* str, size_t len, std::u32string& decoded);
-  static inline void decode(const std::string& str, std::u32string& decoded);
+  static void decode(const char* str, U32String& decoded);
+  static void decode(const char* str, size_t len, U32String& decoded);
+  static inline void decode(const String& str, U32String& decoded);
 
   class string_decoder {
    public:
@@ -47,7 +54,7 @@ class utf8 {
     friend class utf8;
   };
   static inline string_decoder decoder(const char* str);
-  static inline string_decoder decoder(const std::string& str);
+  static inline string_decoder decoder(const String& str);
 
   class buffer_decoder {
    public:
@@ -63,18 +70,18 @@ class utf8 {
   static inline buffer_decoder decoder(const char* str, size_t len);
 
   static inline void append(char*& str, char32_t chr);
-  static inline void append(std::string& str, char32_t chr);
-  static void encode(const std::u32string& str, std::string& encoded);
+  static inline void append(String& str, char32_t chr);
+  static void encode(const U32String& str, String& encoded);
 
-  template<class F> static void map(F f, const char* str, std::string& result);
-  template<class F> static void map(F f, const char* str, size_t len, std::string& result);
-  template<class F> static void map(F f, const std::string& str, std::string& result);
+  template<class F> static void map(F f, const char* str, String& result);
+  template<class F> static void map(F f, const char* str, size_t len, String& result);
+  template<class F> static void map(F f, const String& str, String& result);
 
  private:
   static const char REPLACEMENT_CHAR = '?';
 };
 
-bool utf8::valid(const std::string& str) {
+bool utf8::valid(const String& str) {
   return valid(str.c_str());
 }
 
@@ -136,11 +143,11 @@ char32_t utf8::first(const char* str, size_t len) {
   return decode(str, len);
 }
 
-char32_t utf8::first(const std::string& str) {
+char32_t utf8::first(const String& str) {
   return first(str.c_str());
 }
 
-void utf8::decode(const std::string& str, std::u32string& decoded) {
+void utf8::decode(const String& str, U32String& decoded) {
   decode(str.c_str(), decoded);
 }
 
@@ -177,7 +184,7 @@ utf8::string_decoder utf8::decoder(const char* str) {
   return string_decoder(str);
 }
 
-utf8::string_decoder utf8::decoder(const std::string& str) {
+utf8::string_decoder utf8::decoder(const String& str) {
   return string_decoder(str.c_str());
 }
 
@@ -223,7 +230,7 @@ void utf8::append(char*& str, char32_t chr) {
   else *str++ = REPLACEMENT_CHAR;
 }
 
-void utf8::append(std::string& str, char32_t chr) {
+void utf8::append(String& str, char32_t chr) {
   if (chr < 0x80) str += chr;
   else if (chr < 0x800) { str += 0xC0 + (chr >> 6); str += 0x80 + (chr & 0x3F); }
   else if (chr < 0x10000) { str += 0xE0 + (chr >> 12); str += 0x80 + ((chr >> 6) & 0x3F); str += 0x80 + (chr & 0x3F); }
@@ -231,21 +238,21 @@ void utf8::append(std::string& str, char32_t chr) {
   else str += REPLACEMENT_CHAR;
 }
 
-template<class F> void utf8::map(F f, const char* str, std::string& result) {
+template<class F> void utf8::map(F f, const char* str, String& result) {
   result.clear();
 
   for (char32_t chr; (chr = decode(str)); )
     append(result, f(chr));
 }
 
-template<class F> void utf8::map(F f, const char* str, size_t len, std::string& result) {
+template<class F> void utf8::map(F f, const char* str, size_t len, String& result) {
   result.clear();
 
   while (len)
     append(result, f(decode(str, len)));
 }
 
-template<class F> void utf8::map(F f, const std::string& str, std::string& result) {
+template<class F> void utf8::map(F f, const String& str, String& result) {
   map(f, str.c_str(), result);
 }
 
