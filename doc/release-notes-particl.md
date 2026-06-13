@@ -1,4 +1,11 @@
 
+23.2.10
+==============
+
+- Improve smsg message size validation.
+- New checkpoints.
+
+
 23.2.9
 ==============
 
