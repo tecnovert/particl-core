@@ -30,6 +30,7 @@
              (gnu packages tls)
              (gnu packages version-control)
              (gnu packages gperf)
+             (guix build-system cmake)
              (guix build-system gnu)
              (guix build-system python)
              (guix build-system trivial)
@@ -236,27 +237,27 @@ parse, modify and abstract ELF, PE and MachO formats.")
 (define osslsigncode
   (package
     (name "osslsigncode")
-    (version "2.0")
+    (version "2.5")
     (source (origin
-              (method url-fetch)
-              (uri (string-append "https://github.com/mtrojnar/"
-                                  name "/archive/" version ".tar.gz"))
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/mtrojnar/osslsigncode")
+                    (commit version)))
               (sha256
                (base32
-                "0byri6xny770wwb2nciq44j5071122l14bvv65axdd70nfjf0q2s"))))
-    (build-system gnu-build-system)
-    (native-inputs
-     `(("pkg-config" ,pkg-config)
-       ("autoconf" ,autoconf)
-       ("automake" ,automake)
-       ("libtool" ,libtool)))
-    (inputs
-     `(("openssl" ,openssl)))
+                "1j47vwq4caxfv0xw68kw5yh00qcpbd56d7rq6c483ma3y7s96yyz"))))
+    (build-system cmake-build-system)
     (arguments
-     `(#:configure-flags
-       `("--without-gsf"
-         "--without-curl"
-         "--disable-dependency-tracking")))
+     (list
+      #:phases
+      #~(modify-phases %standard-phases
+          (replace 'check
+            (lambda* (#:key tests? #:allow-other-keys)
+              (if tests?
+                  (invoke "faketime" "-f" "@2025-01-01 00:00:00" ;; Tests fail after 2025.
+                          "ctest" "--output-on-failure" "--no-tests=error")
+                  (format #t "test suite not run~%")))))))
+    (inputs (list libfaketime openssl))
     (home-page "https://github.com/mtrojnar/osslsigncode")
     (synopsis "Authenticode signing and timestamping tool")
     (description "osslsigncode is a small tool that implements part of the
@@ -264,7 +265,6 @@ functionality of the Microsoft tool signtool.exe - more exactly the Authenticode
 signing and timestamping. But osslsigncode is based on OpenSSL and cURL, and
 thus should be able to compile on most platforms where these exist.")
     (license license:gpl3+))) ; license is with openssl exception
-
 (define-public python-elfesteem
   (let ((commit "87bbd79ab7e361004c98cc8601d4e5f029fd8bd5"))
     (package
