@@ -5,6 +5,13 @@ Next Major Version
 - listunspent include_immature parameter is deprecated, replaced by include_immature_coinbase
 - Removed -lookuptorcontrolhost option
 
+27.2.4
+==============
+
+- Improve smsg message size validation.
+- Use secure_allocators in mnemonic code.
+- New checkpoints.
+
 
 27.2.3
 ==============
