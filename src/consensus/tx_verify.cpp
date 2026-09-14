@@ -570,6 +570,11 @@ static bool CheckBlindOutput(TxValidationState &state, const CTxOutCT *p)
         return state.Invalid(TxValidationResult::TX_CONSENSUS, "bad-ctout-rangeproof-size");
     }
 
+    secp256k1_pedersen_commitment commitment_parsed;
+    if (!secp256k1_pedersen_commitment_parse(secp256k1_ctx_blind, &commitment_parsed, p->commitment.data)) {
+        return state.Invalid(TxValidationResult::TX_CONSENSUS, "bad-ctout-commitment");
+    }
+
     if (state.m_skip_rangeproof) {
         return true;
     }
@@ -612,6 +617,11 @@ bool CheckAnonOutput(TxValidationState &state, const CTxOutRingCT *p)
     size_t nRangeProofLen = 5134;
     if (p->vRangeproof.size() < 500 || p->vRangeproof.size() > nRangeProofLen) {
         return state.Invalid(TxValidationResult::TX_CONSENSUS, "bad-rctout-rangeproof-size");
+    }
+
+    secp256k1_pedersen_commitment commitment_parsed;
+    if (!secp256k1_pedersen_commitment_parse(secp256k1_ctx_blind, &commitment_parsed, p->commitment.data)) {
+        return state.Invalid(TxValidationResult::TX_CONSENSUS, "bad-rctout-commitment");
     }
 
     if (state.m_skip_rangeproof) {
