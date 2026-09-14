@@ -231,6 +231,11 @@ bool CheckBlindOutput(CValidationState &state, const CTxOutCT *p)
         return state.Invalid(ValidationInvalidReason::CONSENSUS, false, REJECT_INVALID, "bad-ctout-rangeproof-size");
     }
 
+    secp256k1_pedersen_commitment commitment_parsed;
+    if (!secp256k1_pedersen_commitment_parse(secp256k1_ctx_blind, &commitment_parsed, p->commitment.data)) {
+        return state.Invalid(ValidationInvalidReason::CONSENSUS, false, REJECT_INVALID, "bad-ctout-commitment");
+    }
+
     if ((fBusyImporting) && fSkipRangeproof) {
         return true;
     }
@@ -273,6 +278,11 @@ bool CheckAnonOutput(CValidationState &state, const CTxOutRingCT *p)
     size_t nRangeProofLen = 5134;
     if (p->vRangeproof.size() < 500 || p->vRangeproof.size() > nRangeProofLen) {
         return state.Invalid(ValidationInvalidReason::CONSENSUS, false, REJECT_INVALID, "bad-rctout-rangeproof-size");
+    }
+
+    secp256k1_pedersen_commitment commitment_parsed;
+    if (!secp256k1_pedersen_commitment_parse(secp256k1_ctx_blind, &commitment_parsed, p->commitment.data)) {
+        return state.Invalid(ValidationInvalidReason::CONSENSUS, false, REJECT_INVALID, "bad-rctout-commitment");
     }
 
     if ((fBusyImporting) && fSkipRangeproof) {
