@@ -413,6 +413,8 @@ PARTICL_SCRIPTS = [
     'feature_part_stealth.py',
     'feature_part_blind.py',
     'feature_part_anon.py',
+    'feature_part_anon_commitment_prefix.py',
+    'feature_part_anon_split_commitment.py',
     'feature_part_taproot.py',
     'wallet_part_particl.py',
     'rpc_part_mnemonic.py',
