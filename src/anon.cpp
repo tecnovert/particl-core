@@ -143,8 +143,13 @@ bool VerifyMLSAG(const CTransaction &tx, TxValidationState &state)
         std::vector<uint8_t> vM(nCols * nRows * 33);
 
         if (fSplitCommitments) {
-            vpOutCommits.push_back(&vDL[(1 + (nInputs+1) * nRingSize) * 32]);
-            vpInputSplitCommits.push_back(&vDL[(1 + (nInputs+1) * nRingSize) * 32]);
+            const uint8_t *split_commit = &vDL[(1 + (nInputs+1) * nRingSize) * 32];
+            secp256k1_pedersen_commitment split_parsed;
+            if (!secp256k1_pedersen_commitment_parse(secp256k1_ctx_blind, &split_parsed, split_commit)) {
+                return state.Invalid(TxValidationResult::TX_CONSENSUS, "bad-anonin-split-commitment");
+            }
+            vpOutCommits.push_back(split_commit);
+            vpInputSplitCommits.push_back(split_commit);
         } else {
             vpOutCommits.push_back(plainCommitment.data);
 
