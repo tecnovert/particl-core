@@ -1,4 +1,11 @@
 
+23.2.11
+==============
+
+- Hardened blinded commitment validation.
+- New checkpoints.
+
+
 23.2.10
 ==============
 
