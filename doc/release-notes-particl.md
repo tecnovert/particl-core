@@ -1,4 +1,11 @@
 
+0.19.2.26
+==============
+
+- Hardened blinded commitment validation.
+- New checkpoints.
+
+
 0.19.2.25
 ==============
 
