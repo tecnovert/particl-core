@@ -163,15 +163,6 @@ AC_ARG_ENABLE([usbdevice],
   [enable_usbdevice=$enableval],
   [enable_usbdevice=no])
 
-AC_ARG_ENABLE([bip39-french-legacy-bom],
-  [AS_HELP_STRING([--enable-bip39-french-legacy-bom],
-  [use historical Particl French BIP39 wordlist with UTF-8 BOM on word 0 (recovery only; default no)])],
-  [enable_bip39_french_legacy_bom=$enableval],
-  [enable_bip39_french_legacy_bom=no])
-AS_IF([test "$enable_bip39_french_legacy_bom" = "yes"],
-  [AC_DEFINE([ENABLE_BIP39_FRENCH_LEGACY_BOM], [1],
-    [Define to use legacy French BIP39 wordlist with UTF-8 BOM on index 0])])
-
 AC_ARG_WITH([miniupnpc],
   [AS_HELP_STRING([--with-miniupnpc],
   [enable UPNP (default is yes if libminiupnpc is found)])],
@@ -1861,7 +1852,6 @@ if test "$enable_wallet" != "no"; then
     echo "    with bdb      = $use_bdb"
 fi
 echo "  with usbdevice  = $enable_usbdevice"
-echo "  with bip39 french legacy bom = $enable_bip39_french_legacy_bom"
 echo "  with gui / qt   = $bitcoin_enable_qt"
 if test $bitcoin_enable_qt != "no"; then
     echo "    with qr       = $use_qr"

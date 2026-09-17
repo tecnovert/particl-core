@@ -6,7 +6,6 @@
 #include <test/data/bip39_vectors_english.json.h>
 #include <test/data/bip39_vectors_japanese.json.h>
 
-#include <config/bitcoin-config.h> // IWYU pragma: keep
 #include <key/extkey.h>
 #include <key_io.h>
 #include <key/mnemonic.h>
@@ -138,46 +137,57 @@ BOOST_AUTO_TEST_CASE(mnemonic_test_json)
 
 BOOST_AUTO_TEST_CASE(mnemonic_french_wordlist_bom)
 {
-    // Regression for UTF-8 BOM previously embedded as the first three bytes of
-    // french_txt, which made word index 0 "\ufeffabaisser" instead of "abaisser".
+    // The French wordlist used to begin with a UTF-8 BOM, making word 0 "\ufeffabaisser"
+    const auto to_hex = [](const auto &v) { return HexStr(std::vector<uint8_t>(v.begin(), v.end())); };
     std::string sError;
     SecureString word0;
     BOOST_REQUIRE_EQUAL(0, mnemonic::GetWord(mnemonic::WLL_FRENCH, 0, word0, sError));
-
-#ifndef ENABLE_BIP39_FRENCH_LEGACY_BOM
     BOOST_CHECK_EQUAL(std::string(word0.c_str()), "abaisser");
 
-    std::vector<uint8_t, secure_allocator<unsigned char>> entropy(16, 0);
+    std::vector<uint8_t, secure_allocator<unsigned char>> entropy(16, 0), entropy_out, vSeed;
     SecureString words;
     BOOST_REQUIRE_EQUAL(0, mnemonic::Encode(mnemonic::WLL_FRENCH, entropy, words, sError));
-    BOOST_CHECK(std::string(words.c_str()).rfind("abaisser ", 0) == 0);
+    BOOST_CHECK_EQUAL(std::string(words.c_str()), "abaisser abaisser abaisser abaisser abaisser abaisser abaisser abaisser abaisser abaisser abaisser abeille");
 
     SecureString passphrase = "TREZOR";
-    std::vector<uint8_t, secure_allocator<unsigned char>> vSeed;
     BOOST_REQUIRE_EQUAL(0, mnemonic::ToSeed(words, passphrase, vSeed));
-    std::vector<uint8_t> hex_seed(vSeed.begin(), vSeed.end());
-    BOOST_CHECK_EQUAL(HexStr(hex_seed),
+    BOOST_CHECK_EQUAL(to_hex(vSeed),
         "3bf3366c40256d7e2fca716fddf8673425c7c7e444af290ee1edf1bbf095e6e78a7190253f3e46f1e2069345d4b05ac17b242faa225c0a3e4d268976744e0698");
-#else
-    // Historical Particl list: index 0 carries a leading U+FEFF (UTF-8 BOM).
-    BOOST_CHECK(word0.size() >= 3);
-    BOOST_CHECK_EQUAL(static_cast<unsigned char>(word0[0]), 0xef);
-    BOOST_CHECK_EQUAL(static_cast<unsigned char>(word0[1]), 0xbb);
-    BOOST_CHECK_EQUAL(static_cast<unsigned char>(word0[2]), 0xbf);
-    BOOST_CHECK(std::string(word0.c_str()) != "abaisser");
 
-    std::vector<uint8_t, secure_allocator<unsigned char>> entropy(16, 0);
-    SecureString words;
-    BOOST_REQUIRE_EQUAL(0, mnemonic::Encode(mnemonic::WLL_FRENCH, entropy, words, sError));
-
-    SecureString passphrase = "TREZOR";
-    std::vector<uint8_t, secure_allocator<unsigned char>> vSeed;
-    BOOST_REQUIRE_EQUAL(0, mnemonic::ToSeed(words, passphrase, vSeed));
-    std::vector<uint8_t> hex_seed(vSeed.begin(), vSeed.end());
-    // Positive match for the historical BOM wordlist (not the Trezor/BIP39 seed).
-    BOOST_CHECK_EQUAL(HexStr(hex_seed),
+    // Legacy mode reproduces the seed of the old wordlist from the words as written down
+    BOOST_REQUIRE_EQUAL(0, mnemonic::ToSeed(words, passphrase, vSeed, true));
+    BOOST_CHECK_EQUAL(to_hex(vSeed),
         "06770fb231ab54f483953e034db26719c346ff1c4fbf5ebbd70779468456e1a162fe45cdb83ccfd425eb73fb96f7afbded1b6e982034e31b791883192e594917");
-#endif
+
+    // A mnemonic saved from an old release still carries the BOMs
+    SecureString words_old;
+    for (size_t i = 0; i < 11; ++i) {
+        words_old += "\xef\xbb\xbf";
+        words_old += "abaisser ";
+    }
+    words_old += "abeille";
+
+    int language = -1;
+    BOOST_CHECK(0 != mnemonic::Decode(language, words_old, entropy_out, sError));
+
+    SecureString words_stripped = words_old;
+    mnemonic::RemoveBOM(words_stripped);
+    BOOST_CHECK(words_stripped == words);
+    language = -1;
+    BOOST_REQUIRE_EQUAL(0, mnemonic::Decode(language, words_stripped, entropy_out, sError));
+    BOOST_CHECK_EQUAL(language, (int)mnemonic::WLL_FRENCH);
+    BOOST_CHECK(entropy_out == entropy);
+
+    BOOST_REQUIRE_EQUAL(0, mnemonic::ToSeed(words_old, passphrase, vSeed, true));
+    BOOST_CHECK_EQUAL(to_hex(vSeed),
+        "06770fb231ab54f483953e034db26719c346ff1c4fbf5ebbd70779468456e1a162fe45cdb83ccfd425eb73fb96f7afbded1b6e982034e31b791883192e594917");
+
+    // Legacy mode changes nothing when the first word is absent
+    SecureString words_other = "zoologie zoologie zoologie";
+    std::vector<uint8_t, secure_allocator<unsigned char>> seed_a, seed_b;
+    BOOST_REQUIRE_EQUAL(0, mnemonic::ToSeed(words_other, passphrase, seed_a));
+    BOOST_REQUIRE_EQUAL(0, mnemonic::ToSeed(words_other, passphrase, seed_b, true));
+    BOOST_CHECK(seed_a == seed_b);
 }
 
 BOOST_AUTO_TEST_CASE(random_issuer_test)
