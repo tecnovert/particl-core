@@ -259,12 +259,12 @@ protected:
             consensus.nLastImportHeight = std::max(consensus.nLastImportHeight, cth.nHeight);
         }
     }
-    int nBIP44ID;
+    int nBIP44ID = (int)0x80000001;
     std::vector<unsigned char> bech32Prefixes[MAX_BASE58_TYPES];
-    uint32_t nModifierInterval;         // seconds to elapse before new modifier is computed
-    uint32_t nStakeMinConfirmations;    // min depth in chain before staked output is spendable
-    uint32_t nTargetSpacing;            // targeted number of seconds between blocks
-    uint32_t nTargetTimespan;
+    uint32_t nModifierInterval = 10 * 60;    // seconds to elapse before new modifier is computed
+    uint32_t nStakeMinConfirmations = 225;   // min depth in chain before staked output is spendable
+    uint32_t nTargetSpacing = 120;           // targeted number of seconds between blocks
+    uint32_t nTargetTimespan = 24 * 60;
 
     uint32_t nStakeTimestampMask = (1 << 4) - 1; // 4 bits, every kernel stake hash will change every 16 seconds
     int64_t nCoinYearReward = 2 * CENT; // 2% per year, See GetCoinYearReward

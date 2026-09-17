@@ -101,18 +101,18 @@ struct Params {
 
     bool m_particl_mode = true;
     /** Time at which OP_ISCOINSTAKE becomes active */
-    int64_t OpIsCoinstakeTime;
-    bool fAllowOpIsCoinstakeWithP2PKH;
+    int64_t OpIsCoinstakeTime = 0x7FFFFFFFFFFFFFFF;
+    bool fAllowOpIsCoinstakeWithP2PKH = false;
     /** Time at which Paid SMSG becomes active */
-    uint32_t nPaidSmsgTime;
+    uint32_t nPaidSmsgTime = 0xffffffff;
     /** Time at which variable SMSG fee become active */
-    uint32_t smsg_fee_time;
+    uint32_t smsg_fee_time = 0xffffffff;
     /** Time at which bulletproofs become active */
-    uint32_t bulletproof_time;
+    uint32_t bulletproof_time = 0xffffffff;
     /** Time at which RCT become active */
-    uint32_t rct_time;
+    uint32_t rct_time = 0xffffffff;
     /** Time at which SMSG difficulty tokens are enforced */
-    uint32_t smsg_difficulty_time;
+    uint32_t smsg_difficulty_time = 0xffffffff;
     /** Time of fork to clamp tx version, fix moneysupply and add more data outputs for blind and anon txns */
     uint32_t clamp_tx_version_time = 0xffffffff;
     /** Exploit fix 1 */
@@ -139,12 +139,12 @@ struct Params {
     size_t m_max_ringsize = 32;
     size_t m_max_anon_inputs = 32;
 
-    uint32_t smsg_fee_period;
-    int64_t smsg_fee_funding_tx_per_k;
-    int64_t smsg_fee_msg_per_day_per_k;
-    int64_t smsg_fee_max_delta_percent; /* Divided by 1000000 */
-    uint32_t smsg_min_difficulty;
-    uint32_t smsg_difficulty_max_delta;
+    uint32_t smsg_fee_period = 5040;
+    int64_t smsg_fee_funding_tx_per_k = 0;
+    int64_t smsg_fee_msg_per_day_per_k = 0;
+    int64_t smsg_fee_max_delta_percent = 0; /* Divided by 1000000 */
+    uint32_t smsg_min_difficulty = 0;
+    uint32_t smsg_difficulty_max_delta = 0;
     /** Highest block with imported outputs, set from vImportedCoinbaseTxns */
     uint32_t nLastImportHeight{0};
 
@@ -173,7 +173,7 @@ struct Params {
     uint256 defaultAssumeValid;
 
     /** Minimum depth a Particl Anon output is spendable at */
-    int nMinRCTOutputDepth;
+    int nMinRCTOutputDepth = 12;
 
     /**
      * If true, witness commitments contain a payload equal to a Bitcoin Script solution
