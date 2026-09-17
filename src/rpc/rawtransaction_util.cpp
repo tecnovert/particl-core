@@ -256,7 +256,7 @@ void ParsePrevouts(const UniValue& prevTxsUnival, FillableSigningProvider* keyst
                         ScriptToAsmStr(scriptPubKey);
                     throw JSONRPCError(RPC_DESERIALIZATION_ERROR, err);
                 }
-                if (coin->second.nType != OUTPUT_STANDARD && coin->second.nType != OUTPUT_CT) {
+                if (coin != coins.end() && coin->second.nType != OUTPUT_STANDARD && coin->second.nType != OUTPUT_CT) {
                     throw JSONRPCError(RPC_MISC_ERROR, strprintf("Bad input type: %d", coin->second.nType));
                 }
                 Coin newcoin;
