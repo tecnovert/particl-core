@@ -166,6 +166,51 @@ class MnemonicTest(ParticlTestFramework):
         mnemonic_out = node.mnemonicfromentropy({'entropy': entropy_hex})
         assert (mnemonic_out == test_mnemonic)
 
+        self.log.info('Test legacy French wordlist byte order mark')
+        words_fr = 'abaisser abaisser abaisser abaisser abaisser abaisser abaisser abaisser abaisser abaisser abaisser abeille'
+        assert (node.mnemonicfromentropy({'entropy': '00' * 16, 'language': 'french'}) == words_fr)
+        ro = node.mnemonic('decode', '', words_fr)
+        ro_legacy = node.mnemonic('decode', '', words_fr, 'true', 'true')
+        assert (ro['master'] != ro_legacy['master'])
+
+        words_fr_old = words_fr.replace('abaisser', '\ufeffabaisser')
+        try:
+            node.mnemonic('decode', '', words_fr_old)
+            assert (False), 'Decoded mnemonic with byte order marks'
+        except JSONRPCException as e:
+            assert ('Decode failed' in e.error['message'])
+        assert (node.mnemonic('decode', '', words_fr_old, 'true', 'true')['master'] == ro_legacy['master'])
+
+        try:
+            node.mnemonic('decode', '', 'abandon baby cabbage dad eager fabric gadget habit ice kangaroo lab absorb', 'true', 'true')
+            assert (False), 'legacy_french_bom accepted for an English mnemonic'
+        except JSONRPCException as e:
+            assert ('only applies to French' in e.error['message'])
+
+        if self.is_wallet_compiled():
+            self.log.info('Test legacy French wordlist wallet import')
+            for wallet_name in ('fr_standard', 'fr_legacy', 'fr_legacy_old', 'en_legacy'):
+                node.createwallet(wallet_name)
+            w_standard = node.get_wallet_rpc('fr_standard')
+            w_legacy = node.get_wallet_rpc('fr_legacy')
+            w_legacy_old = node.get_wallet_rpc('fr_legacy_old')
+            w_english = node.get_wallet_rpc('en_legacy')
+
+            ro_standard = w_standard.extkeyimportmaster(words_fr, '', False, 'Master Key', 'Default Account', -1)
+            ro_legacy = w_legacy.extkeyimportmaster(words_fr, '', False, 'Master Key', 'Default Account', -1, {'legacy_french_bom': True})
+            assert (ro_standard['master_id'] != ro_legacy['master_id'])
+            assert (ro_standard['account_id'] != ro_legacy['account_id'])
+
+            ro_legacy_old = w_legacy_old.extkeyimportmaster(words_fr_old, '', False, 'Master Key', 'Default Account', -1, {'legacy_french_bom': True})
+            assert (ro_legacy_old['master_id'] == ro_legacy['master_id'])
+            assert (ro_legacy_old['account_id'] == ro_legacy['account_id'])
+
+            try:
+                w_english.extkeyimportmaster('abandon baby cabbage dad eager fabric gadget habit ice kangaroo lab absorb', '', False, 'Master Key', 'Default Account', -1, {'legacy_french_bom': True})
+                assert (False), 'legacy_french_bom accepted for an English mnemonic'
+            except JSONRPCException as e:
+                assert ('only applies to French' in e.error['message'])
+
 
 if __name__ == '__main__':
     MnemonicTest().main()

@@ -621,7 +621,41 @@ static int mnemonicKdf(const uint8_t *password, size_t lenPassword,
     return 0;
 };
 
-int ToSeed(const SecureString &sMnemonic, const SecureString &sPasswordIn, std::vector<uint8_t, secure_allocator<uint8_t>> &vSeed)
+static const char *UTF8_BOM = "\xef\xbb\xbf";
+
+void RemoveBOM(SecureString &sWordList)
+{
+    size_t pos = 0;
+    while ((pos = sWordList.find(UTF8_BOM, pos)) != SecureString::npos) {
+        sWordList.erase(pos, 3);
+    }
+};
+
+// Older releases shipped the French wordlist with a BOM on the first word and derived seeds from the mnemonic including it
+static void AddLegacyFrenchBOM(SecureString &sWordList)
+{
+    static const SecureString first_word = "abaisser";
+    RemoveBOM(sWordList);
+    SecureString out;
+    size_t start = 0;
+    while (start <= sWordList.size()) {
+        size_t end = sWordList.find(' ', start);
+        if (end == SecureString::npos) {
+            end = sWordList.size();
+        }
+        if (sWordList.compare(start, end - start, first_word) == 0) {
+            out += UTF8_BOM;
+        }
+        out.append(sWordList, start, end - start);
+        if (end < sWordList.size()) {
+            out += ' ';
+        }
+        start = end + 1;
+    }
+    sWordList = out;
+};
+
+int ToSeed(const SecureString &sMnemonic, const SecureString &sPasswordIn, std::vector<uint8_t, secure_allocator<uint8_t>> &vSeed, bool legacy_french_bom)
 {
     LogPrint(BCLog::HDWALLET, "%s\n", __func__);
 
@@ -630,6 +664,9 @@ int ToSeed(const SecureString &sMnemonic, const SecureString &sPasswordIn, std::
     SecureString sWordList = sMnemonic, sPassword = sPasswordIn;
     NormaliseInput(sWordList);
     NormaliseInput(sPassword);
+    if (legacy_french_bom) {
+        AddLegacyFrenchBOM(sWordList);
+    }
 
     if (strstr(sWordList.c_str(), "  ") != nullptr) {
         return errorN(1, "%s: Multiple spaces between words.", __func__);
