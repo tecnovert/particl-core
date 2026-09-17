@@ -125,15 +125,37 @@ class SmsgTest(ParticlTestFramework):
         assert (len(ro['messages']) == 1)
         assert (ro['messages'][0]['msgid'] == msgids[1])
 
+        self.log.info('Testing smsgin/outbox num_messages')
+        ro = nodes[0].smsginbox('all', '', {'max_results': 1})
+        assert (len(ro['messages']) == 1)
+        assert (ro['num_messages'] == 2)
+        ro = nodes[0].smsginbox('all', '', {'max_results': 1, 'offset': 5})
+        assert (len(ro['messages']) == 0)
+        assert (ro['num_messages'] == 2)
+        ro = nodes[0].smsginbox('all', '. 2', {'max_results': 1})
+        assert (len(ro['messages']) == 1)
+        assert (ro['messages'][0]['text'] == 'Test 1->0. 2')
+        assert (ro['num_messages'] == 1)
+        ro = nodes[0].smsginbox('all', '. 2', {'max_results': 1, 'offset': 1})
+        assert (len(ro['messages']) == 0)
+        assert (ro['num_messages'] == 1)
+        assert (nodes[0].smsginbox('unread')['num_messages'] == 0)
+
         ro = nodes[1].smsgoutbox('all')
         assert (len(ro['messages']) == 2)
         msgids = [ro['messages'][0]['msgid'], ro['messages'][1]['msgid']]
         ro = nodes[1].smsgoutbox('all', '', {'max_results': 1})
         assert (len(ro['messages']) == 1)
         assert (ro['messages'][0]['msgid'] == msgids[0])
+        assert (ro['num_messages'] == 2)
         ro = nodes[1].smsgoutbox('all', '', {'max_results': 1, 'offset': 1})
         assert (len(ro['messages']) == 1)
         assert (ro['messages'][0]['msgid'] == msgids[1])
+        assert (ro['num_messages'] == 2)
+        ro = nodes[1].smsgoutbox('all', '. 2', {'max_results': 1})
+        assert (len(ro['messages']) == 1)
+        assert (ro['num_messages'] == 1)
+        assert (nodes[1].smsgoutbox('count')['num_messages'] == 2)
 
         msg = 'Test anon 1->0. 2'
         ro = nodes[1].smsgsendanon(address0, msg)
@@ -262,6 +284,34 @@ class SmsgTest(ParticlTestFramework):
 
         outbox_after = nodes[1].smsgoutbox()
         assert len(outbox_before["messages"]) == len(outbox_after["messages"])
+
+        self.log.info('Testing smsgexpire')
+        options = {'encoding': 'none', 'updatestatus': False}
+        inbox_msgs = nodes[1].smsginbox('all', '', options)['messages']
+        outbox_msgs = nodes[1].smsgoutbox('all', '', options)['messages']
+        num_inbox = len(inbox_msgs)
+        num_outbox = len(outbox_msgs)
+        assert (num_inbox > 0 and num_outbox > 0)
+        expire_times = [m['sent'] + m['ttl'] for m in inbox_msgs + outbox_msgs]
+
+        ro = nodes[1].smsgexpire(min(expire_times), {'dry_run': True})
+        assert (ro['num_expired'] == 0)
+        ro = nodes[1].smsgexpire(min(expire_times) + 1, {'dry_run': True})
+        assert (ro['num_expired'] > 0)
+        assert (nodes[1].smsginbox('count')['num_messages'] == num_inbox)
+        assert (nodes[1].smsgoutbox('count')['num_messages'] == num_outbox)
+
+        ro = nodes[1].smsgexpire(max(expire_times) + 1, {'outbox': False})
+        assert (ro['expired_inbox'] == num_inbox)
+        assert (ro['expired_outbox'] == 0)
+        assert (nodes[1].smsginbox('count')['num_messages'] == 0)
+        assert (nodes[1].smsgoutbox('count')['num_messages'] == num_outbox)
+
+        ro = nodes[1].smsgexpire(max(expire_times) + 1)
+        assert (ro['expired_inbox'] == 0)
+        assert (ro['expired_outbox'] == num_outbox)
+        assert (ro['num_expired'] == num_outbox)
+        assert (nodes[1].smsgoutbox('count')['num_messages'] == 0)
 
 
 if __name__ == '__main__':

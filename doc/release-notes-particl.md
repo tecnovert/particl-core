@@ -4,6 +4,9 @@ Next Major Version
 
 - listunspent include_immature parameter is deprecated, replaced by include_immature_coinbase
 - Removed -lookuptorcontrolhost option
+- rpc: smsginbox and smsgoutbox list modes return num_messages, the number of matching messages before offset and max_results are applied.
+  - offset now skips matching messages rather than all stored messages.
+- rpc: Added smsgexpire, deletes stored messages which expired before a timestamp without decrypting them.
 
 24.0.2
 ==============
