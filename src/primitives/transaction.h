@@ -669,7 +669,7 @@ inline void UnserializeTransaction(TxType& tx, Stream& s) {
 
         size_t nOutputs = ReadCompactSize(s);
         tx.vpout.clear();
-        tx.vpout.reserve(nOutputs);
+        tx.vpout.reserve(std::min<size_t>(nOutputs, 1 + 4999999 / sizeof(CTxOutBaseRef)));
         for (size_t k = 0; k < nOutputs; ++k) {
             s >> bv;
             switch (bv) {

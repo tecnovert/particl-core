@@ -480,6 +480,13 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
             state.fHasAnonInput = true;
             nRingCTInputs++;
 
+            if (tx.vin[i].scriptData.stack.size() != 1) {
+                return state.Invalid(ValidationInvalidReason::CONSENSUS, false, REJECT_INVALID, "bad-anonin-dstack-size");
+            }
+            if (tx.vin[i].scriptWitness.stack.size() != 2) {
+                return state.Invalid(ValidationInvalidReason::CONSENSUS, false, REJECT_INVALID, "bad-anonin-wstack-size");
+            }
+
             const std::vector<uint8_t> &vKeyImages = tx.vin[i].scriptData.stack[0];
             const std::vector<uint8_t> &vMI = tx.vin[i].scriptWitness.stack[0];
             uint32_t nInputs, nRingSize;
@@ -489,6 +496,9 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
             }
             if (nRingSize < consensusParams.m_min_ringsize || nRingSize > consensusParams.m_max_ringsize) {
                 return state.Invalid(ValidationInvalidReason::CONSENSUS, false, REJECT_INVALID, "bad-anon-ringsize");
+            }
+            if (vKeyImages.size() != nInputs * 33) {
+                return state.Invalid(ValidationInvalidReason::CONSENSUS, false, REJECT_INVALID, "bad-anonin-keyimages-size");
             }
             if (min_ring_size > nRingSize) {
                 min_ring_size = nRingSize;
