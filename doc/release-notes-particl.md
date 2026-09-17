@@ -6,6 +6,19 @@ Next Major Version
 - Removed -lookuptorcontrolhost option
 
 
+27.2.6
+==============
+
+- consensus: Harden anon transaction input data length checks.
+  - Reject anon inputs with a malformed key-image or witness stack before the data is read.
+- serialize: Fix a potential out-of-bounds read in GetVarInt when the offset is at or past the end of the buffer.
+- Bound output vector pre-allocation when deserializing transactions.
+- smsg: Check funding data length before use.
+- Initialise Particl consensus parameters for the signet chain.
+- consensus: Reject anon transactions with a zero plain value explicitly instead of through an uninitialised commitment.
+- rpc: Bounds check prevouts in decodepsbt and signrawtransaction for Particl output types.
+
+
 27.2.5
 ==============
 
