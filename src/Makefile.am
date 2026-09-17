@@ -920,6 +920,7 @@ libparticl_mnemonic_a_SOURCES = \
   key/wordlists/chinese_traditional.h \
   key/wordlists/english.h \
   key/wordlists/french.h \
+  key/wordlists/french_legacy_bom.h \
   key/wordlists/japanese.h \
   key/wordlists/spanish.h \
   key/wordlists/italian.h \

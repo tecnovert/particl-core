@@ -14,6 +14,7 @@
 #define ENABLE_BIP39_KOREAN 1
 #define ENABLE_BIP39_CZECH 1
 
+#include <config/bitcoin-config.h> // IWYU pragma: keep
 #include <key/mnemonic.h>
 
 #include <crypto/hmac_sha512.h>
@@ -37,7 +38,11 @@ unsigned char *english_txt = nullptr;
 uint32_t english_txt_len = 0;
 #endif
 #ifdef ENABLE_BIP39_FRENCH
+#ifdef ENABLE_BIP39_FRENCH_LEGACY_BOM
+#include <key/wordlists/french_legacy_bom.h>
+#else
 #include <key/wordlists/french.h>
+#endif
 #else
 unsigned char *french_txt = nullptr;
 uint32_t french_txt_len = 0;
