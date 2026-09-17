@@ -6281,6 +6281,10 @@ static void traceFrozenPrevout(WalletContext& context, const COutPoint &op_trace
         int64_t anon_index = 0;
         CCmpPubKey anon_pubkey;
         if (r.nType == OUTPUT_RINGCT) {
+            if (r.n >= stx.tx->GetNumVOuts() || !stx.tx->vpout[r.n]->IsType(OUTPUT_RINGCT)) {
+                warnings.push_back(strprintf("Output type mismatch %s", op_trace.ToString()));
+                continue;
+            }
             anon_pubkey = ((CTxOutRingCT*)stx.tx->vpout[r.n].get())->pk;
             if (!pwallet->chain().readRCTOutputLink(anon_pubkey, anon_index)) {
                 warnings.push_back(strprintf("ReadRCTOutputLink failed %s", op_trace.ToString()));
@@ -6466,6 +6470,7 @@ static void traceFrozenOutputs(WalletContext& context, UniValue &rv, CAmount min
                 if (r.nType == OUTPUT_RINGCT) {
                     CStoredTransaction stx;
                     if (!wdb.ReadStoredTx(txid, stx) ||
+                        r.n >= stx.tx->GetNumVOuts() ||
                         !stx.tx->vpout[r.n]->IsType(OUTPUT_RINGCT) ||
                         !pwallet->chain().readRCTOutputLink(((CTxOutRingCT*)stx.tx->vpout[r.n].get())->pk, anon_index)) {
                         warnings.push_back(strprintf("Failed to get anon index for %s.%d", txid.ToString(), r.n));
@@ -6553,7 +6558,9 @@ static void traceFrozenOutputs(WalletContext& context, UniValue &rv, CAmount min
                 traced_output.m_value = r.nValue;
                 traced_output.m_n = r.n;
                 if (r.nType == OUTPUT_RINGCT &&
-                    !pwallet->chain().readRCTOutputLink(((CTxOutRingCT*)stx.tx->vpout[r.n].get())->pk, traced_output.m_anon_index)) {
+                    (r.n >= stx.tx->GetNumVOuts() ||
+                     !stx.tx->vpout[r.n]->IsType(OUTPUT_RINGCT) ||
+                     !pwallet->chain().readRCTOutputLink(((CTxOutRingCT*)stx.tx->vpout[r.n].get())->pk, traced_output.m_anon_index))) {
                     warnings.push_back(strprintf("ReadRCTOutputLink failed %s %d", txid.ToString(), r.n));
                 }
                 traced_output.m_is_spent = pwallet->IsSpent(COutPoint(Txid::FromUint256(txid), r.n));
@@ -6867,6 +6874,7 @@ static RPCHelpMan debugwallet()
                     CStoredTransaction stx;
 
                     if (!wdb.ReadStoredTx(txid, stx) ||
+                        r.n >= stx.tx->GetNumVOuts() ||
                         !stx.tx->vpout[r.n]->IsType(OUTPUT_RINGCT) ||
                         !pwallet->chain().readRCTOutputLink(((CTxOutRingCT*)stx.tx->vpout[r.n].get())->pk, anon_index) ||
                         IsBlacklistedAnonOutput(anon_index) ||
