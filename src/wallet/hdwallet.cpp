@@ -1699,8 +1699,12 @@ void CHDWallet::Downgrade()
             }
             uint32_t nInputs, nRingSize;
             txin.GetAnonInfo(nInputs, nRingSize);
+            if (txin.scriptData.stack.size() != 1 ||
+                txin.scriptData.stack[0].size() != (size_t)nInputs * 33) {
+                WalletLogPrintf("Error: %s - Malformed anon txin, %s.\n", __func__, txhash.ToString());
+                continue;
+            }
             const std::vector<uint8_t> &vKeyImages = txin.scriptData.stack[0];
-            assert(vKeyImages.size() == nInputs * 33);
             for (size_t k = 0; k < nInputs; ++k) {
                 const CCmpPubKey &ki = *((CCmpPubKey*)&vKeyImages[k*33]);
                 op.n = 0;
@@ -4021,7 +4025,7 @@ int CHDWallet::AddStandardInputs(CWalletTx &wtx, CTransactionRecord &rtx,
                         r.vBlind.resize(32);
                         // Last to-be-blinded value: compute from all other blinding factors.
                         // sum of output blinding values must equal sum of input blinding values
-                        if (!secp256k1_pedersen_blind_sum(secp256k1_ctx_blind, &r.vBlind[0], &vpBlinds[0], vpBlinds.size(), nBlindedInputs)) {
+                        if (!secp256k1_pedersen_blind_sum(secp256k1_ctx_blind, &r.vBlind[0], vpBlinds.data(), vpBlinds.size(), nBlindedInputs)) {
                             return wserrorN(1, sError, __func__, "secp256k1_pedersen_blind_sum failed.");
                         }
                     } else {
@@ -4792,7 +4796,7 @@ int CHDWallet::AddBlindedInputs(CWalletTx &wtx, CTransactionRecord &rtx,
 
             // Last to-be-blinded value: compute from all other blinding factors.
             // sum of output blinding values must equal sum of input blinding values
-            if (!secp256k1_pedersen_blind_sum(secp256k1_ctx_blind, &r.vBlind[0], &vpBlinds[0], vpBlinds.size(), nBlindedInputs)) {
+            if (!secp256k1_pedersen_blind_sum(secp256k1_ctx_blind, &r.vBlind[0], vpBlinds.data(), vpBlinds.size(), nBlindedInputs)) {
                 return wserrorN(1, sError, __func__, "secp256k1_pedersen_blind_sum failed.");
             }
 
@@ -4820,7 +4824,7 @@ int CHDWallet::AddBlindedInputs(CWalletTx &wtx, CTransactionRecord &rtx,
             vData.push_back(DO_MASK);
             size_t start = vData.size();
             vData.resize(start + 32);
-            if (!secp256k1_pedersen_blind_sum(secp256k1_ctx_blind, vData.data() + start, &vpBlinds[0], vpBlinds.size(), nBlindedInputs)) {
+            if (!secp256k1_pedersen_blind_sum(secp256k1_ctx_blind, vData.data() + start, vpBlinds.data(), vpBlinds.size(), nBlindedInputs)) {
                 return wserrorN(1, sError, __func__, "secp256k1_pedersen_blind_sum failed.");
             }
         }
@@ -10281,6 +10285,10 @@ bool CHDWallet::ScanForOwnedOutputs(const CTransaction &tx, size_t &nCT, size_t 
                 continue;
             }
 
+            if (ctout->vData.size() < 33) {
+                continue;
+            }
+
             // Uncover stealth
             uint32_t prefix = 0;
             bool fHavePrefix = ExtractStealthPrefix(ctout->vData, prefix);
@@ -10299,6 +10307,9 @@ bool CHDWallet::ScanForOwnedOutputs(const CTransaction &tx, size_t &nCT, size_t 
             const CTxOutRingCT *rctout = (CTxOutRingCT*) txout.get();
 
             CKeyID idk = rctout->pk.GetID();
+            if (rctout->vData.size() < 33) {
+                continue;
+            }
 
             // Uncover stealth
             uint32_t prefix = 0;
@@ -10532,11 +10543,12 @@ bool CHDWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const SyncT
                 uint32_t nInputs, nRingSize;
                 txin.GetAnonInfo(nInputs, nRingSize);
 
-                const std::vector<uint8_t> &vKeyImages = txin.scriptData.stack[0];
-                if (vKeyImages.size() != nInputs * 33) {
+                if (txin.scriptData.stack.size() != 1 ||
+                    txin.scriptData.stack[0].size() != (size_t)nInputs * 33) {
                     WalletLogPrintf("Error: %s - Malformed anon txin, %s.\n", __func__, tx.GetHash().ToString());
                     continue;
                 }
+                const std::vector<uint8_t> &vKeyImages = txin.scriptData.stack[0];
 
                 CHDWalletDB wdb(*m_database);
                 for (size_t k = 0; k < nInputs; ++k) {
@@ -11176,8 +11188,12 @@ bool CHDWallet::AddToRecord(CTransactionRecord &rtxIn, const CTransaction &tx, c
             }
             uint32_t nInputs, nRingSize;
             txin.GetAnonInfo(nInputs, nRingSize);
+            if (txin.scriptData.stack.size() != 1 ||
+                txin.scriptData.stack[0].size() != (size_t)nInputs * 33) {
+                WalletLogPrintf("Error: %s - Malformed anon txin, %s.\n", __func__, txhash.ToString());
+                continue;
+            }
             const std::vector<uint8_t> &vKeyImages = txin.scriptData.stack[0];
-            assert(vKeyImages.size() == nInputs * 33);
 
             for (size_t k = 0; k < nInputs; ++k) {
                 const CCmpPubKey &ki = *((CCmpPubKey*)&vKeyImages[k * 33]);
@@ -12262,6 +12278,7 @@ void CHDWallet::AvailableAnonCoins(std::vector<COutputR> &vCoins, const CCoinCon
                 CStoredTransaction stx;
                 int64_t index;
                 if (!wdb.ReadStoredTx(txid, stx) ||
+                    r.n >= stx.tx->GetNumVOuts() ||
                     !stx.tx->vpout[r.n]->IsType(OUTPUT_RINGCT) ||
                     !chain().readRCTOutputLink(((CTxOutRingCT*)stx.tx->vpout[r.n].get())->pk, index) ||
                     IsBlacklistedAnonOutput(index) ||
@@ -12308,6 +12325,9 @@ const CTxOutBase* CHDWallet::FindNonChangeParentOutput(const CTransaction& tx, i
 {
     const CTransaction* ptx = &tx;
     int n = output;
+    if (n < 0 || (size_t)n >= ptx->vpout.size()) {
+        return nullptr;
+    }
     while (IsChange(ptx->vpout[n].get()) && ptx->vin.size() > 0) {
         const COutPoint& prevout = ptx->vin[0].prevout;
 
@@ -12340,9 +12360,14 @@ std::map<CTxDestination, std::vector<COutput>> CHDWallet::ListCoins() const
         CTransactionRef tx;
         CTxDestination address;
 
-        if (coin.spendable &&
-            GetTransaction(coin.outpoint.hash, tx) &&
-            ExtractDestination(*(FindNonChangeParentOutput(*tx, coin.outpoint.n)->GetPScriptPubKey()), address)) {
+        if (!coin.spendable ||
+            !GetTransaction(coin.outpoint.hash, tx)) {
+            continue;
+        }
+        const CTxOutBase *parent_output = FindNonChangeParentOutput(*tx, coin.outpoint.n);
+        const CScript *parent_script = parent_output ? parent_output->GetPScriptPubKey() : nullptr;
+        if (parent_script &&
+            ExtractDestination(*parent_script, address)) {
             result[address].emplace_back(coin);
         }
     }
