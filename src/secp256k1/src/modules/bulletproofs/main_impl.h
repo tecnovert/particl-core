@@ -96,6 +96,7 @@ int secp256k1_bulletproof_rangeproof_verify(const secp256k1_context* ctx, secp25
     ARG_CHECK(n_commits > 0);
     ARG_CHECK(nbits > 0);
     ARG_CHECK(nbits <= 64);
+    ARG_CHECK(((nbits * n_commits) & (nbits * n_commits - 1)) == 0);
     ARG_CHECK(value_gen != NULL);
     ARG_CHECK(extra_commit != NULL || extra_commit_len == 0);
 
@@ -103,7 +104,10 @@ int secp256k1_bulletproof_rangeproof_verify(const secp256k1_context* ctx, secp25
 
     commitp = (secp256k1_ge *)secp256k1_scratch_alloc(&bp_error_callback, scratch, n_commits * sizeof(secp256k1_ge));
     for (i = 0; i < n_commits; i++) {
-        secp256k1_pedersen_commitment_load(&commitp[i], &commit[i]);
+        if (!secp256k1_pedersen_commitment_load(&commitp[i], &commit[i])) {
+            secp256k1_scratch_apply_checkpoint(&bp_error_callback, scratch, scratch_checkpoint);
+            return 0;
+        }
     }
     secp256k1_generator_load(&value_genp, value_gen);
 
@@ -131,6 +135,7 @@ int secp256k1_bulletproof_rangeproof_verify_multi(const secp256k1_context* ctx, 
     ARG_CHECK(n_commits > 0);
     ARG_CHECK(nbits > 0);
     ARG_CHECK(nbits <= 64);
+    ARG_CHECK(((nbits * n_commits) & (nbits * n_commits - 1)) == 0);
     ARG_CHECK(value_gen != NULL);
     ARG_CHECK((extra_commit_len == NULL) == (extra_commit == NULL));
     if (extra_commit != NULL) {
@@ -148,7 +153,10 @@ int secp256k1_bulletproof_rangeproof_verify_multi(const secp256k1_context* ctx, 
         size_t j;
         commitp[i] = (secp256k1_ge *)secp256k1_scratch_alloc(&bp_error_callback, scratch, n_commits * sizeof(*commitp[i]));
         for (j = 0; j < n_commits; j++) {
-            secp256k1_pedersen_commitment_load(&commitp[i][j], &commit[i][j]);
+            if (!secp256k1_pedersen_commitment_load(&commitp[i][j], &commit[i][j])) {
+                secp256k1_scratch_apply_checkpoint(&bp_error_callback, scratch, scratch_checkpoint);
+                return 0;
+            }
         }
         secp256k1_generator_load(&value_genp[i], &value_gen[i]);
     }
@@ -198,7 +206,9 @@ int secp256k1_bulletproof_rangeproof_prove(const secp256k1_context* ctx, secp256
     ARG_CHECK(value_gen != NULL);
     ARG_CHECK(nonce != NULL);
     ARG_CHECK(n_commits > 0);
+    ARG_CHECK(nbits > 0);
     ARG_CHECK(nbits <= 64);
+    ARG_CHECK(((nbits * n_commits) & (nbits * n_commits - 1)) == 0);
     if (nbits < 64) {
         for (i = 0; i < n_commits; i++) {
             ARG_CHECK(value[i] < (1ull << nbits));
