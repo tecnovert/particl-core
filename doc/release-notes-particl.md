@@ -20,6 +20,7 @@ Next Major Version
 - rpc: smsginbox and smsgoutbox list modes return num_messages, the number of matching messages before offset and max_results are applied.
   - offset now skips matching messages rather than all stored messages.
 - rpc: Added smsgexpire, deletes stored messages which expired before a timestamp without decrypting them.
+- secp256k1: Invalid commitments are rejected when loaded and bulletproof aggregate min_value verification is fixed.
 
 
 27.2.5
