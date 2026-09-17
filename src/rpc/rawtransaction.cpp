@@ -1512,7 +1512,11 @@ static RPCHelpMan decodepsbt()
         }
         if (input.non_witness_utxo) {
             if (input.non_witness_utxo->IsParticlVersion()) {
-                txout = input.non_witness_utxo->vpout[psbtx.tx->vin[i].prevout.n]->GetCTxOut();
+                const uint32_t prevout_n = psbtx.tx->vin[i].prevout.n;
+                if (prevout_n < input.non_witness_utxo->vpout.size() &&
+                    input.non_witness_utxo->vpout[prevout_n]->IsType(OUTPUT_STANDARD)) {
+                    txout = input.non_witness_utxo->vpout[prevout_n]->GetCTxOut();
+                }
             } else {
                 txout = input.non_witness_utxo->vout[psbtx.tx->vin[i].prevout.n];
             }

@@ -101,8 +101,8 @@ struct Params {
 
     bool m_particl_mode = true;
     /** Time at which OP_ISCOINSTAKE becomes active */
-    int64_t OpIsCoinstakeTime;
-    bool fAllowOpIsCoinstakeWithP2PKH;
+    int64_t OpIsCoinstakeTime = 0x7FFFFFFFFFFFFFFF;
+    bool fAllowOpIsCoinstakeWithP2PKH = false;
     /** Time at which Paid SMSG becomes active */
     uint32_t nPaidSmsgTime;
     /** Time at which variable SMSG fee become active */
@@ -173,7 +173,7 @@ struct Params {
     uint256 defaultAssumeValid;
 
     /** Minimum depth a Particl Anon output is spendable at */
-    int nMinRCTOutputDepth;
+    int nMinRCTOutputDepth = 12;
 
     /**
      * If true, witness commitments contain a payload equal to a Bitcoin Script solution

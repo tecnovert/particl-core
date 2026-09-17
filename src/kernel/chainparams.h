@@ -260,7 +260,7 @@ protected:
             consensus.nLastImportHeight = std::max(consensus.nLastImportHeight, cth.nHeight);
         }
     }
-    int nBIP44ID;
+    int nBIP44ID = (int)0x80000001;
     std::vector<unsigned char> bech32Prefixes[MAX_BASE58_TYPES];
     uint32_t nModifierInterval;         // seconds to elapse before new modifier is computed
     uint32_t nStakeMinConfirmations;    // min depth in chain before staked output is spendable
