@@ -1508,7 +1508,7 @@ static RPCHelpMan smsginbox()
                             }},
                         }},
                         {RPCResult::Type::STR, "expected", /*optional=*/true, "values understood"},
-                        {RPCResult::Type::NUM, "num_messages", /*optional=*/true, "Number of messages counted"},
+                        {RPCResult::Type::NUM, "num_messages", /*optional=*/true, "Number of messages matching the mode and filter, ignoring offset and max_results"},
                 }},
                 RPCExamples{
                     "Display unread received messages:"
@@ -1562,7 +1562,7 @@ static RPCHelpMan smsginbox()
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Could not open DB");
         }
 
-        uint32_t nMessages = 0;
+        uint32_t nMessages = 0, nMatched = 0;
         uint8_t chKey[30];
 
         if (mode == "count") {
@@ -1613,34 +1613,49 @@ static RPCHelpMan smsginbox()
                     !(smsgStored.status & SMSG_MASK_UNREAD)) {
                     continue;
                 }
-                if (offset > 0) {
-                    offset--;
+                const bool in_page = offset < 1 && (max_results < 0 || (int)nMessages < max_results);
+                if (!in_page && filter.empty()) {
+                    nMatched++;
+                    if (offset > 0) {
+                        offset--;
+                    }
                     continue;
-                }
-                if (max_results >= 0 && (int)nMessages >= max_results) {
-                    break;
                 }
                 const unsigned char *pHeader = smsgStored.vchMessage.data();
                 smsg::SecureMessage smsg(pHeader);
                 const smsg::SecureMessage *psmsg = &smsg;
 
-                UniValue objM(UniValue::VOBJ);
-                objM.pushKV("msgid", HexStr(Span<const unsigned char>(&chKey[2], 28))); // timestamp+hash
-                objM.pushKV("version", strprintf("%02x%02x", psmsg->version[0], psmsg->version[1]));
-
                 uint32_t nPayload = smsgStored.vchMessage.size() - smsg::SMSG_HDR_LEN;
                 smsg::MessageInfo msg_info;
                 int rv = smsgModule.Decrypt(false, smsgStored.addrTo, pHeader, pHeader + smsg::SMSG_HDR_LEN, nPayload, msg, &msg_info);
+                std::string sAddrTo, sText;
                 if (rv == 0) {
-                    std::string sAddrTo = EncodeDestination(PKHash(smsgStored.addrTo));
-                    std::string sText = GetMessageText(msg);
+                    sAddrTo = EncodeDestination(PKHash(smsgStored.addrTo));
+                    sText = GetMessageText(msg);
                     if (filter.size() > 0 &&
                         !(part::stringsMatchI(msg.sFromAddress, filter, 3) ||
                           part::stringsMatchI(sAddrTo, filter, 3) ||
                           part::stringsMatchI(sText, filter, 3))) {
                         continue;
                     }
+                } else
+                if (filter.size() > 0) {
+                    continue;
+                }
+                nMatched++;
+                if (offset > 0) {
+                    offset--;
+                    continue;
+                }
+                if (!in_page) {
+                    continue;
+                }
 
+                UniValue objM(UniValue::VOBJ);
+                objM.pushKV("msgid", HexStr(Span<const unsigned char>(&chKey[2], 28))); // timestamp+hash
+                objM.pushKV("version", strprintf("%02x%02x", psmsg->version[0], psmsg->version[1]));
+
+                if (rv == 0) {
                     PushTime(objM, "received", smsgStored.timeReceived);
                     PushTime(objM, "sent", msg.timestamp);
                     objM.pushKV("paid", UniValue(psmsg->IsPaidVersion()));
@@ -1672,10 +1687,6 @@ static RPCHelpMan smsginbox()
                         objM.pushKV("unknown_encoding", sEnc);
                     }
                 } else {
-                    if (filter.size() > 0) {
-                        continue;
-                    }
-
                     objM.pushKV("status", "Decrypt failed");
                     objM.pushKV("error", smsg::GetString(rv));
                 }
@@ -1694,6 +1705,7 @@ static RPCHelpMan smsginbox()
 
             result.pushKV("messages", messageList);
             result.pushKV("result", strprintf("%u", nMessages));
+            result.pushKV("num_messages", (int)nMatched);
         } else {
             result.pushKV("result", "Unknown Mode.");
             result.pushKV("expected", "all|unread|clear.");
@@ -1751,7 +1763,7 @@ static RPCHelpMan smsgoutbox()
                             }},
                         }},
                         {RPCResult::Type::STR, "expected", /*optional=*/true, "values understood"},
-                        {RPCResult::Type::NUM, "num_messages", /*optional=*/true, "Number of messages counted"},
+                        {RPCResult::Type::NUM, "num_messages", /*optional=*/true, "Number of messages matching the mode and filter, ignoring offset and max_results"},
                 }},
                 RPCExamples{
                     HelpExampleCli("smsgoutbox", "")
@@ -1804,7 +1816,7 @@ static RPCHelpMan smsgoutbox()
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Could not open DB");
         }
 
-        uint32_t nMessages = 0;
+        uint32_t nMessages = 0, nMatched = 0;
 
         std::string db_prefix = show_sending ? smsg::DBK_QUEUED : show_stashed ? smsg::DBK_STASHED : smsg::DBK_OUTBOX;
         if (mode == "count") {
@@ -1838,34 +1850,49 @@ static RPCHelpMan smsgoutbox()
             UniValue messageList(UniValue::VARR);
 
             while (dbOutbox.NextSmesg(it, db_prefix, chKey, smsgStored)) {
-                if (offset > 0) {
-                    offset--;
+                const bool in_page = offset < 1 && (max_results < 0 || (int)nMessages < max_results);
+                if (!in_page && filter.empty()) {
+                    nMatched++;
+                    if (offset > 0) {
+                        offset--;
+                    }
                     continue;
-                }
-                if (max_results >= 0 && (int)nMessages >= max_results) {
-                    break;
                 }
                 const unsigned char *pHeader = smsgStored.vchMessage.data();
                 smsg::SecureMessage smsg(pHeader);
                 const smsg::SecureMessage *psmsg = &smsg;
 
-                UniValue objM(UniValue::VOBJ);
-                objM.pushKV("msgid", HexStr(Span<const unsigned char>(&chKey[2], 28))); // timestamp+hash
-                objM.pushKV("version", strprintf("%02x%02x", psmsg->version[0], psmsg->version[1]));
-
                 uint32_t nPayload = smsgStored.vchMessage.size() - smsg::SMSG_HDR_LEN;
                 smsg::MessageInfo msg_info;
                 int rv = smsgModule.Decrypt(false, smsgStored.addrOutbox, pHeader, pHeader + smsg::SMSG_HDR_LEN, nPayload, msg, &msg_info);
+                std::string sAddrTo, sText;
                 if (rv == 0) {
-                    std::string sAddrTo = EncodeDestination(PKHash(smsgStored.addrTo));
-                    std::string sText = GetMessageText(msg);
+                    sAddrTo = EncodeDestination(PKHash(smsgStored.addrTo));
+                    sText = GetMessageText(msg);
                     if (filter.size() > 0 &&
                         !(part::stringsMatchI(msg.sFromAddress, filter, 3) ||
                           part::stringsMatchI(sAddrTo, filter, 3) ||
                           part::stringsMatchI(sText, filter, 3))) {
                         continue;
                     }
+                } else
+                if (filter.size() > 0) {
+                    continue;
+                }
+                nMatched++;
+                if (offset > 0) {
+                    offset--;
+                    continue;
+                }
+                if (!in_page) {
+                    continue;
+                }
 
+                UniValue objM(UniValue::VOBJ);
+                objM.pushKV("msgid", HexStr(Span<const unsigned char>(&chKey[2], 28))); // timestamp+hash
+                objM.pushKV("version", strprintf("%02x%02x", psmsg->version[0], psmsg->version[1]));
+
+                if (rv == 0) {
                     PushTime(objM, "sent", msg.timestamp);
                     objM.pushKV("paid", UniValue(psmsg->IsPaidVersion()));
 
@@ -1892,10 +1919,6 @@ static RPCHelpMan smsgoutbox()
                         objM.pushKV("unknown_encoding", sEnc);
                     }
                 } else {
-                    if (filter.size() > 0) {
-                        continue;
-                    }
-
                     objM.pushKV("status", "Decrypt failed");
                     objM.pushKV("error", smsg::GetString(rv));
                 }
@@ -1906,6 +1929,7 @@ static RPCHelpMan smsgoutbox()
 
             result.pushKV("messages" ,messageList);
             result.pushKV("result", strprintf("%u", nMessages));
+            result.pushKV("num_messages", (int)nMatched);
         } else {
             result.pushKV("result", "Unknown Mode.");
             result.pushKV("expected", "all|clear.");
@@ -2681,6 +2705,105 @@ static RPCHelpMan smsgpurge()
     };
 }
 
+static RPCHelpMan smsgexpire()
+{
+    return RPCHelpMan{"smsgexpire",
+                "\nDelete stored messages which expired before a timestamp.\n"
+                "A message expires at the time it was sent plus its ttl.\n",
+                {
+                    {"timestamp", RPCArg::Type::NUM, RPCArg::DefaultHint{"current time"}, "Delete messages which expired before this unix timestamp."},
+                    {"options", RPCArg::Type::OBJ, RPCArg::Default{UniValue::VOBJ}, "",
+                        {
+                            {"inbox", RPCArg::Type::BOOL, RPCArg::Default{true}, "Expire received messages."},
+                            {"outbox", RPCArg::Type::BOOL, RPCArg::Default{true}, "Expire sent messages."},
+                            {"dry_run", RPCArg::Type::BOOL, RPCArg::Default{false}, "Count expired messages without deleting them."},
+                        },
+                    },
+                },
+                RPCResult{
+                    RPCResult::Type::OBJ, "", "", {
+                        {RPCResult::Type::NUM, "expired_inbox", "Number of received messages expired"},
+                        {RPCResult::Type::NUM, "expired_outbox", "Number of sent messages expired"},
+                        {RPCResult::Type::NUM, "num_expired", "Total number of messages expired"},
+                }},
+                RPCExamples{
+                    HelpExampleCli("smsgexpire", "")
+                    + HelpExampleCli("smsgexpire", "1700000000 \"{\\\"outbox\\\":false}\"")
+                    + HelpExampleRpc("smsgexpire", "1700000000")
+                },
+        [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
+{
+    EnsureSMSGIsEnabled();
+
+    int64_t timestamp = request.params[0].isNum() ? request.params[0].getInt<int64_t>() : GetTime();
+
+    bool expire_inbox = true;
+    bool expire_outbox = true;
+    bool dry_run = false;
+    if (request.params[1].isObject()) {
+        UniValue options = request.params[1].get_obj();
+        if (options["inbox"].isBool()) {
+            expire_inbox = options["inbox"].get_bool();
+        }
+        if (options["outbox"].isBool()) {
+            expire_outbox = options["outbox"].get_bool();
+        }
+        if (options["dry_run"].isBool()) {
+            dry_run = options["dry_run"].get_bool();
+        }
+    }
+
+    uint32_t num_inbox = 0, num_outbox = 0;
+    {
+        LOCK(smsg::cs_smsgDB);
+
+        smsg::SecMsgDB dbMsg;
+        if (!dbMsg.Open("cr+")) {
+            throw JSONRPCError(RPC_INTERNAL_ERROR, "Could not open DB");
+        }
+
+        auto expire_prefix = [&](const std::string &prefix) -> uint32_t {
+            uint32_t num_expired = 0;
+            uint8_t chKey[30];
+            smsg::SecMsgStored smsgStored;
+
+            dbMsg.TxnBegin();
+            leveldb::Iterator *it = dbMsg.pdb->NewIterator(leveldb::ReadOptions());
+            while (dbMsg.NextSmesg(it, prefix, chKey, smsgStored)) {
+                if (smsgStored.vchMessage.size() < smsg::SMSG_HDR_LEN) {
+                    continue;
+                }
+                smsg::SecureMessage smsg(smsgStored.vchMessage.data());
+                if (smsg.timestamp + (int64_t)smsg.m_ttl >= timestamp) {
+                    continue;
+                }
+                if (!dry_run) {
+                    dbMsg.EraseSmesg(chKey);
+                }
+                num_expired++;
+            }
+            delete it;
+            dbMsg.TxnCommit();
+            return num_expired;
+        };
+
+        if (expire_inbox) {
+            num_inbox = expire_prefix(smsg::DBK_INBOX);
+        }
+        if (expire_outbox) {
+            num_outbox = expire_prefix(smsg::DBK_OUTBOX);
+        }
+    }
+
+    UniValue result(UniValue::VOBJ);
+    result.pushKV("expired_inbox", (int)num_inbox);
+    result.pushKV("expired_outbox", (int)num_outbox);
+    result.pushKV("num_expired", (int)(num_inbox + num_outbox));
+    return result;
+},
+    };
+}
+
 static RPCHelpMan smsggetfeerate()
 {
     return RPCHelpMan{"smsggetfeerate",
@@ -3136,6 +3259,7 @@ void RegisterSmsgRPCCommands(CRPCTable &t)
         {"smsg", &smsgone},
         {"smsg", &smsgimport},
         {"smsg", &smsgpurge},
+        {"smsg", &smsgexpire},
         {"smsg", &smsggetfeerate},
         {"smsg", &smsggetdifficulty},
         {"smsg", &smsggetinfo},

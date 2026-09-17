@@ -17,6 +17,9 @@ Next Major Version
 - Initialise Particl consensus parameters for the signet chain.
 - consensus: Reject anon transactions with a zero plain value explicitly instead of through an uninitialised commitment.
 - rpc: Bounds check prevouts in decodepsbt and signrawtransaction for Particl output types.
+- rpc: smsginbox and smsgoutbox list modes return num_messages, the number of matching messages before offset and max_results are applied.
+  - offset now skips matching messages rather than all stored messages.
+- rpc: Added smsgexpire, deletes stored messages which expired before a timestamp without decrypting them.
 
 
 27.2.5
